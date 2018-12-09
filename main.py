@@ -35,6 +35,7 @@ class Rogue():
 
     def mainloop( self ):
         key = 1;
+        self.messenger.add( 'Kill all monsters. Move with arrow keys or numpad. Q to exit.' );
         while key != ord( 'Q' ):
             logging.info( '== Turn %d. ==' % ( self.turn ) );
             self.level.lookAround( self.player.pos, self.player.range, sys.argv == ['rogue.py', 'seethrough'] );

@@ -25,7 +25,7 @@ class Messenger():
                 if len( self.messageList ) > 0:
                     logging.debug( 'still messages left.' );
                     Curses.print_at( messageEnd, 23, '-more-', Curses.color( 'YELLOW' ) );
-                    Curses.stdscr.getch();
+                    Curses.wait();
                     Curses.print_at( 0, messageLine, 79*' ' );
                 Curses.refresh();
         elif len( self.messageList ) == 1:

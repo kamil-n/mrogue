@@ -51,6 +51,12 @@ class CursesHelper:
         return cls._instance.color[ colorName ];
 
     @classmethod
+    def wait( cls, window = None ):
+        if not window:
+            window = cls._instance.stdscr;
+        window.getch();
+
+    @classmethod
     def refresh( cls ):
         cls._instance.stdscr.refresh();
 
