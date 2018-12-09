@@ -1,34 +1,40 @@
-import random;
-import logging;
-from map import Point;
+import logging, random;
+from rogue.curse import CursesHelper as Curses;
+from rogue.map import RogueMap;
+import rogue.util;
+from rogue.player import Player;
+from rogue.message import Messenger;
 
 class Menagerie():
-    gameObject = None;
+    #_instance = None;
     monsterList = [];
 
-    def __init__( self, game, num ):
-        self.gameObject = game;
+    def __init__( self, num ):
         monsterTemplates = [];
-        monsterTemplates.append( MonsterTemplate( 'rat', 'r', self.gameObject.window.color['DARKGRAY'], '1d4-1', '1d4-1', 2, 12 ) );
-        monsterTemplates.append( MonsterTemplate( 'kobold', 'k', self.gameObject.window.color['RED'], '1d6-1', '1d6-1', 1, 13 ) );
-        monsterTemplates.append( MonsterTemplate( 'goblin', 'g', self.gameObject.window.color['GREEN'], '1d6-1', '1d8-1', 2, 13 ) );
-        monsterTemplates.append( MonsterTemplate( 'orc', 'o', self.gameObject.window.color['DARKGREEN'], '1d8', '1d8', 3, 14 ) );
-        monsterTemplates.append( MonsterTemplate( 'skeleton', 's', self.gameObject.window.color['WHITE'], '1d8', '1d4+1', 3, 11 ) );
+        monsterTemplates.append( MonsterTemplate( 'rat', 'r', Curses.color( 'DARKGRAY' ), '1d4-1', '1d4-1', 2, 12 ) );
+        monsterTemplates.append( MonsterTemplate( 'kobold', 'k', Curses.color( 'RED' ), '1d6-1', '1d6-1', 1, 13 ) );
+        monsterTemplates.append( MonsterTemplate( 'goblin', 'g', Curses.color( 'GREEN' ), '1d6-1', '1d8-1', 2, 13 ) );
+        monsterTemplates.append( MonsterTemplate( 'orc', 'o', Curses.color( 'DARKGREEN' ), '1d8', '1d8', 3, 14 ) );
+        monsterTemplates.append( MonsterTemplate( 'skeleton', 's', Curses.color( 'WHITE' ), '1d8', '1d4+1', 3, 11 ) );
         for i in range( num ):
-            startPosition = self.gameObject.level.findSpot();
-            tempMonster = Monster( self.gameObject, startPosition, random.choice( monsterTemplates ) );
+            startPosition = RogueMap.findSpot();
+            tempMonster = Monster( startPosition, random.choice( monsterTemplates ) );
             self.monsterList.append( tempMonster );
-            logging.debug( 'Created monster %s at %d,%d' % ( tempMonster.name, tempMonster.pos.x, tempMonster.pos.y ) );
+            logging.debug( 'Created monster %s at %d,%d' % ( tempMonster.name, tempMonster.pos[0], tempMonster.pos[1] ) );
+        #Menagerie._instance = self;
 
     def handleMonsters( self ):
         for monster in self.monsterList:
-            if monster.isInRange( self.gameObject.player.pos, 5 ):
-                if self.gameObject.level.isLoSbetween( monster.pos, self.gameObject.player.pos ):
-                    if monster.isInRange( self.gameObject.player.pos, 1 ):
+            if monster.isInRange( Player.get_pos(), 5 ):
+                if RogueMap.isLoSbetween( monster.pos, Player.get_pos() ):
+                    if monster.isInRange( Player.get_pos(), 1 ):
                         logging.debug( '%s is in melee range - attacking' % ( monster.name ) );
-                        monster.attack( self.gameObject.player );
+                        monster.attack( Player.get_AC() );
                     else:
-                        monster.approach( self.gameObject.player.pos );
+                        monster.approach( Player.get_pos() );
+        if not len( self.monsterList ):
+            return False;
+        return True;
 
 
 
@@ -45,7 +51,6 @@ class MonsterTemplate:
 
 
 class Monster:
-    gameObject = None;
     name = '';
     letter = 0;
     color = None;
@@ -56,8 +61,7 @@ class Monster:
     hitPoints = 0;
     control = 'ai';
 
-    def __init__( self, game, pos, template ):
-        self.gameObject = game;
+    def __init__( self, pos, template ):
         self.name = template.name;
         self.letter = template.letter;
         self.color = template.color;
@@ -65,7 +69,7 @@ class Monster:
         self.hit = template.toHit;
         self.damage = template.dmgDie;
         self.armorClass = template.armorClass;
-        self.hitPoints = self.gameObject.roll( template.hitDie );
+        self.hitPoints = rogue.util.roll( template.hitDie );
 
     def takeDamage( self, damage ):
         logging.debug( '%s is taking %d damage.' % ( self.name, damage ) );
@@ -77,64 +81,64 @@ class Monster:
 
     def die( self ):
         logging.info( '%s dies. (%d hp)' % ( self.name, self.hitPoints ) );
-        self.gameObject.messenger.add( '%s dies.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
-        self.gameObject.monsters.monsterList.remove( self );
+        Messenger.add( '%s dies.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
+        Menagerie.monsterList.remove( self );
 
-    def attack( self, playerObject ):
+    def attack( self, targetAC ):
         logging.info( '%s attacks player.' % ( self.name ) );
-        attackRoll = self.gameObject.roll( '1d20' );
+        attackRoll = rogue.util.roll( '1d20' );
         logging.debug( 'attack roll = %d + %d' % ( attackRoll, self.hit ) );
         criticalHit = attackRoll == 20;
         criticalMiss = attackRoll == 1;
-        if criticalHit or attackRoll + self.hit >= playerObject.armorClass:
+        if criticalHit or attackRoll + self.hit >= targetAC:
             if criticalHit:
                 logging.debug( 'Critical hit.' );
-                self.gameObject.messenger.add( '%s critically hits you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
+                Messenger.add( '%s critically hits you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
             else:
                 logging.debug( 'Attack hit.' );
-                self.gameObject.messenger.add( '%s hits you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
-            damageRoll = self.gameObject.roll( self.damage, criticalHit );
+                Messenger.add( '%s hits you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
+            damageRoll = rogue.util.roll( self.damage, criticalHit );
             logging.debug( 'damage roll = %d' % ( damageRoll ) );
-            playerObject.takeDamage( damageRoll );
+            Player.takeDamage( damageRoll );
         else:
             if criticalMiss:
                 logging.debug( 'Critical miss' );
-                self.gameObject.messenger.add( '%s critically misses you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
+                Messenger.add( '%s critically misses you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
             else:
                 logging.debug( 'Attack missed' );
-                self.gameObject.messenger.add( '%s misses you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
+                Messenger.add( '%s misses you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
 
     def isInRange( self, targetPosition, radius ):
-        return abs( self.pos.x - targetPosition.x ) <= radius and abs( self.pos.y - targetPosition.y ) <= radius;
+        return abs( self.pos[0] - targetPosition[0] ) <= radius and abs( self.pos[1] - targetPosition[1] ) <= radius;
 
     def approach( self, goal ):
-        difx = goal.x - self.pos.x;
-        dify = goal.y - self.pos.y;
+        difx = goal[0] - self.pos[0];
+        dify = goal[1] - self.pos[1];
         vertical = abs( dify ) > abs( difx );
         if vertical:
             if difx == 0:
-                success = self.gameObject.level.movement( self, Point( 0, dify / abs( dify ) ) );
+                success = RogueMap.movement( self, ( 0, dify / abs( dify ) ) );
                 if not success:
-                    success = self.gameObject.level.movement( self, Point( -1, dify / abs( dify ) ) );
+                    success = RogueMap.movement( self, ( -1, dify / abs( dify ) ) );
                     if not success:
-                        self.gameObject.level.movement( self, Point( 1, dify / abs( dify ) ) );
+                        RogueMap.movement( self, ( 1, dify / abs( dify ) ) );
             else:
-                success = self.gameObject.level.movement( self, Point( difx / abs( difx ), dify / abs( dify ) ) );
+                success = RogueMap.movement( self, ( difx / abs( difx ), dify / abs( dify ) ) );
                 if not success:
-                    success = self.gameObject.level.movement( self, Point( 0, dify / abs( dify ) ) );
+                    success = RogueMap.movement( self, ( 0, dify / abs( dify ) ) );
                     if not success:
-                        self.gameObject.level.movement( self, Point( -1 * difx / abs( difx ), dify / abs( dify ) ) );
+                        RogueMap.movement( self, ( -1 * difx / abs( difx ), dify / abs( dify ) ) );
         else:
             if dify == 0:
-                success = self.gameObject.level.movement( self, Point( difx / abs( difx ), 0 ) );
+                success = RogueMap.movement( self, ( difx / abs( difx ), 0 ) );
                 if not success:
-                    success = self.gameObject.level.movement( self, Point( difx / abs( difx ), -1 ) );
+                    success = RogueMap.movement( self, ( difx / abs( difx ), -1 ) );
                     if not success:
-                        self.gameObject.level.movement( self, Point( difx / abs( difx ), 1 ) );
+                        RogueMap.movement( self, ( difx / abs( difx ), 1 ) );
             else:
-                success = self.gameObject.level.movement( self, Point( difx / abs( difx ), dify / abs( dify ) ) );
+                success = RogueMap.movement( self, ( difx / abs( difx ), dify / abs( dify ) ) );
                 if not success:
-                    success = self.gameObject.level.movement( self, Point( difx / abs( difx ), 0 ) );
+                    success = RogueMap.movement( self, ( difx / abs( difx ), 0 ) );
                     if not success:
-                        success = self.gameObject.level.movement( self, Point( difx / abs( difx ), -1 * dify / abs( dify ) ) );
+                        success = RogueMap.movement( self, ( difx / abs( difx ), -1 * dify / abs( dify ) ) );
             

@@ -1,9 +1,15 @@
 import logging;
+from rogue.curse import CursesHelper as Curses;
 
 class Messenger():
+    _instance = None;
     messageList = [];
 
-    def show( self, messageLine, windowObject ):
+    def __init__( self ):
+        self. messageList = [];
+        Messenger._instance = self;
+
+    def show( self, messageLine ):
         #TODO: zrobic to w nowym oknie
         if len( self.messageList ) > 1:
             while len( self.messageList ) > 0:
@@ -14,22 +20,23 @@ class Messenger():
                         break;
                 logging.debug( 'tempMessage = %s' % ( tempMessage ) );
                 messageEnd = len( tempMessage );
-                windowObject.show( 0, messageLine, tempMessage, windowObject.color['WHITE'] );
+                Curses.print_at( 0, messageLine, tempMessage, Curses.color( 'WHITE' ) );
                 tempMessage = '';
                 if len( self.messageList ) > 0:
                     logging.debug( 'still messages left.' );
-                    windowObject.show( messageEnd, 23, '-more-', windowObject.color['YELLOW'] );
-                    windowObject.stdscr.getch();
-                    windowObject.show( 0, messageLine, 79*' ' );
-                windowObject.stdscr.refresh();
+                    Curses.print_at( messageEnd, 23, '-more-', Curses.color( 'YELLOW' ) );
+                    Curses.stdscr.getch();
+                    Curses.print_at( 0, messageLine, 79*' ' );
+                Curses.refresh();
         elif len( self.messageList ) == 1:
-            windowObject.show( 0, messageLine, self.messageList[0], windowObject.color['WHITE'] );
-            windowObject.stdscr.refresh();
+            Curses.print_at( 0, messageLine, self.messageList[0], Curses.color( 'WHITE' ) );
+            Curses.refresh();
 
-    def add( self, message ):
-        self.messageList.append( message );
+    @classmethod
+    def add( cls, message ):
+        cls._instance.messageList.append( message );
     
-    def clear( self, messageLine, windowObject ):
-        windowObject.show( 0, messageLine, 79*' ' );
-        windowObject.stdscr.refresh();
+    def clear( self, messageLine ):
+        Curses.print_at( 0, messageLine, 79 * ' ' );
+        Curses.refresh();
         del self.messageList[:];

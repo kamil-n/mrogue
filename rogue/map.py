@@ -1,19 +1,11 @@
 import random;
 import logging;
-
-class Point:
-    def __init__( self, x, y ):
-        self.x = x;
-        self.y = y;
-
-    def __eq__( self, other ):
-        return self.x == other.x and self.y == other.y;
-
-
+from rogue.curse import CursesHelper as Curses;
+from rogue.message import Messenger;
 
 class Room:
-    min_room_size = Point( 6, 3 );
-    max_room_size = Point( 19, 6 );
+    min_room_size = ( 6, 3 );
+    max_room_size = ( 19, 6 );
     width = 0;
     height = 0;
     x = 0;
@@ -23,8 +15,8 @@ class Room:
         while True:
             self.width = random.randint( 5, 11 );
             self.height = random.randint( 5, 8 );
-            self.x = random.randint( 1, dungeon.mapDim.x - self.width - 1 );
-            self.y = random.randint( dungeon.mapTop + 1, dungeon.mapDim.y - self.height - 1 );
+            self.x = random.randint( 1, dungeon.mapDim[0] - self.width - 1 );
+            self.y = random.randint( dungeon.mapTop + 1, dungeon.mapDim[1] - self.height - 1 );
             if not dungeon.alreadyTaken( self.x, self.y, self.x + self.width, self.y + self.height ):
                 break;
         self.num = num;
@@ -34,25 +26,23 @@ class Room:
             for j in range( self.y, self.y + self.height ):
                 dungeon.mapArray[j][i] = { 'type':'.', 'visible':False, 'seen':False, 'blockMove':False, 'blockLOS':False };
 
-    
-
 
 
 class RogueMap:
-    gameObject = None;
+    _instance = None;
     mapArray = [];
-    mapDim = Point( 0, 0 );
+    mapDim = ( 0, 0 );
     mapTop = 1;
 
-    def __init__( self, game ):
-        self.gameObject = game;
-        self.mapDim = self.gameObject.mapDim;
+    def __init__( self, dimensions ):
+        self.mapDim = dimensions;
         counter = 0;
         while True:
             counter += 1;
             if self.create_map():
                 break;
         logging.info( 'Map was created %d times.' % ( counter ) );
+        RogueMap._instance = self;
 
 
 
@@ -63,8 +53,8 @@ class RogueMap:
             'seen':False,\
             'blockMove':True,\
             'blockLOS':True\
-        } for x in range( self.mapDim.x )]\
-            for y in range( self.mapDim.y )];
+        } for x in range( self.mapDim[0] )]\
+            for y in range( self.mapDim[1] )];
         self.rooms = [ Room( self, i ) for i in range( random.randint( 5, 9 ) ) ];
         self.connectRooms();
         return self.isEverythingConnected();
@@ -125,12 +115,13 @@ class RogueMap:
 
 
 
-    def findSpot( self ):
+    @classmethod
+    def findSpot( cls ):
         while True:
-            x = random.randint( 1, self.mapDim.x - 1 );
-            y = random.randint( self.mapTop + 1, self.mapDim.y - 1 );
-            if not self.mapArray[y][x]['blockMove']:
-                return Point( x, y );
+            x = random.randint( 1, cls._instance.mapDim[0] - 1 );
+            y = random.randint( cls._instance.mapTop + 1, cls._instance.mapDim[1] - 1 );
+            if not cls._instance.mapArray[y][x]['blockMove']:
+                return ( x, y );
 
 
 
@@ -155,7 +146,7 @@ class RogueMap:
                     continue;
                 if xx * xx + yy * yy > radius * radius or xx * xx + yy * yy < radius * radius - radius - 1:
                     continue;
-                self.lineOfSight( origin.x, origin.y, origin.x + xx, origin.y + yy );
+                self.lineOfSight( origin[0], origin[1], origin[0] + xx, origin[1] + yy );
 
 
 
@@ -181,24 +172,25 @@ class RogueMap:
 
 
 
-    def isLoSbetween( self, source, targetDoNotModify ):
+    @classmethod
+    def isLoSbetween( cls, source, targetDoNotModify ):
         if source is targetDoNotModify:
             return True;
-        target = Point( targetDoNotModify.x, targetDoNotModify.y );
-        target.x += 0.5 if target.x < source.x else -0.5;
-        target.y += 0.5 if target.y < source.y else -0.5;
-        dx = target.x - source.x;
-        dy = target.y - source.y;
+        targetx, targety = targetDoNotModify;
+        targetx += 0.5 if targetx < source[0] else -0.5;
+        targety += 0.5 if targety < source[1] else -0.5;
+        dx = targetx - source[0];
+        dy = targety - source[1];
         length = max( abs( dx ), abs( dy ) );
         dx /= length;
         dy /= length;
-        xx = source.x;
-        yy = source.y;
+        xx = source[0];
+        yy = source[1];
         thereIs = False;
         while length > 0:
             ix = int( xx + 0.5 );
             iy = int( yy + 0.5 );
-            if self.mapArray[iy][ix]['blockLOS'] or ( ix == target.x and iy == target.y ):
+            if cls._instance.mapArray[iy][ix]['blockLOS'] or ( ix == targetx and iy == targety ):
                 thereIs = False;
                 break;
             thereIs = True;
@@ -209,12 +201,13 @@ class RogueMap:
 
 
 
-    def movement( self, unit, check ):
-        if self.mapArray[unit.pos.y + check.y][unit.pos.x + check.x]['blockMove']:
+    @classmethod
+    def movement( cls, unit, check ):
+        if cls._instance.mapArray[unit.pos[1] + check[1]][unit.pos[0] + check[0]]['blockMove']:
             if unit.control is not 'ai':
-                self.gameObject.messenger.messageList.append( 'You can\'t move there.' );
+                Messenger.add( 'You can\'t move there.' );
             return False;
-        mon = self.whichMonsterAt( unit.pos.x + check.x, unit.pos.y + check.y );
+        mon = cls._instance.whichMonsterAt( unit.pos[0] + check[0], unit.pos[1] + check[1] );
         if mon:
             if unit.control is 'player':
                 logging.debug( 'Engaged %s.' % ( mon.name ) );
@@ -222,30 +215,31 @@ class RogueMap:
                 return False;
             else:
                 return False;
-        #elif self.gameObject.player.pos == Point( unit.pos.x + check.x, unit.pos.y + check.y ) and unit.control is 'ai':
-        unit.pos.x += check.x;
-        unit.pos.y += check.y;
+        #elif Player.get_pos() == ( unit.pos[0] + check[0], unit.pos[1] + check[1] ) and unit.control is 'ai':
+        unit.pos = ( unit.pos[0] + check[0], unit.pos[1] + check[1] );
         return True;
 
 
 
     def whichMonsterAt( self, x, y ):
-        for mon in self.gameObject.monsters.monsterList:
-            if mon.pos.x == x and mon.pos.y == y:
+        import rogue.monster;
+        for mon in rogue.monster.Menagerie.monsterList:
+            if mon.pos[0] == x and mon.pos[1] == y:
                 return mon;
         return None;
 
 
 
     def drawMap( self ):
-        for x in range( self.mapDim.x ):
-            for y in range( self.mapTop, self.mapDim.y ):
+        import rogue.monster;
+        for x in range( self.mapDim[0] ):
+            for y in range( self.mapTop, self.mapDim[1] ):
                 if self.mapArray[y][x]['visible']:
-                    self.gameObject.window.show( x, y, self.mapArray[y][x]['type'], self.gameObject.window.color['GRAY'] );
+                    Curses.print_at( x, y, self.mapArray[y][x]['type'], Curses.color( 'GRAY' ) );
                 elif self.mapArray[y][x]['seen']:
-                    self.gameObject.window.show( x, y, self.mapArray[y][x]['type'], self.gameObject.window.color['DARKGRAY'] );
+                    Curses.print_at( x, y, self.mapArray[y][x]['type'], Curses.color( 'DARKGRAY' ) );
                 else:
-                    self.gameObject.window.show( x, y, ' ' );
-        for mon in self.gameObject.monsters.monsterList:
-            if self.mapArray[mon.pos.y][mon.pos.x]['visible']:
-                self.gameObject.window.show( mon.pos.x, mon.pos.y, mon.letter, mon.color );
+                    Curses.print_at( x, y, ' ' );
+        for mon in rogue.monster.Menagerie.monsterList:
+            if self.mapArray[mon.pos[1]][mon.pos[0]]['visible']:
+                Curses.print_at( mon.pos[0], mon.pos[1], mon.letter, mon.color );

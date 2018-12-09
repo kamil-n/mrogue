@@ -1,7 +1,11 @@
 import logging;
+import util;
+from rogue.map import RogueMap;
+from rogue.curse import CursesHelper as Curses;
+from rogue.message import Messenger;
 
 class Player:
-    gameObject = None;
+    _instance = None;
     pos = None;
     color = None;
     range = 0;
@@ -12,51 +16,60 @@ class Player:
     maxHealth = 0;
     control = 'player';
 
-    def __init__( self, game, range = 6 ):
-        self.gameObject = game;
-        self.pos = self.gameObject.level.findSpot();
-        self.color = self.gameObject.window.color['YELLOW'];
+    def __init__( self, range = 6 ):
+        self.pos = RogueMap.findSpot();
+        self.color = Curses.color( 'YELLOW' );
         self.range = range;
         self.hit = 3;
         self.damage = "1d6+1";
         self.armorClass = 14;
         self.hitPoints = 12;
         self.maxHealth = 12;
+        Player._instance = self;
+
+    @classmethod
+    def get_pos( cls ):
+        return cls._instance.pos;
+
+    @classmethod
+    def get_AC( cls ):
+        return cls._instance.armorClass;
 
     def attack( self, targetMonster ):
         logging.info( 'Player attacks %s.' % ( targetMonster.name ) );
-        attackRoll = self.gameObject.roll( '1d20' );
+        attackRoll = util.roll( '1d20' );
         logging.debug( 'attack roll = %d + %d' % ( attackRoll, self.hit ) );
         criticalHit = attackRoll == 20;
         criticalMiss = attackRoll == 1;
         if criticalHit or attackRoll + self.hit >= targetMonster.armorClass:
             if criticalHit:
                 logging.debug( 'Critical hit.' );
-                self.gameObject.messenger.add( 'You critically hit %s.' % ( targetMonster.name ) );
+                Messenger.add( 'You critically hit %s.' % ( targetMonster.name ) );
             else:
                 logging.debug( 'Attack hit.' );
-                self.gameObject.messenger.add( 'You hit %s.' % ( targetMonster.name ) );
-            damageRoll = self.gameObject.roll( self.damage, criticalHit );
+                Messenger.add( 'You hit %s.' % ( targetMonster.name ) );
+            damageRoll = util.roll( self.damage, criticalHit );
             logging.debug( 'damage roll = %d' % ( damageRoll ) );
             targetMonster.takeDamage( damageRoll );
         else:
             if criticalMiss:
                 logging.debug( 'Critical miss' );
-                self.gameObject.messenger.add( 'You critically missed %s.' % ( targetMonster.name ) );
+                Messenger.add( 'You critically missed %s.' % ( targetMonster.name ) );
             else:
                 logging.debug( 'Attack missed' );
-                self.gameObject.messenger.add( 'You missed %s.' % ( targetMonster.name ) );
+                Messenger.add( 'You missed %s.' % ( targetMonster.name ) );
 
-    def takeDamage( self, damage ):
+    @classmethod
+    def takeDamage( cls, damage ):
         logging.debug( 'Player is taking %d damage.' % ( damage ) );
-        self.hitPoints -= damage;
-        if self.hitPoints < 1:
-            logging.info( 'Player dies. (%d hp)' % ( self.hitPoints ) );
-            self.gameObject.messenger.add( 'You die.' );
+        cls._instance.hitPoints -= damage;
+        if cls._instance.hitPoints < 1:
+            logging.info( 'Player dies. (%d hp)' % ( cls._instance.hitPoints ) );
+            Messenger.add( 'You die.' );
         else:
-            logging.debug( 'current hit points: %d.' % ( self.hitPoints ) );
+            logging.debug( 'current hit points: %d.' % ( cls._instance.hitPoints ) );
 
-    def showStatus( self, statusLine, cursesObject ):
-        cursesObject.show( 4, statusLine, '%2d/%d' % ( self.hitPoints, self.maxHealth ), cursesObject.color['GREEN'] );
-        cursesObject.show( 16, statusLine, '%2d' % ( self.armorClass ), cursesObject.color['LIGHTBLUE'] );
-        cursesObject.show( 26, statusLine, '%d/%s' % ( self.hit, self.damage ), cursesObject.color['RED'] );
+    def showStatus( self, statusLine ):
+        Curses.print_at( 4, statusLine, '%2d/%d' % ( self.hitPoints, self.maxHealth ), Curses.color( 'GREEN' ) );
+        Curses.print_at( 16, statusLine, '%2d' % ( self.armorClass ), Curses.color( 'LIGHTBLUE' ) );
+        Curses.print_at( 26, statusLine, '%d/%s' % ( self.hit, self.damage ), Curses.color( 'RED' ) );
