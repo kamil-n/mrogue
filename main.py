@@ -22,7 +22,7 @@ class Rogue():
     def __init__( self ):
         if os.path.isfile( 'rogue.log' ):
             os.remove( 'rogue.log' );
-        logging.basicConfig( filename = 'rogue.log', level = logging.DEBUG );
+        logging.basicConfig( filename = 'rogue.log', level = logging.INFO );
         logging.info( '======== Game start. ========' );
         self.interface = CursesHelper();
         self.level = RogueMap( self.mapDim );
@@ -38,11 +38,11 @@ class Rogue():
         self.messenger.add( 'Kill all monsters. Move with arrow keys or numpad. Q to exit.' );
         while key != ord( 'Q' ):
             logging.info( '== Turn %d. ==' % ( self.turn ) );
-            self.level.lookAround( self.player.pos, self.player.range, sys.argv == ['rogue.py', 'seethrough'] );
+            self.level.lookAround( self.player.pos, self.player.range, sys.argv == [ __file__, 'seethrough' ] );
             if not self.monsters.handleMonsters():
-                win = CursesWindow( self.mapDim[0] / 2 - 10, self.mapDim[1] / 2 - 3, 20, 6, 'Congratulations!' );
-                win.window.addstr( 3, 2, 'You`ve defeated' );
-                win.window.addstr( 4, 2, 'all monsters!' );
+                win = CursesWindow( self.mapDim[0] / 2 - 10, self.mapDim[1] / 2 - 3, 20, 6, 'Congratulations!', 'GREEN', 'DARKGREEN' );
+                win.window.addstr( 3, 2, 'You`ve defeated', self.interface.color['WHITE'] );
+                win.window.addstr( 4, 2, 'all monsters!', self.interface.color['WHITE'] );
                 win.loop();
                 win.close();
                 self.interface.close();
@@ -53,8 +53,8 @@ class Rogue():
             self.player.showStatus( self.statusLine );
             self.turn += 1;
             if self.player.hitPoints < 1:
-                win = CursesWindow( self.mapDim[0] / 2 - 10, self.mapDim[1] / 2 - 3, 20, 5, 'Defeat!' );
-                win.window.addstr( 3, 2, 'YOU DIED' );
+                win = CursesWindow( self.mapDim[0] / 2 - 10, self.mapDim[1] / 2 - 3, 20, 5, 'Defeat!', 'RED', 'DARKRED' );
+                win.window.addstr( 3, 2, 'YOU DIED', self.interface.color['RED'] );
                 win.loop();
                 win.close();
                 self.interface.close();

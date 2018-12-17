@@ -1,5 +1,5 @@
 import logging;
-import util;
+from rogue import roll;
 from rogue.map import RogueMap;
 from rogue.curse import CursesHelper as Curses;
 from rogue.message import Messenger;
@@ -37,7 +37,7 @@ class Player:
 
     def attack( self, targetMonster ):
         logging.info( 'Player attacks %s.' % ( targetMonster.name ) );
-        attackRoll = util.roll( '1d20' );
+        attackRoll = roll( '1d20' );
         logging.debug( 'attack roll = %d + %d' % ( attackRoll, self.hit ) );
         criticalHit = attackRoll == 20;
         criticalMiss = attackRoll == 1;
@@ -48,7 +48,7 @@ class Player:
             else:
                 logging.debug( 'Attack hit.' );
                 Messenger.add( 'You hit %s.' % ( targetMonster.name ) );
-            damageRoll = util.roll( self.damage, criticalHit );
+            damageRoll = roll( self.damage, criticalHit );
             logging.debug( 'damage roll = %d' % ( damageRoll ) );
             targetMonster.takeDamage( damageRoll );
         else:

@@ -1,7 +1,7 @@
 import logging, random;
 from rogue.curse import CursesHelper as Curses;
 from rogue.map import RogueMap;
-import rogue.util;
+from rogue import roll;
 from rogue.player import Player;
 from rogue.message import Messenger;
 
@@ -69,7 +69,7 @@ class Monster:
         self.hit = template.toHit;
         self.damage = template.dmgDie;
         self.armorClass = template.armorClass;
-        self.hitPoints = rogue.util.roll( template.hitDie );
+        self.hitPoints = roll( template.hitDie );
 
     def takeDamage( self, damage ):
         logging.debug( '%s is taking %d damage.' % ( self.name, damage ) );
@@ -86,7 +86,7 @@ class Monster:
 
     def attack( self, targetAC ):
         logging.info( '%s attacks player.' % ( self.name ) );
-        attackRoll = rogue.util.roll( '1d20' );
+        attackRoll = roll( '1d20' );
         logging.debug( 'attack roll = %d + %d' % ( attackRoll, self.hit ) );
         criticalHit = attackRoll == 20;
         criticalMiss = attackRoll == 1;
@@ -97,7 +97,7 @@ class Monster:
             else:
                 logging.debug( 'Attack hit.' );
                 Messenger.add( '%s hits you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
-            damageRoll = rogue.util.roll( self.damage, criticalHit );
+            damageRoll = roll( self.damage, criticalHit );
             logging.debug( 'damage roll = %d' % ( damageRoll ) );
             Player.takeDamage( damageRoll );
         else:

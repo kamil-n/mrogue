@@ -1,5 +1,5 @@
-import random;
-import logging;
+import random, logging;
+from rogue import types;
 from rogue.curse import CursesHelper as Curses;
 from rogue.message import Messenger;
 
@@ -24,7 +24,7 @@ class Room:
         logging.debug( 'Created room %d (w%d h%d) ( %d,%d - %d,%d )' % ( num, self.width, self.height, self.x, self.y,  self.x + self.width, self.y + self.height ) );
         for i in range( self.x, self.x + self.width ):
             for j in range( self.y, self.y + self.height ):
-                dungeon.mapArray[j][i] = { 'type':'.', 'visible':False, 'seen':False, 'blockMove':False, 'blockLOS':False };
+                dungeon.mapArray[j][i] = { 'type':types['floor'], 'visible':False, 'seen':False, 'blockMove':False, 'blockLOS':False };
 
 
 
@@ -65,10 +65,9 @@ class RogueMap:
         for first in self.rooms:
             if len( first.connected ) > 0:
                 continue;
-            while True:
-                second = self.rooms[random.randint( 0, len( self.rooms ) - 1 )];
-                if first.num != second.num and len( second.connected ) < 2:
-                    break;
+            vectors = [ ( abs( first.x - r.x ), abs( first.y - r.y ), r.num ) for r in self.rooms if r.num != first.num ];
+            nearest = min( vectors, key=lambda v: sum(p*p for p in v ))[2];
+            second = next( ( r for r in self.rooms if r.num == nearest ), None );
             x1 = random.randint( first.x + 1, first.x + first.width - 2 );
             y1 = random.randint( first.y + 1, first.y + first.height - 2 );
             x2 = random.randint( second.x + 1, second.x + second.width - 2 );
@@ -81,17 +80,23 @@ class RogueMap:
 
 
     def digTunnel( self, x1, y1, x2, y2 ):
-        dx = 1 if x2 - x1 > 0 else ( -1 if x2 - x1 < 0 else 0 );
-        dy = 1 if y2 - y1 > 0 else ( -1 if y2 - y1 < 0 else 0 );
+        absx = abs( x2 - x1 );
+        absy = abs( y2 - y1 );
+        dx = 0 if x1 == x2 else absx / ( x2 - x1 );
+        dy = 0 if y1 == y2 else absy / ( y2 - y1 );
         horizontal = random.random() > 0.5;
+        distance = 0;
+        broken = 100;
         while x1 != x2 or y1 != y2:
             if y1 == y2 or ( horizontal and x1 != x2 ):
                 x1 += dx;
             else:
                 y1 += dy;
+            distance += 1;
             if self.mapArray[y1][x1]['type'] == '#':
-                self.mapArray[y1][x1] = { 'type':'.', 'visible':False, 'seen':False, 'blockMove':False, 'blockLOS':False };
-            if random.random() > 0.7:
+                broken = distance;
+            self.mapArray[y1][x1] = { 'type':types['tunnel'], 'visible':False, 'seen':False, 'blockMove':False, 'blockLOS':False };
+            if random.random() > 0.7 and distance - broken > 1:
                 horizontal = not horizontal;
 
 
@@ -128,7 +133,7 @@ class RogueMap:
     def alreadyTaken( self, x1, y1, x2, y2 ):
         for x in range( x1 - 1, x2 + 1 ):
             for y in range( y1 - 1, y2 + 1 ):
-                if self.mapArray[y][x]['type'] == '.':
+                if self.mapArray[y][x]['type'] == types['floor']:
                     return True
         return False
 

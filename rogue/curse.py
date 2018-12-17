@@ -71,13 +71,15 @@ class CursesHelper:
 class CursesWindow():
     window = None;
 
-    def __init__( self, left = 1, top = 1, width = 20, height = 4, title = 'Window title', bgChar = ' ', bgAttr = curses.A_NORMAL ):
+    def __init__( self, left = 1, top = 1, width = 20, height = 4, title = 'Window title', titleColor = 'GRAY', bgAttr = 'GRAY' ):
         self.window = curses.newwin( height, width, top, left );
-        self.window.bkgd( bgChar, bgAttr ); #bkgdset
-        self.window.addstr( 1, 2, title );
-        self.window.hline( 2, 1, '-', width - 2 );
+        self.window.bkgdset( ' ', CursesHelper.color( bgAttr ) ); #bkgdset
+        self.window.addstr( 1, 2, title, CursesHelper.color( titleColor ) );
         self.window.border( 0, 0, 0, 0, 0, 0, 0, 0 );
-        self.window.addstr( 0, width - 2, 'q' );
+        self.window.addch( 2, 0, curses.ACS_LTEE );
+        self.window.hline( 2, 1, curses.ACS_BSBS, width - 2 );
+        self.window.addch( 2, width-1, curses.ACS_RTEE );
+        self.window.addch( 0, width - 2, 'q' );
         self.window.refresh();
 
     def set_border( self, ls = 0, rs = 0, ts = 0, bs = 0, tl = 0, tr = 0, bl = 0, br = 0 ):
