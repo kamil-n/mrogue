@@ -9,9 +9,9 @@ from rogue.message import Messenger;
 
 
 class Rogue():
-    mapDim = ( 80, 23 );
+    mapDim = ( 128, 32 - 1 );
     statusLine = 0;
-    messageLine = 23;
+    messageLine = mapDim[1];
     turn = 0;
     player = None;
     level = None;
@@ -28,7 +28,7 @@ class Rogue():
         self.level = RogueMap( self.mapDim );
         self.player = Player();
         self.monsters = Menagerie( 10 );
-        self.messenger = Messenger();
+        self.messenger = Messenger( self.mapDim );
         self.interface.print_at( 0, self.statusLine, 'HP:', self.interface.color['WHITE'] );
         self.interface.print_at( 12, self.statusLine, 'AC:', self.interface.color['WHITE'] );
         self.interface.print_at( 21, self.statusLine, 'ATK:', self.interface.color['WHITE'] );
@@ -38,7 +38,7 @@ class Rogue():
         self.messenger.add( 'Kill all monsters. Move with arrow keys or numpad. Q to exit.' );
         while key != ord( 'Q' ):
             logging.info( '== Turn %d. ==' % ( self.turn ) );
-            self.level.lookAround( self.player.pos, self.player.range, sys.argv == [ __file__, 'seethrough' ] );
+            self.level.lookAround( self.player.pos, self.player.range, 'seethrough' in sys.argv );
             if not self.monsters.handleMonsters():
                 win = CursesWindow( self.mapDim[0] / 2 - 10, self.mapDim[1] / 2 - 3, 20, 6, 'Congratulations!', 'GREEN', 'DARKGREEN' );
                 win.window.addstr( 3, 2, 'You`ve defeated', self.interface.color['WHITE'] );
@@ -101,7 +101,6 @@ class Rogue():
 if __name__ == '__main__':
     rogue = Rogue();
     try:
-        #rogue = Rogue();
         rogue.mainloop();
     except:
         rogue.interface.close();

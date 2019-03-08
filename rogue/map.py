@@ -3,9 +3,10 @@ from rogue import types;
 from rogue.curse import CursesHelper as Curses;
 from rogue.message import Messenger;
 
+min_room_size = ( 6, 3 );
+max_room_size = ( 19, 6 );
+
 class Room:
-    min_room_size = ( 6, 3 );
-    max_room_size = ( 19, 6 );
     width = 0;
     height = 0;
     x = 0;
@@ -13,8 +14,8 @@ class Room:
 
     def __init__( self, dungeon, num ):
         while True:
-            self.width = random.randint( 5, 11 );
-            self.height = random.randint( 5, 8 );
+            self.width = random.randint( min_room_size[0], max_room_size[0] );
+            self.height = random.randint( min_room_size[1], max_room_size[1] );
             self.x = random.randint( 1, dungeon.mapDim[0] - self.width - 1 );
             self.y = random.randint( dungeon.mapTop + 1, dungeon.mapDim[1] - self.height - 1 );
             if not dungeon.alreadyTaken( self.x, self.y, self.x + self.width, self.y + self.height ):
@@ -33,10 +34,14 @@ class RogueMap:
     mapArray = [];
     mapDim = ( 0, 0 );
     mapTop = 1;
+    min_rooms = 1;
+    max_rooms = 1;
 
     def __init__( self, dimensions ):
         self.mapDim = dimensions;
         counter = 0;
+        self.min_rooms = 5;
+        self.max_rooms = self.mapDim[0] / max_room_size[0] * self.mapDim[1] / max_room_size[1];
         while True:
             counter += 1;
             if self.create_map():
@@ -55,7 +60,8 @@ class RogueMap:
             'blockLOS':True\
         } for x in range( self.mapDim[0] )]\
             for y in range( self.mapDim[1] )];
-        self.rooms = [ Room( self, i ) for i in range( random.randint( 5, 9 ) ) ];
+        self.rooms = [ Room( self, i ) for i in range( random.randint( self.min_rooms, self.max_rooms ) ) ];
+        logging.info( 'Trying with ' + str( len( self.rooms ) ) + ' rooms...' );
         self.connectRooms();
         return self.isEverythingConnected();
 
@@ -229,7 +235,7 @@ class RogueMap:
     def whichMonsterAt( self, x, y ):
         import rogue.monster;
         for mon in rogue.monster.Menagerie.monsterList:
-            if mon.pos[0] == x and mon.pos[1] == y:
+            if mon.pos == ( x, y ):
                 return mon;
         return None;
 
