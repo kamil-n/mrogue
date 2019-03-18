@@ -1,4 +1,6 @@
-import random, logging;
+# -*- coding: utf-8 -*-
+
+import random, math, logging;
 from rogue import types;
 from rogue.curse import CursesHelper as Curses;
 from rogue.message import Messenger;
@@ -27,11 +29,18 @@ class Room:
             for j in range( self.y, self.y + self.height ):
                 dungeon.mapArray[j][i] = { 'type':types['floor'], 'visible':False, 'seen':False, 'blockMove':False, 'blockLOS':False };
 
+    def __str__( self ):
+        return 'room ' + str( self.num ) + '(' + str( self.x ) + ',' + str( self.y ) + ')';
+
+    def __repr__( self ):
+        return 'room ' + str( self.num );
+
 
 
 class RogueMap:
     _instance = None;
     mapArray = [];
+    rooms = [];
     mapDim = ( 0, 0 );
     mapTop = 1;
     min_rooms = 1;
@@ -39,53 +48,110 @@ class RogueMap:
 
     def __init__( self, dimensions ):
         self.mapDim = dimensions;
-        counter = 0;
         self.min_rooms = 5;
         self.max_rooms = self.mapDim[0] / max_room_size[0] * self.mapDim[1] / max_room_size[1];
-        while True:
-            counter += 1;
-            if self.create_map():
-                break;
-        logging.info( 'Map was created %d times.' % ( counter ) );
+        self.create_map();
         RogueMap._instance = self;
 
 
 
     def create_map( self ):
-        self.mapArray = [ [ {\
-            'type':'#',\
-            'visible':False,\
-            'seen':False,\
-            'blockMove':True,\
-            'blockLOS':True\
-        } for x in range( self.mapDim[0] )]\
-            for y in range( self.mapDim[1] )];
+        self.mapArray = [
+            [
+                { 'type': '#', 'visible': False, 'seen': False, 'blockMove': True, 'blockLOS': True }
+                for x in range( self.mapDim[0] )
+            ] for y in range( self.mapDim[1] )];
         self.rooms = [ Room( self, i ) for i in range( random.randint( self.min_rooms, self.max_rooms ) ) ];
         logging.info( 'Trying with ' + str( len( self.rooms ) ) + ' rooms...' );
-        self.connectRooms();
-        return self.isEverythingConnected();
+        self.connect_rooms();
+        self.check_connections();
 
 
 
-    def connectRooms( self ):
+    def connect_rooms( self ):
         for first in self.rooms:
             if len( first.connected ) > 0:
                 continue;
-            vectors = [ ( abs( first.x - r.x ), abs( first.y - r.y ), r.num ) for r in self.rooms if r.num != first.num ];
-            nearest = min( vectors, key=lambda v: sum(p*p for p in v ))[2];
-            second = next( ( r for r in self.rooms if r.num == nearest ), None );
+            second = self.get_nearest_room( first, self.rooms )[0];
             x1 = random.randint( first.x + 1, first.x + first.width - 2 );
             y1 = random.randint( first.y + 1, first.y + first.height - 2 );
             x2 = random.randint( second.x + 1, second.x + second.width - 2 );
             y2 = random.randint( second.y + 1, second.y + second.height - 2 );
-            self.digTunnel( x1, y1, x2, y2 );
+            self.dig_tunnel( x1, y1, x2, y2 );
             first.connected.append( second.num );
             second.connected.append( first.num );
             logging.debug( 'Connected rooms %d and %d' % ( first.num, second.num ) );
 
 
 
-    def digTunnel( self, x1, y1, x2, y2 ):
+    def get_nearest_room( self, source, roomList ):
+        vectors = [ ( abs( source.x - r.x ), abs( source.y - r.y ), r.num ) for r in roomList if r.num != source.num ];
+        nearest = min( vectors, key=lambda v: sum(p*p for p in v ));
+        return next( ( r for r in self.rooms if r.num == nearest[2] ), None ), int( math.sqrt( nearest[0]*nearest[0] + nearest[1] * nearest[1] ) );
+
+
+
+    def collect_connected_rooms( self, room, bagOfRooms ):
+        if len( bagOfRooms ) == 0:
+            bagOfRooms.add( room.num );
+        if set( room.connected ).issubset( bagOfRooms ):
+            return bagOfRooms;
+        else:
+            for r in room.connected:
+                if r not in bagOfRooms:
+                    bagOfRooms.add( r );
+                    self.collect_connected_rooms( self.rooms[r], bagOfRooms );
+
+
+
+    def check_connections( self ):
+        roomGroups = [];
+        for room in self.rooms:
+            tempSet = set();
+            self.collect_connected_rooms( room, tempSet );
+            if tempSet not in roomGroups:
+                roomGroups.append( tempSet );
+        logging.info( 'Number of room groups: %d.' % len( roomGroups ) );
+        if len( roomGroups ) > 1:
+            matching = [];
+            for num, thisGroup in enumerate( roomGroups ):
+                groupCandidates = [];
+                for thisRoom in thisGroup:
+                    roomCandidates = [];
+                    for enum, thatGroup in enumerate( roomGroups ):
+                        if thisGroup == thatGroup:
+                            continue;
+                        roomCandidates.append( ( self.get_nearest_room( self.rooms[thisRoom], [ self.rooms[r] for r in thatGroup ] ), enum, thisRoom ) );
+                    ( candidate, dist ), group, source = min( roomCandidates, key=lambda v:v[0][1] );
+                    groupCandidates.append( ( candidate, dist, group, source ) );
+                result, distance, group, source = min( groupCandidates, key=lambda v:v[1] );
+                logging.debug( 'connection between room %2d - group %d and %d - is room %2d with distance %d.'
+                                       % ( source, num, group, result.num, distance ) );
+                matching.append( ( { num, group }, { source, result.num }, distance ) );
+            logging.debug( matching );
+            dungeon = [];
+            for groupPair, roomPair, distance in matching:
+                if groupPair not in [ pair[0] for pair in dungeon ]:
+                    dungeon.append( ( groupPair, roomPair, distance ) );
+                else:
+                    stored = next( ( tup for tup in dungeon if tup[0] == groupPair ) );
+                    if distance < stored[2]:
+                        dungeon[dungeon.index( stored )] = ( groupPair, roomPair, distance );
+            logging.debug( 'Number of necessary connections: %d.' % len( dungeon ) );
+            for room1, room2 in [ tup[1] for tup in dungeon ]:
+                first = self.rooms[room1];
+                second = self.rooms[room2];
+                x1 = random.randint( first.x + 1, first.x + first.width - 2 );
+                y1 = random.randint( first.y + 1, first.y + first.height - 2 );
+                x2 = random.randint( second.x + 1, second.x + second.width - 2 );
+                y2 = random.randint( second.y + 1, second.y + second.height - 2 );
+                self.dig_tunnel( x1, y1, x2, y2 );
+                first.connected.append( second.num );
+                second.connected.append( first.num );
+
+
+
+    def dig_tunnel( self, x1, y1, x2, y2 ):
         absx = abs( x2 - x1 );
         absy = abs( y2 - y1 );
         dx = 0 if x1 == x2 else absx / ( x2 - x1 );
@@ -107,32 +173,13 @@ class RogueMap:
 
 
 
-    def isEverythingConnected( self ):
-        connectedRooms = set();
-        otherSet = set();
-        for room in self.rooms:
-            tempSet = set();
-            tempSet.add( room.num );
-            for i in room.connected:
-                tempSet.add( i );
-            if len( connectedRooms ) == 0:
-                connectedRooms |= tempSet;
-            else:
-                if not tempSet.isdisjoint( connectedRooms ):
-                    connectedRooms |= tempSet;
-                else:
-                    otherSet |= tempSet;
-        return len( otherSet ) == 0;
-
-
-
     @classmethod
     def findSpot( cls ):
         while True:
             x = random.randint( 1, cls._instance.mapDim[0] - 1 );
             y = random.randint( cls._instance.mapTop + 1, cls._instance.mapDim[1] - 1 );
             if not cls._instance.mapArray[y][x]['blockMove']:
-                return ( x, y );
+                return x, y;
 
 
 
