@@ -8,10 +8,7 @@ from rogue.message import Messenger;
 
 
 
-class Rogue():
-    mapDim = ( 128, 32 - 1 );
-    statusLine = 0;
-    messageLine = mapDim[1];
+class Rogue:
     turn = 0;
     player = None;
     level = None;
@@ -25,6 +22,9 @@ class Rogue():
         logging.basicConfig( filename = 'rogue.log', level = logging.INFO );
         logging.info( '======== Game start. ========' );
         self.interface = CursesHelper();
+        self.mapDim = ( self.interface.dimensions[1], self.interface.dimensions[0] - 1 );
+        self.statusLine = 0;
+        self.messageLine = self.mapDim[1];
         self.level = RogueMap( self.mapDim );
         self.player = Player();
         self.monsters = Menagerie( 10 );

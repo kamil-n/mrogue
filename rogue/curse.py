@@ -1,12 +1,16 @@
+# -*- coding: utf-8 -*-
+
 import curses;
 
 class CursesHelper:
     _instance = None;
     stdscr = None;
-    color = None;
+    colors = None;
+    dimensions = None;
 
     def __init__( self ):
         self.stdscr = curses.initscr();
+        self.dimensions = self.stdscr.getmaxyx();
         curses.curs_set( False );
         curses.noecho();
         self.stdscr.keypad( 1 );
