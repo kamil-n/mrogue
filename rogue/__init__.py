@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import logging, random;
 
 types = {
@@ -26,9 +28,9 @@ def roll( dieString, crit = False ):
     rollResult = 0;
     resultString = '';
     for i in range( numDie ):
-        roll = random.randint( 1, typeDie );
-        resultString += str( roll ) + '+';
-        rollResult += roll;
+        cast = random.randint( 1, typeDie );
+        resultString += str( cast ) + '+';
+        rollResult += cast;
     rollResult += modifier;
     resultString = resultString[:-1];
     if rollResult < 1:

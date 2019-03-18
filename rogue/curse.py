@@ -23,36 +23,36 @@ class CursesHelper:
         curses.init_pair( 5, curses.COLOR_MAGENTA, curses.COLOR_BLACK );
         curses.init_pair( 6, curses.COLOR_YELLOW, curses.COLOR_BLACK );
         curses.init_pair( 7, curses.COLOR_BLACK, curses.COLOR_BLACK );
-        self.color = {\
-            'WHITE':    curses.color_pair( 0 ) | curses.A_BOLD,\
-            'GRAY':     curses.color_pair( 0 ),\
-            'RED':      curses.color_pair( 1 ) | curses.A_BOLD,\
-            'DARKRED':  curses.color_pair( 1 ),\
-            'GREEN':    curses.color_pair( 2 ) | curses.A_BOLD,\
-            'DARKGREEN':curses.color_pair( 2 ),\
-            'BLUE':     curses.color_pair( 3 ) | curses.A_BOLD,\
-            'DARKBLUE': curses.color_pair( 3 ),\
-            'LIGHTBLUE':curses.color_pair( 4 ) | curses.A_BOLD,\
-            'AQUAMARINE':curses.color_pair( 4 ),\
-            'PURPLE':   curses.color_pair( 5 ) | curses.A_BOLD,\
-            'DARKPURPLE':curses.color_pair( 5 ),\
-            'YELLOW':   curses.color_pair( 6 ) | curses.A_BOLD,\
-            'BROWN':    curses.color_pair( 6 ),\
-            'DARKGRAY': curses.color_pair( 7 ) | curses.A_BOLD\
+        self.colors = {
+            'WHITE':    curses.color_pair( 0 ) | curses.A_BOLD,
+            'GRAY':     curses.color_pair( 0 ),
+            'RED':      curses.color_pair( 1 ) | curses.A_BOLD,
+            'DARKRED':  curses.color_pair( 1 ),
+            'GREEN':    curses.color_pair( 2 ) | curses.A_BOLD,
+            'DARKGREEN':curses.color_pair( 2 ),
+            'BLUE':     curses.color_pair( 3 ) | curses.A_BOLD,
+            'DARKBLUE': curses.color_pair( 3 ),
+            'LIGHTBLUE':curses.color_pair( 4 ) | curses.A_BOLD,
+            'AQUAMARINE':curses.color_pair( 4 ),
+            'PURPLE':   curses.color_pair( 5 ) | curses.A_BOLD,
+            'DARKPURPLE':curses.color_pair( 5 ),
+            'YELLOW':   curses.color_pair( 6 ) | curses.A_BOLD,
+            'BROWN':    curses.color_pair( 6 ),
+            'DARKGRAY': curses.color_pair( 7 ) | curses.A_BOLD
         };
         CursesHelper._instance = self;
 
     @classmethod
     def print_at( cls, x, y, string, decoration = None, window = None ):
-        if decoration == None:
-            decoration = cls._instance.color['DARKGRAY'];
+        if decoration == None:  #because 0 (valid int arg) evaluates to False
+            decoration = cls._instance.colors['DARKGRAY'];
         if not window:
             window = cls._instance.stdscr;
         window.addstr( y, x, string, decoration );
 
     @classmethod
     def color( cls, colorName = 'WHITE' ):
-        return cls._instance.color[ colorName ];
+        return cls._instance.colors[ colorName ];
 
     @classmethod
     def wait( cls, window = None ):
@@ -72,7 +72,7 @@ class CursesHelper:
 
 
 
-class CursesWindow():
+class CursesWindow:
     window = None;
 
     def __init__( self, left = 1, top = 1, width = 20, height = 4, title = 'Window title', titleColor = 'GRAY', bgAttr = 'GRAY' ):

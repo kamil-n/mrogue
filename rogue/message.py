@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
+
 import logging;
 from rogue.curse import CursesHelper as Curses;
 
-class Messenger():
+class Messenger:
     _instance = None;
     messageList = [];
     scrDim = tuple();
@@ -20,10 +22,9 @@ class Messenger():
                     tempMessage += self.messageList.pop( 0 ) + ' ';
                     if len( self.messageList ) == 0:
                         break;
-                logging.debug( 'tempMessage = %s' % ( tempMessage ) );
+                logging.debug( 'tempMessage = %s' % tempMessage );
                 messageEnd = len( tempMessage );
                 Curses.print_at( 0, messageLine, tempMessage, Curses.color( 'WHITE' ) );
-                tempMessage = '';
                 if len( self.messageList ) > 0:
                     logging.debug( 'still messages left.' );
                     Curses.print_at( messageEnd, messageLine, '-more-', Curses.color( 'YELLOW' ) );

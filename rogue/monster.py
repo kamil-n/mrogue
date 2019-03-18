@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import logging, random;
 from rogue.curse import CursesHelper as Curses;
 from rogue.map import RogueMap;
@@ -5,31 +7,30 @@ from rogue import roll;
 from rogue.player import Player;
 from rogue.message import Messenger;
 
-class Menagerie():
+class Menagerie:
     #_instance = None;
     monsterList = [];
 
     def __init__( self, num ):
-        monsterTemplates = [];
-        monsterTemplates.append( MonsterTemplate( 'rat', 'r', Curses.color( 'DARKGRAY' ), '1d4-1', '1d4-1', 2, 12 ) );
-        monsterTemplates.append( MonsterTemplate( 'kobold', 'k', Curses.color( 'RED' ), '1d6-1', '1d6-1', 1, 13 ) );
-        monsterTemplates.append( MonsterTemplate( 'goblin', 'g', Curses.color( 'GREEN' ), '1d6-1', '1d8-1', 2, 13 ) );
-        monsterTemplates.append( MonsterTemplate( 'orc', 'o', Curses.color( 'DARKGREEN' ), '1d8', '1d8', 3, 14 ) );
-        monsterTemplates.append( MonsterTemplate( 'skeleton', 's', Curses.color( 'WHITE' ), '1d8', '1d4+1', 3, 11 ) );
+        monsterTemplates = [ MonsterTemplate( 'rat', 'r', Curses.color( 'DARKGRAY' ), '1d4-1', '1d4-1', 2, 12 ),
+                             MonsterTemplate( 'kobold', 'k', Curses.color( 'RED' ), '1d6-1', '1d6-1', 1, 13 ),
+                             MonsterTemplate( 'goblin', 'g', Curses.color( 'GREEN' ), '1d6-1', '1d8-1', 2, 13 ),
+                             MonsterTemplate( 'orc', 'o', Curses.color( 'DARKGREEN' ), '1d8', '1d8', 3, 14 ),
+                             MonsterTemplate( 'skeleton', 's', Curses.color( 'WHITE' ), '1d8', '1d4+1', 3, 11 ) ];
         for i in range( num ):
-            startPosition = RogueMap.findSpot();
+            startPosition = RogueMap.find_spot();
             tempMonster = Monster( startPosition, random.choice( monsterTemplates ) );
             self.monsterList.append( tempMonster );
             logging.debug( 'Created monster %s at %d,%d' % ( tempMonster.name, tempMonster.pos[0], tempMonster.pos[1] ) );
         #Menagerie._instance = self;
 
-    def handleMonsters( self ):
+    def handle_monsters( self ):
         for monster in self.monsterList:
-            if monster.isInRange( Player.get_pos(), 5 ):
-                if RogueMap.isLoSbetween( monster.pos, Player.get_pos() ):
-                    if monster.isInRange( Player.get_pos(), 1 ):
-                        logging.debug( '%s is in melee range - attacking' % ( monster.name ) );
-                        monster.attack( Player.get_AC() );
+            if monster.is_in_range( Player.get_pos(), 5 ):
+                if RogueMap.is_los_between( monster.pos, Player.get_pos() ):
+                    if monster.is_in_range( Player.get_pos(), 1 ):
+                        logging.debug( '%s is in melee range - attacking' % monster.name );
+                        monster.attack( Player.get_ac() );
                     else:
                         monster.approach( Player.get_pos() );
         if not len( self.monsterList ):
@@ -71,13 +72,13 @@ class Monster:
         self.armorClass = template.armorClass;
         self.hitPoints = roll( template.hitDie );
 
-    def takeDamage( self, damage ):
+    def take_damage( self, damage ):
         logging.debug( '%s is taking %d damage.' % ( self.name, damage ) );
         self.hitPoints -= damage;
         if self.hitPoints < 1:
             self.die();
         else:
-            logging.debug( 'current hit points: %d.' % ( self.hitPoints ) );
+            logging.debug( 'current hit points: %d.' % self.hitPoints );
 
     def die( self ):
         logging.info( '%s dies. (%d hp)' % ( self.name, self.hitPoints ) );
@@ -85,7 +86,7 @@ class Monster:
         Menagerie.monsterList.remove( self );
 
     def attack( self, targetAC ):
-        logging.info( '%s attacks player.' % ( self.name ) );
+        logging.info( '%s attacks player.' % self.name );
         attackRoll = roll( '1d20' );
         logging.debug( 'attack roll = %d + %d' % ( attackRoll, self.hit ) );
         criticalHit = attackRoll == 20;
@@ -98,8 +99,8 @@ class Monster:
                 logging.debug( 'Attack hit.' );
                 Messenger.add( '%s hits you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
             damageRoll = roll( self.damage, criticalHit );
-            logging.debug( 'damage roll = %d' % ( damageRoll ) );
-            Player.takeDamage( damageRoll );
+            logging.debug( 'damage roll = %d' % damageRoll );
+            Player.take_damage( damageRoll );
         else:
             if criticalMiss:
                 logging.debug( 'Critical miss' );
@@ -108,7 +109,7 @@ class Monster:
                 logging.debug( 'Attack missed' );
                 Messenger.add( '%s misses you.' % ( str.upper( self.name[0] ) + self.name[1:] ) );
 
-    def isInRange( self, targetPosition, radius ):
+    def is_in_range( self, targetPosition, radius ):
         return abs( self.pos[0] - targetPosition[0] ) <= radius and abs( self.pos[1] - targetPosition[1] ) <= radius;
 
     def approach( self, goal ):
@@ -140,5 +141,5 @@ class Monster:
                 if not success:
                     success = RogueMap.movement( self, ( difx / abs( difx ), 0 ) );
                     if not success:
-                        success = RogueMap.movement( self, ( difx / abs( difx ), -1 * dify / abs( dify ) ) );
+                        RogueMap.movement( self, ( difx / abs( difx ), -1 * dify / abs( dify ) ) );
             

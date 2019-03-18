@@ -20,7 +20,7 @@ class Room:
             self.height = random.randint( min_room_size[1], max_room_size[1] );
             self.x = random.randint( 1, dungeon.mapDim[0] - self.width - 1 );
             self.y = random.randint( dungeon.mapTop + 1, dungeon.mapDim[1] - self.height - 1 );
-            if not dungeon.alreadyTaken( self.x, self.y, self.x + self.width, self.y + self.height ):
+            if not dungeon.already_taken( self.x, self.y, self.x + self.width, self.y + self.height ):
                 break;
         self.num = num;
         self.connected = [];
@@ -174,7 +174,7 @@ class RogueMap:
 
 
     @classmethod
-    def findSpot( cls ):
+    def find_spot( cls ):
         while True:
             x = random.randint( 1, cls._instance.mapDim[0] - 1 );
             y = random.randint( cls._instance.mapTop + 1, cls._instance.mapDim[1] - 1 );
@@ -183,7 +183,7 @@ class RogueMap:
 
 
 
-    def alreadyTaken( self, x1, y1, x2, y2 ):
+    def already_taken( self, x1, y1, x2, y2 ):
         for x in range( x1 - 1, x2 + 1 ):
             for y in range( y1 - 1, y2 + 1 ):
                 if self.mapArray[y][x]['type'] == types['floor']:
@@ -192,7 +192,7 @@ class RogueMap:
 
 
 
-    def lookAround( self, origin, radius, cheat ):
+    def look_around( self, origin, radius, cheat ):
         for y in range( self.mapTop, len( self.mapArray ) ):
             for x in range( len( self.mapArray[0] ) ):
                 if self.mapArray[y][x]['visible'] or cheat:
@@ -204,11 +204,11 @@ class RogueMap:
                     continue;
                 if xx * xx + yy * yy > radius * radius or xx * xx + yy * yy < radius * radius - radius - 1:
                     continue;
-                self.lineOfSight( origin[0], origin[1], origin[0] + xx, origin[1] + yy );
+                self.line_of_sight( origin[0], origin[1], origin[0] + xx, origin[1] + yy );
 
 
 
-    def lineOfSight( self, origin_x, origin_y, target_x, target_y ):
+    def line_of_sight( self, origin_x, origin_y, target_x, target_y ):
         target_x += 0.5 if target_x < origin_x else -0.5;
         target_y += 0.5 if target_y < origin_y else -0.5;
         dx = target_x - origin_x;
@@ -231,7 +231,7 @@ class RogueMap:
 
 
     @classmethod
-    def isLoSbetween( cls, source, targetDoNotModify ):
+    def is_los_between( cls, source, targetDoNotModify ):
         if source is targetDoNotModify:
             return True;
         targetx, targety = targetDoNotModify;
@@ -265,10 +265,10 @@ class RogueMap:
             if unit.control is not 'ai':
                 Messenger.add( 'You can\'t move there.' );
             return False;
-        mon = cls._instance.whichMonsterAt( unit.pos[0] + check[0], unit.pos[1] + check[1] );
+        mon = cls._instance.which_monster_at( unit.pos[0] + check[0], unit.pos[1] + check[1] );
         if mon:
             if unit.control is 'player':
-                logging.debug( 'Engaged %s.' % ( mon.name ) );
+                logging.debug( 'Engaged %s.' % mon.name );
                 unit.attack( mon );
                 return False;
             else:
@@ -279,7 +279,7 @@ class RogueMap:
 
 
 
-    def whichMonsterAt( self, x, y ):
+    def which_monster_at( self, x, y ):
         import rogue.monster;
         for mon in rogue.monster.Menagerie.monsterList:
             if mon.pos == ( x, y ):
@@ -288,7 +288,7 @@ class RogueMap:
 
 
 
-    def drawMap( self ):
+    def draw_map( self ):
         import rogue.monster;
         for x in range( self.mapDim[0] ):
             for y in range( self.mapTop, self.mapDim[1] ):
