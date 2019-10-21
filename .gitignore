@@ -1,5 +1,7 @@
 build
 dist
+__pycache__
 /*.log
 /rogue/*.pyc
+/rogue/__pycache__
 .idea

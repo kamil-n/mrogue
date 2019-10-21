@@ -1,43 +1,47 @@
 # -*- coding: utf-8 -*-
 
-import logging, random;
+import logging
+import random
 
 types = {
     'tunnel': '.',
     'floor': '.',
-};
+}
 
-def roll( dieString, crit = False ):
-    separatorIndex = dieString.index( 'd' );
-    numDie = int( dieString[:separatorIndex] );
-    typeDie = dieString[separatorIndex+1:];
+
+def roll(die_string, crit=False):
+    separator_index = die_string.index('d')
+    num_die = int(die_string[:separator_index])
+    type_die = die_string[separator_index + 1:]
     if crit:
-        numDie *= 2;
-        dieString = str( numDie ) + dieString[separatorIndex:];
-    modifier = 0;
-    modifierIndex = -1;
-    if '-' in typeDie:
-        modifierIndex = typeDie.index( '-' );
-    elif '+' in typeDie:
-        modifierIndex = typeDie.index( '+' );
-    if not modifierIndex == -1:
-        modifier = int( typeDie[modifierIndex:] );
-        typeDie = int( typeDie[:modifierIndex] );
+        num_die *= 2
+        die_string = str(num_die) + die_string[separator_index:]
+    modifier = 0
+    modifier_index = -1
+    if '-' in type_die:
+        modifier_index = type_die.index('-')
+    elif '+' in type_die:
+        modifier_index = type_die.index('+')
+    if not modifier_index == -1:
+        modifier = int(type_die[modifier_index:])
+        type_die = int(type_die[:modifier_index])
     else:
-        typeDie = int( typeDie );
-    rollResult = 0;
-    resultString = '';
-    for i in range( numDie ):
-        cast = random.randint( 1, typeDie );
-        resultString += str( cast ) + '+';
-        rollResult += cast;
-    rollResult += modifier;
-    resultString = resultString[:-1];
-    if rollResult < 1:
-        rollResult = 1;
+        type_die = int(type_die)
+    roll_result = 0
+    result_string = ''
+    for i in range(num_die):
+        cast = random.randint(1, type_die)
+        result_string += str(cast) + '+'
+        roll_result += cast
+    roll_result += modifier
+    result_string = result_string[:-1]
+    if roll_result < 1:
+        roll_result = 1
     if modifier < 0:
-        resultString += str(modifier);
+        result_string += str(modifier)
     elif modifier > 0:
-        resultString += '+' + str( modifier ); 
-    logging.debug( 'rolling %s: %s = %d' % ( dieString, resultString, rollResult ) );
-    return rollResult;
+        result_string += '+' + str(modifier)
+    logging.debug('rolling {}: {} = {}'.format(die_string,
+                                               result_string,
+                                               roll_result))
+    return roll_result
