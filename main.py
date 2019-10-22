@@ -4,20 +4,18 @@ import logging
 import os
 import sys
 
-# from rogue.interface import Interface
-import curses
-from rogue.curse import CursesWindow, CursesHelper
+from rogue.interface import Interface, Arrows, Window
 from rogue.map import RogueMap
 from rogue.message import Messenger
 from rogue.monster import Menagerie
 from rogue.player import Player
 
 
-class Rogue:
+class Rogue(object):
     turn = 0
-    player = None
-    level = None
     interface = None
+    level = None
+    player = None
     monsters = None
     messenger = None
 
@@ -26,21 +24,11 @@ class Rogue:
             os.remove('rogue.log')
         logging.basicConfig(filename='rogue.log', level=logging.DEBUG)
         logging.info('======== Game start. ========')
-        self.interface = CursesHelper()
-        self.mapDim = (self.interface.dimensions[1],
-                       self.interface.dimensions[0] - 1)
-        self.statusLine = 0
-        self.messageLine = self.mapDim[1]
-        self.level = RogueMap(self.mapDim)
-        self.player = Player()
-        self.monsters = Menagerie(10)
-        self.messenger = Messenger(self.mapDim)
-        self.interface.print_at(0, self.statusLine, 'HP:',
-                                self.interface.colors['WHITE'])
-        self.interface.print_at(12, self.statusLine, 'AC:',
-                                self.interface.colors['WHITE'])
-        self.interface.print_at(21, self.statusLine, 'ATK:',
-                                self.interface.colors['WHITE'])
+        self.interface = Interface()
+        self.level = RogueMap(self)
+        self.player = Player(self)
+        self.monsters = Menagerie(self, 10)
+        self.messenger = Messenger(self)
 
     def mainloop(self):
         key = 1
@@ -52,13 +40,14 @@ class Rogue:
                                    self.player.range,
                                    'seethrough' in sys.argv)
             if not self.monsters.handle_monsters():
-                win = CursesWindow(self.mapDim[0] / 2 - 10,
-                                   self.mapDim[1] / 2 - 3,
-                                   20,
-                                   6,
-                                   'Congratulations!',
-                                   'GREEN',
-                                   'DARKGREEN')
+                win = Window(self.interface,
+                             self.interface.dimensions[1] / 2 - 10,
+                             self.interface.dimensions[0] / 2 - 3,
+                             20,
+                             6,
+                             'Congratulations!',
+                             'GREEN',
+                             'DARKGREEN')
                 win.window.addstr(3, 2, 'You`ve defeated',
                                   self.interface.colors['WHITE'])
                 win.window.addstr(4, 2, 'all monsters!',
@@ -67,22 +56,23 @@ class Rogue:
                 win.close()
                 self.interface.close()
                 break
-            self.level.draw_map()
+            self.level.draw_map(self.interface)
             self.interface.print_at(self.player.pos[0],
                                     self.player.pos[1],
                                     '@',
                                     self.player.color)
-            self.messenger.show(self.messageLine)
-            self.player.show_status(self.statusLine)
+            self.messenger.show()
+            self.player.show_status()
             self.turn += 1
             if self.player.hitPoints < 1 and 'god' not in sys.argv:
-                win = CursesWindow(int(self.mapDim[0] / 2 - 10),
-                                   int(self.mapDim[1] / 2 - 3),
-                                   20,
-                                   5,
-                                   'Defeat!',
-                                   'RED',
-                                   'DARKRED')
+                win = Window(self.interface,
+                             int(self.interface.dimensions[1] / 2 - 10),
+                             int(self.interface.dimensions[0] / 2 - 3),
+                             20,
+                             5,
+                             'Defeat!',
+                             'RED',
+                             'DARKRED')
                 win.window.addstr(3, 2, 'YOU DIED',
                                   self.interface.colors['RED'])
                 win.loop()
@@ -90,7 +80,7 @@ class Rogue:
                 self.interface.close()
                 break
             key = self.interface.stdscr.getch()
-            self.messenger.clear(self.messageLine)
+            self.messenger.clear()
             # movement:
             checkx = 0
             checky = 0
@@ -103,18 +93,17 @@ class Rogue:
                     checky -= 1
                 elif key < 52:
                     checky += 1
-            elif key in (curses.KEY_LEFT, curses.KEY_RIGHT,
-                         curses.KEY_UP, curses.KEY_DOWN):
-                if key == curses.KEY_LEFT:
+            elif key in (Arrows.LEFT, Arrows.RIGHT, Arrows.UP, Arrows.DOWN):
+                if key == Arrows.LEFT:
                     checkx -= 1
-                elif key == curses.KEY_RIGHT:
+                elif key == Arrows.RIGHT:
                     checkx += 1
-                elif key == curses.KEY_UP:
+                elif key == Arrows.UP:
                     checky -= 1
-                elif key == curses.KEY_DOWN:
+                elif key == Arrows.DOWN:
                     checky += 1
             elif key == ord('w'):
-                win = CursesWindow()
+                win = Window(self.interface)
                 win.loop()
                 win.close()
                 # self.level.drawMap()

@@ -3,15 +3,17 @@
 import curses
 
 
-class CursesHelper:
-    _instance = None
+class CursesHelper(object):
     stdscr = None
     colors = None
     dimensions = None
+    status_line = 0
+    message_line = 23
 
     def __init__(self):
         self.stdscr = curses.initscr()
         self.dimensions = self.stdscr.getmaxyx()
+        self.message_line = self.dimensions[0] - 1
         curses.curs_set(False)
         curses.noecho()
         self.stdscr.keypad(1)
@@ -41,29 +43,27 @@ class CursesHelper:
             'BROWN': curses.color_pair(6),
             'DARKGRAY': curses.color_pair(7) | curses.A_BOLD
         }
-        CursesHelper._instance = self
 
-    @classmethod
-    def print_at(cls, x, y, string, decoration=None, window=None):
+    def print_at(self, x, y, string, decoration=None, window=None):
         if decoration is None:  # because 0 (valid int arg) evaluates to False
-            decoration = cls._instance.colors['DARKGRAY']
+            decoration = self.colors['DARKGRAY']
         if not window:
-            window = cls._instance.stdscr
-        window.addstr(y, x, string, decoration)
+            window = self.stdscr
+        try:
+            window.addstr(y, x, string, decoration)
+        except curses.error:
+            import logging
+            logging.error('Error when drawing \'{}\' at coords {},{}!'.format(
+                string, x, y))
+            raise
 
-    @classmethod
-    def color(cls, color_name='WHITE'):
-        return cls._instance.colors[color_name]
-
-    @classmethod
-    def wait(cls, window=None):
+    def wait(self, window=None):
         if not window:
-            window = cls._instance.stdscr
+            window = self.stdscr
         window.getch()
 
-    @classmethod
-    def refresh(cls):
-        cls._instance.stdscr.refresh()
+    def refresh(self):
+        self.stdscr.refresh()
 
     def close(self):
         curses.curs_set(True)
@@ -72,14 +72,14 @@ class CursesHelper:
         curses.endwin()
 
 
-class CursesWindow:
+class CursesWindow(object):
     window = None
 
-    def __init__(self, left=1, top=1, width=20, height=4, title='Window title',
-                 title_color='GRAY', bg_attr='GRAY'):
+    def __init__(self, curs, left=1, top=1, width=20, height=4,
+                 title='Window title', title_color='GRAY', bg_attr='GRAY'):
         self.window = curses.newwin(height, width, top, left)
-        self.window.bkgdset(' ', CursesHelper.color(bg_attr))  # bkgdset
-        self.window.addstr(1, 2, title, CursesHelper.color(title_color))
+        self.window.bkgdset(' ', curs.colors[bg_attr])  # bkgdset
+        self.window.addstr(1, 2, title, curs.colors[title_color])
         self.window.border(0, 0, 0, 0, 0, 0, 0, 0)
         self.window.addch(2, 0, curses.ACS_LTEE)
         self.window.hline(2, 1, curses.ACS_BSBS, width - 2)

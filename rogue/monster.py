@@ -2,60 +2,58 @@
 
 import logging
 import random
-
 from rogue import roll
-from rogue.curse import CursesHelper as Curses
-from rogue.map import RogueMap
-from rogue.message import Messenger
-from rogue.player import Player
 
 
-class Menagerie:
-    # _instance = None
+class Menagerie(object):
+    game = None
     monsterList = []
 
-    def __init__(self, num):
+    def __init__(self, game, num):
+        self.game = game
         monster_templates = [MonsterTemplate('rat', 'r',
-                                             Curses.color('DARKGRAY'),
+                                             game.interface.colors[
+                                                 'DARKGRAY'],
                                              '1d4-1', '1d4-1', 2, 12),
                              MonsterTemplate('kobold', 'k',
-                                             Curses.color('RED'),
+                                             game.interface.colors['RED'],
                                              '1d6-1', '1d6-1', 1, 13),
                              MonsterTemplate('goblin', 'g',
-                                             Curses.color('GREEN'),
+                                             game.interface.colors['GREEN'],
                                              '1d6-1', '1d8-1', 2, 13),
                              MonsterTemplate('orc', 'o',
-                                             Curses.color('DARKGREEN'),
+                                             game.interface.colors[
+                                                 'DARKGREEN'],
                                              '1d8', '1d8', 3, 14),
                              MonsterTemplate('skeleton', 's',
-                                             Curses.color('WHITE'),
+                                             game.interface.colors['WHITE'],
                                              '1d8', '1d4+1', 3, 11)]
         for i in range(num):
-            start_position = RogueMap.find_spot()
-            temp_monster = Monster(start_position,
+            start_position = game.level.find_spot()
+            temp_monster = Monster(self.game, start_position,
                                    random.choice(monster_templates))
             self.monsterList.append(temp_monster)
             logging.debug('Created monster %s at %d,%d' % (temp_monster.name,
                                                            temp_monster.pos[0],
                                                            temp_monster.pos[1]))
-        # Menagerie._instance = self
 
     def handle_monsters(self):
         for monster in self.monsterList:
-            if monster.is_in_range(Player.get_pos(), 5):
-                if RogueMap.is_los_between(monster.pos, Player.get_pos()):
-                    if monster.is_in_range(Player.get_pos(), 1):
+            if monster.is_in_range(self.game.player.get_pos(), 5):
+                if self.game.level.is_los_between(monster.pos,
+                                                  self.game.player.get_pos()):
+                    if monster.is_in_range(self.game.player.get_pos(), 1):
                         logging.debug('%s is in melee range - attacking' %
                                       monster.name)
-                        monster.attack(Player.get_ac())
+                        monster.attack(self.game.player.get_ac())
                     else:
-                        monster.approach(Player.get_pos())
+                        monster.approach(self.game.player.get_pos())
         if not len(self.monsterList):
             return False
         return True
 
 
-class MonsterTemplate:
+class MonsterTemplate(object):
     def __init__(self, name, letter, color, hit_die, dmg_die, to_hit, ac):
         self.name = name
         self.letter = letter
@@ -66,7 +64,8 @@ class MonsterTemplate:
         self.armorClass = ac
 
 
-class Monster:
+class Monster(object):
+    game = None
     name = ''
     letter = 0
     color = None
@@ -77,7 +76,8 @@ class Monster:
     hitPoints = 0
     control = 'ai'
 
-    def __init__(self, pos, template):
+    def __init__(self, game, pos, template):
+        self.game = game
         self.name = template.name
         self.letter = template.letter
         self.color = template.color
@@ -97,7 +97,8 @@ class Monster:
 
     def die(self):
         logging.info('%s dies. (%d hp)' % (self.name, self.hitPoints))
-        Messenger.add('%s dies.' % (str.upper(self.name[0]) + self.name[1:]))
+        self.game.messenger.add(
+            '%s dies.' % (str.upper(self.name[0]) + self.name[1:]))
         Menagerie.monsterList.remove(self)
 
     def attack(self, target_ac):
@@ -109,27 +110,27 @@ class Monster:
         if critical_hit or attack_roll + self.hit >= target_ac:
             if critical_hit:
                 logging.debug('Critical hit.')
-                Messenger.add('%s critically hits you.' % (
+                self.game.messenger.add('%s critically hits you.' % (
                         str.upper(self.name[0]) + self.name[1:]))
             else:
                 logging.debug('Attack hit.')
-                Messenger.add('%s hits you.' % (
+                self.game.messenger.add('%s hits you.' % (
                         str.upper(self.name[0]) + self.name[1:]))
             damage_roll = roll(self.damage, critical_hit)
             logging.debug('damage roll = %d' % damage_roll)
-            Player.take_damage(damage_roll)
+            self.game.player.take_damage(damage_roll)
         else:
             if critical_miss:
                 logging.debug('Critical miss')
-                Messenger.add('%s critically misses you.' % (
+                self.game.messenger.add('%s critically misses you.' % (
                         str.upper(self.name[0]) + self.name[1:]))
             else:
                 logging.debug('Attack missed')
-                Messenger.add('%s misses you.' % (
+                self.game.messenger.add('%s misses you.' % (
                         str.upper(self.name[0]) + self.name[1:]))
 
     def is_in_range(self, target_position, radius):
-        return abs(self.pos[0] - target_position[0]) <= radius and\
+        return abs(self.pos[0] - target_position[0]) <= radius and \
                abs(self.pos[1] - target_position[1]) <= radius
 
     def approach(self, goal):
@@ -138,51 +139,58 @@ class Monster:
         vertical = abs(dify) > abs(difx)
         if vertical:
             if difx == 0:
-                success = RogueMap.movement(self,
-                                            (0,
-                                             int(dify / abs(dify))))
+                success = self.game.level.movement(self,
+                                                   (0,
+                                                    int(dify / abs(dify))))
                 if not success:
-                    success = RogueMap.movement(self,
-                                                (-1,
-                                                 int(dify / abs(dify))))
+                    success = self.game.level.movement(self,
+                                                       (-1,
+                                                        int(dify / abs(
+                                                            dify))))
                     if not success:
-                        RogueMap.movement(self,
-                                          (1,
-                                           int(dify / abs(dify))))
+                        self.game.level.movement(self,
+                                                 (1,
+                                                  int(dify / abs(dify))))
             else:
-                success = RogueMap.movement(self,
-                                            (int(difx / abs(difx)),
-                                             int(dify / abs(dify))))
+                success = self.game.level.movement(self,
+                                                   (int(difx / abs(difx)),
+                                                    int(dify / abs(dify))))
                 if not success:
-                    success = RogueMap.movement(self,
-                                                (0,
-                                                 int(dify / abs(dify))))
+                    success = self.game.level.movement(self,
+                                                       (0,
+                                                        int(dify / abs(
+                                                            dify))))
                     if not success:
-                        RogueMap.movement(self,
-                                          (-1 * int(difx / abs(difx)),
-                                           int(dify / abs(dify))))
+                        self.game.level.movement(self,
+                                                 (-1 * int(difx / abs(difx)),
+                                                  int(dify / abs(dify))))
         else:
             if dify == 0:
-                success = RogueMap.movement(self,
-                                            (int(difx / abs(difx)),
-                                             0))
+                success = self.game.level.movement(self,
+                                                   (int(difx / abs(difx)),
+                                                    0))
                 if not success:
-                    success = RogueMap.movement(self,
-                                                (int(difx / abs(difx)),
-                                                 -1))
+                    success = self.game.level.movement(self,
+                                                       (
+                                                           int(difx / abs(
+                                                               difx)),
+                                                           -1))
                     if not success:
-                        RogueMap.movement(self,
-                                          (int(difx / abs(difx)),
-                                           1))
+                        self.game.level.movement(self,
+                                                 (int(difx / abs(difx)),
+                                                  1))
             else:
-                success = RogueMap.movement(self,
-                                            (int(difx / abs(difx)),
-                                             int(dify / abs(dify))))
+                success = self.game.level.movement(self,
+                                                   (int(difx / abs(difx)),
+                                                    int(dify / abs(dify))))
                 if not success:
-                    success = RogueMap.movement(self,
-                                                (int(difx / abs(difx)),
-                                                 0))
+                    success = self.game.level.movement(self,
+                                                       (
+                                                           int(difx / abs(
+                                                               difx)),
+                                                           0))
                     if not success:
-                        RogueMap.movement(self,
-                                          (int(difx / abs(difx)),
-                                           -1 * int(dify / abs(dify))))
+                        self.game.level.movement(self,
+                                                 (int(difx / abs(difx)),
+                                                  -1 * int(
+                                                      dify / abs(dify))))

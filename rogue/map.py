@@ -3,16 +3,13 @@
 import logging
 import math
 import random
-
 from rogue import types
-from rogue.curse import CursesHelper as Curses
-from rogue.message import Messenger
 
 min_room_size = (6, 3)
 max_room_size = (19, 6)
 
 
-class Room:
+class Room(object):
     width = 0
     height = 0
     x = 0
@@ -51,8 +48,8 @@ class Room:
         return 'room ' + str(self.num)
 
 
-class RogueMap:
-    _instance = None
+class RogueMap(object):
+    game = None
     mapArray = []
     rooms = []
     mapDim = (0, 0)
@@ -60,14 +57,15 @@ class RogueMap:
     min_rooms = 1
     max_rooms = 1
 
-    def __init__(self, dimensions):
-        self.mapDim = dimensions
+    def __init__(self, game):
+        self.mapDim = (game.interface.dimensions[1],
+                       game.interface.dimensions[0] - 1)
+        self.game = game
         self.min_rooms = 5
         self.max_rooms = int(self.mapDim[0] / max_room_size[0] *
                              self.mapDim[1] / max_room_size[1])
         logging.debug('self.max_rooms is {}'.format(self.max_rooms))
         self.create_map()
-        RogueMap._instance = self
 
     def create_map(self):
         self.mapArray = [
@@ -197,13 +195,12 @@ class RogueMap:
             if random.random() > 0.7 and distance - broken > 1:
                 horizontal = not horizontal
 
-    @classmethod
-    def find_spot(cls):
+    def find_spot(self):
         while True:
-            x = random.randint(1, cls._instance.mapDim[0] - 1)
-            y = random.randint(cls._instance.mapTop + 1,
-                               cls._instance.mapDim[1] - 1)
-            if not cls._instance.mapArray[y][x]['blockMove']:
+            x = random.randint(1, self.mapDim[0] - 1)
+            y = random.randint(self.mapTop + 1,
+                               self.mapDim[1] - 1)
+            if not self.mapArray[y][x]['blockMove']:
                 return x, y
 
     def already_taken(self, x1, y1, x2, y2):
@@ -252,8 +249,7 @@ class RogueMap:
             yy += dy
             length -= 1
 
-    @classmethod
-    def is_los_between(cls, source, target_do_not_modify):
+    def is_los_between(self, source, target_do_not_modify):
         if source is target_do_not_modify:
             return True
         targetx, targety = target_do_not_modify
@@ -270,7 +266,7 @@ class RogueMap:
         while length > 0:
             ix = int(xx + 0.5)
             iy = int(yy + 0.5)
-            if cls._instance.mapArray[iy][ix]['blockLOS'] or (
+            if self.mapArray[iy][ix]['blockLOS'] or (
                     ix == targetx and iy == targety):
                 there_is = False
                 break
@@ -280,18 +276,14 @@ class RogueMap:
             length -= 1
         return there_is
 
-    @classmethod
-    def movement(cls, unit, check):
-        if \
-                cls._instance.mapArray[unit.pos[1] + check[1]][unit.pos[0] +
-                                                               check[0]][
-                    'blockMove']:
+    def movement(self, unit, check):
+        if self.mapArray[unit.pos[1] + check[1]][
+             unit.pos[0] + check[0]]['blockMove']:
             if unit.control is not 'ai':
-                Messenger.add('You can\'t move there.')
+                self.game.messenger.add('You can\'t move there.')
             return False
-        import rogue.monster
         monster = None
-        for mon in rogue.monster.Menagerie.monsterList:
+        for mon in self.game.monsters.monsterList:
             if mon.pos == (unit.pos[0] + check[0], unit.pos[1] + check[1]):
                 monster = mon
         if monster:
@@ -306,18 +298,17 @@ class RogueMap:
         unit.pos = (unit.pos[0] + check[0], unit.pos[1] + check[1])
         return True
 
-    def draw_map(self):
-        import rogue.monster
-        for x in range(self.mapDim[0]):
-            for y in range(self.mapTop, self.mapDim[1]):
+    def draw_map(self, curs):
+        for x in range(len(self.mapArray[0])):
+            for y in range(self.mapTop, len(self.mapArray)):
                 if self.mapArray[y][x]['visible']:
-                    Curses.print_at(x, y, self.mapArray[y][x]['type'],
-                                    Curses.color('GRAY'))
+                    curs.print_at(x, y, self.mapArray[y][x]['type'],
+                                  curs.colors['GRAY'])
                 elif self.mapArray[y][x]['seen']:
-                    Curses.print_at(x, y, self.mapArray[y][x]['type'],
-                                    Curses.color('DARKGRAY'))
+                    curs.print_at(x, y, self.mapArray[y][x]['type'],
+                                  curs.colors['DARKGRAY'])
                 else:
-                    Curses.print_at(x, y, ' ')
-        for mon in rogue.monster.Menagerie.monsterList:
+                    curs.print_at(x, y, ' ')
+        for mon in self.game.monsters.monsterList:
             if self.mapArray[mon.pos[1]][mon.pos[0]]['visible']:
-                Curses.print_at(mon.pos[0], mon.pos[1], mon.letter, mon.color)
+                curs.print_at(mon.pos[0], mon.pos[1], mon.letter, mon.color)
