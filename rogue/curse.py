@@ -53,7 +53,7 @@ class CursesHelper(object):
             window.addstr(y, x, string, decoration)
         except curses.error:
             import logging
-            logging.error('Error when drawing \'{}\' at coords {},{}!'.format(
+            logging.error('Error when drawing \'{}\' at coords {}, {}!'.format(
                 string, x, y))
             raise
 

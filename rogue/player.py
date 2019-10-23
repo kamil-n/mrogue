@@ -7,6 +7,7 @@ from rogue import roll
 class Player(object):
     game = None
     pos = None
+    icon = ''
     color = None
     range = 0
     hit = 0
@@ -19,6 +20,7 @@ class Player(object):
     def __init__(self, game, rng=6):
         self.game = game
         self.pos = game.level.find_spot()
+        self.icon = '@'
         self.color = game.interface.colors['YELLOW']
         self.range = rng
         self.hit = 3
@@ -26,12 +28,13 @@ class Player(object):
         self.armorClass = 14
         self.hitPoints = 12
         self.maxHealth = 12
-
-    def get_pos(self):
-        return self.pos
-
-    def get_ac(self):
-        return self.armorClass
+        self.game.interface.print_at(0, self.game.interface.status_line,
+                                     'HP:', self.game.interface.colors['WHITE'])
+        self.game.interface.print_at(12, self.game.interface.status_line,
+                                     'AC:', self.game.interface.colors['WHITE'])
+        self.game.interface.print_at(21, self.game.interface.status_line,
+                                     'ATK:',
+                                     self.game.interface.colors['WHITE'])
 
     def attack(self, target_monster):
         logging.info('Player attacks %s.' % target_monster.name)
@@ -68,14 +71,11 @@ class Player(object):
         else:
             logging.debug('current hit points: %d.' % self.hitPoints)
 
+    def draw(self):
+        self.game.interface.print_at(self.pos[0], self.pos[1],
+                                    self.icon, self.color)
+
     def show_status(self):
-        self.game.interface.print_at(0, self.game.interface.status_line,
-                                     'HP:', self.game.interface.colors['WHITE'])
-        self.game.interface.print_at(12, self.game.interface.status_line,
-                                     'AC:', self.game.interface.colors['WHITE'])
-        self.game.interface.print_at(21, self.game.interface.status_line,
-                                     'ATK:',
-                                     self.game.interface.colors['WHITE'])
         self.game.interface.print_at(4, self.game.interface.status_line,
                                      '%2d/%d' % (
                                          self.hitPoints, self.maxHealth),

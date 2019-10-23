@@ -210,12 +210,14 @@ class RogueMap(object):
                     return True
         return False
 
-    def look_around(self, origin, radius, cheat):
+    def look_around(self, cheat):
         for y in range(self.mapTop, len(self.mapArray)):
             for x in range(len(self.mapArray[0])):
                 if self.mapArray[y][x]['visible'] or cheat:
                     self.mapArray[y][x]['seen'] = True
                 self.mapArray[y][x]['visible'] = False
+        radius = self.game.player.range
+        pos = self.game.player.pos
         for xx in range(-radius, radius + 1):
             for yy in range(-radius, radius + 1):
                 if xx == 0 and yy == 0:
@@ -223,10 +225,7 @@ class RogueMap(object):
                 if xx * xx + yy * yy > radius * radius or \
                         xx * xx + yy * yy < radius * radius - radius - 1:
                     continue
-                self.line_of_sight(origin[0],
-                                   origin[1],
-                                   origin[0] + xx,
-                                   origin[1] + yy)
+                self.line_of_sight(pos[0], pos[1], pos[0] + xx, pos[1] + yy)
 
     def line_of_sight(self, origin_x, origin_y, target_x, target_y):
         target_x += 0.5 if target_x < origin_x else -0.5
@@ -298,7 +297,8 @@ class RogueMap(object):
         unit.pos = (unit.pos[0] + check[0], unit.pos[1] + check[1])
         return True
 
-    def draw_map(self, curs):
+    def draw_map(self):
+        curs = self.game.interface
         for x in range(len(self.mapArray[0])):
             for y in range(self.mapTop, len(self.mapArray)):
                 if self.mapArray[y][x]['visible']:

@@ -39,18 +39,16 @@ class Menagerie(object):
 
     def handle_monsters(self):
         for monster in self.monsterList:
-            if monster.is_in_range(self.game.player.get_pos(), 5):
+            if monster.is_in_range(self.game.player.pos, 5):
                 if self.game.level.is_los_between(monster.pos,
-                                                  self.game.player.get_pos()):
-                    if monster.is_in_range(self.game.player.get_pos(), 1):
+                                                  self.game.player.pos):
+                    if monster.is_in_range(self.game.player.pos, 1):
                         logging.debug('%s is in melee range - attacking' %
                                       monster.name)
-                        monster.attack(self.game.player.get_ac())
+                        monster.attack(self.game.player.armorClass)
                     else:
-                        monster.approach(self.game.player.get_pos())
-        if not len(self.monsterList):
-            return False
-        return True
+                        monster.approach(self.game.player.pos)
+        return len(self.monsterList) > 0
 
 
 class MonsterTemplate(object):

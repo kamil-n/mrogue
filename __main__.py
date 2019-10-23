@@ -36,9 +36,7 @@ class Rogue(object):
             'Kill all monsters. Move with arrow keys or numpad. Q to exit.')
         while key != ord('Q'):
             logging.info('== Turn %d. ==' % self.turn)
-            self.level.look_around(self.player.pos,
-                                   self.player.range,
-                                   'seethrough' in sys.argv)
+            self.level.look_around('seethrough' in sys.argv)
             if not self.monsters.handle_monsters():
                 win = Window(self.interface,
                              self.interface.dimensions[1] / 2 - 10,
@@ -56,11 +54,8 @@ class Rogue(object):
                 win.close()
                 self.interface.close()
                 break
-            self.level.draw_map(self.interface)
-            self.interface.print_at(self.player.pos[0],
-                                    self.player.pos[1],
-                                    '@',
-                                    self.player.color)
+            self.level.draw_map()
+            self.player.draw()
             self.messenger.show()
             self.player.show_status()
             self.turn += 1
@@ -107,6 +102,8 @@ class Rogue(object):
                 win.loop()
                 win.close()
                 # self.level.drawMap()
+            elif key == ord('Q'):
+                logging.info('Game exit on Q press.')
             else:
                 keychar = ''
                 if key < 256:
