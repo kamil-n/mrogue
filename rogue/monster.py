@@ -11,23 +11,53 @@ class Menagerie(object):
 
     def __init__(self, game, num):
         self.game = game
-        monster_templates = [MonsterTemplate('rat', 'r',
-                                             game.interface.colors[
-                                                 'DARKGRAY'],
-                                             '1d4-1', '1d4-1', 2, 12),
-                             MonsterTemplate('kobold', 'k',
-                                             game.interface.colors['RED'],
-                                             '1d6-1', '1d6-1', 1, 13),
-                             MonsterTemplate('goblin', 'g',
-                                             game.interface.colors['GREEN'],
-                                             '1d6-1', '1d8-1', 2, 13),
-                             MonsterTemplate('orc', 'o',
-                                             game.interface.colors[
-                                                 'DARKGREEN'],
-                                             '1d8', '1d8', 3, 14),
-                             MonsterTemplate('skeleton', 's',
-                                             game.interface.colors['WHITE'],
-                                             '1d8', '1d4+1', 3, 11)]
+        monster_templates = [
+            {
+                'name': 'rat',
+                'letter': 'r',
+                'color': 'DARKGRAY',
+                'hit_die': '1d4-1',
+                'dmg_die': '1d4-1',
+                'to_hit': 2,
+                'ac': 12
+            },
+            {
+                'name': 'kobold',
+                'letter': 'k',
+                'color': 'RED',
+                'hit_die': '1d6-1',
+                'dmg_die': '1d6-1',
+                'to_hit': 1,
+                'ac': 13
+            },
+            {
+                'name': 'goblin',
+                'letter': 'g',
+                'color': 'GREEN',
+                'hit_die': '1d6-1',
+                'dmg_die': '1d8-1',
+                'to_hit': 2,
+                'ac': 13
+            },
+            {
+                'name': 'orc',
+                'letter': 'o',
+                'color': 'DARKGREEN',
+                'hit_die': '1d8',
+                'dmg_die': '1d8',
+                'to_hit': 3,
+                'ac': 14
+            },
+            {
+                'name': 'skeleton',
+                'letter': 's',
+                'color': 'WHITE',
+                'hit_die': '1d8',
+                'dmg_die': '1d4+1',
+                'to_hit': 3,
+                'ac': 11
+            }
+        ]
         for i in range(num):
             start_position = game.level.find_spot()
             temp_monster = Monster(self.game, start_position,
@@ -51,17 +81,6 @@ class Menagerie(object):
         return len(self.monsterList) > 0
 
 
-class MonsterTemplate(object):
-    def __init__(self, name, letter, color, hit_die, dmg_die, to_hit, ac):
-        self.name = name
-        self.letter = letter
-        self.color = color
-        self.hitDie = hit_die
-        self.dmgDie = dmg_die
-        self.toHit = to_hit
-        self.armorClass = ac
-
-
 class Monster(object):
     game = None
     name = ''
@@ -76,14 +95,14 @@ class Monster(object):
 
     def __init__(self, game, pos, template):
         self.game = game
-        self.name = template.name
-        self.letter = template.letter
-        self.color = template.color
         self.pos = pos
-        self.hit = template.toHit
-        self.damage = template.dmgDie
-        self.armorClass = template.armorClass
-        self.hitPoints = roll(template.hitDie)
+        self.name = template['name']
+        self.letter = template['letter']
+        self.color = game.interface.colors[template['color']]
+        self.hitPoints = roll(template['hit_die'])
+        self.damage = template['dmg_die']
+        self.hit = template['to_hit']
+        self.armorClass = template['ac']
 
     def take_damage(self, damage):
         logging.debug('%s is taking %d damage.' % (self.name, damage))
