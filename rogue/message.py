@@ -16,39 +16,36 @@ class Messenger(object):
 
     def show(self):
         # TODO: zrobic to w nowym oknie
-        if len(self.messageList) > 1:
-            while len(self.messageList) > 0:
-                temp_message = ''
-                while (self.scrDim[0] - 7 - len(temp_message)) > \
-                        len(self.messageList[0]):
-                    temp_message += self.messageList.pop(0) + ' '
-                    if len(self.messageList) == 0:
-                        break
-                logging.debug('temp_message = %s' % temp_message)
-                message_end = len(temp_message)
-                self.game.interface.print_at(0,
-                                             self.game.interface.message_line,
-                                             temp_message,
-                                             self.game.interface.colors[
-                                                 'WHITE'])
-                if len(self.messageList) > 0:
-                    logging.debug('still messages left.')
-                    self.game.interface.print_at(message_end,
-                                                 self.game.interface.message_line,
-                                                 '-more-',
-                                                 self.game.interface.colors[
-                                                     'YELLOW'])
-                    self.game.interface.wait()
-                    self.game.interface.print_at(0,
-                                                 self.game.interface.message_line,
-                                                 (self.scrDim[0] - 1) * ' ')
-                self.game.interface.refresh()
-        elif len(self.messageList) == 1:
+        msg_buffer = ' '.join(self.messageList)
+        buffer_length = len(msg_buffer)
+        msg_buffer = msg_buffer.split(' ')
+        while buffer_length > 0:
+            msg_piece = ''
+            while (self.scrDim[0] - 6 > len(msg_piece) + len(msg_buffer[0])):
+                msg_piece += ' ' + msg_buffer.pop(0)
+                msg_piece = msg_piece.strip()
+                buffer_length = len(' '.join(msg_buffer))
+                if buffer_length == 0:
+                    break
+            message_end = len(msg_piece)
             self.game.interface.print_at(0,
                                          self.game.interface.message_line,
-                                         self.messageList[0],
+                                         msg_piece,
                                          self.game.interface.colors[
                                              'WHITE'])
+            if len(msg_buffer) > 0:
+                if message_end == self.scrDim[0] - 6:
+                    logging.warning('Last character of "-more-" is screen end!')
+                logging.debug('still {} words left.'.format(len(msg_buffer)))
+                self.game.interface.print_at(message_end,
+                                             self.game.interface.message_line,
+                                             '-more-',
+                                             self.game.interface.colors[
+                                                 'YELLOW'])
+                self.game.interface.wait(' ')
+                self.game.interface.print_at(0,
+                                             self.game.interface.message_line,
+                                             (self.scrDim[0]) * ' ')
             self.game.interface.refresh()
 
     def add(self, message):

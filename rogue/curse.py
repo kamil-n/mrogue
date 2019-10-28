@@ -52,15 +52,21 @@ class CursesHelper(object):
         try:
             window.addstr(y, x, string, decoration)
         except curses.error:
-            import logging
-            logging.error('Error when drawing \'{}\' at coords {}, {}!'.format(
-                string, x, y))
-            raise
+            # import logging
+            # logging.error('Error when drawing "{}" at coords {}, {}!'.format(
+            #    string, x, y))
+            # raise
+            pass
 
-    def wait(self, window=None):
+    def wait(self, character=None, window=None):
         if not window:
             window = self.stdscr
-        window.getch()
+        key = 1
+        if key:
+            while key != ord(character):
+                key = window.getch()
+        else:
+            window.getch()
 
     def refresh(self):
         self.stdscr.refresh()

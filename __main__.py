@@ -39,8 +39,8 @@ class Rogue(object):
             self.level.look_around('seethrough' in sys.argv)
             if not self.monsters.handle_monsters():
                 win = Window(self.interface,
-                             self.interface.dimensions[1] / 2 - 10,
-                             self.interface.dimensions[0] / 2 - 3,
+                             int(self.interface.dimensions[1] / 2 - 10),
+                             int(self.interface.dimensions[0] / 2 - 3),
                              20,
                              6,
                              'Congratulations!',
