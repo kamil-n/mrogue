@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import curses
-import rogue.curse
+import rogue.pgame
 
 
-class Interface(rogue.curse.CursesHelper):
-    _impl = 'Curses'
+class Interface(rogue.pgame.PygameHelper):
+    _impl = 'PyGame'
 
 
-class Window(rogue.curse.CursesWindow):
-    _impl = 'Curses'
-
-
-class Arrows(object):
-    UP = curses.KEY_UP
-    DOWN = curses.KEY_DOWN
-    LEFT = curses.KEY_LEFT
-    RIGHT = curses.KEY_RIGHT
+class Window(rogue.pgame.PygameWindow):
+    _impl = 'PyGame'

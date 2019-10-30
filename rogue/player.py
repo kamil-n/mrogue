@@ -7,8 +7,7 @@ from rogue import roll
 class Player(object):
     game = None
     pos = None
-    icon = ''
-    color = None
+    tile = None
     range = 0
     hit = 0
     damage = ''
@@ -20,19 +19,18 @@ class Player(object):
     def __init__(self, game, rng=6):
         self.game = game
         self.pos = game.level.find_spot()
-        self.icon = '@'
-        self.color = game.interface.colors['YELLOW']
+        self.tile = game.interface.tileset[107]
         self.range = rng
         self.hit = 3
         self.damage = "1d6+1"
         self.armorClass = 14
         self.hitPoints = 12
         self.maxHealth = 12
-        self.game.interface.print_at(0, self.game.interface.status_line,
+        self.game.interface.print_at(0, 0,
                                      'HP:', self.game.interface.colors['WHITE'])
-        self.game.interface.print_at(12, self.game.interface.status_line,
+        self.game.interface.print_at(12, 0,
                                      'AC:', self.game.interface.colors['WHITE'])
-        self.game.interface.print_at(21, self.game.interface.status_line,
+        self.game.interface.print_at(21, 0,
                                      'ATK:',
                                      self.game.interface.colors['WHITE'])
 
@@ -72,17 +70,13 @@ class Player(object):
             logging.debug('current hit points: %d.' % self.hitPoints)
 
     def draw(self):
-        self.game.interface.print_at(self.pos[0], self.pos[1],
-                                    self.icon, self.color)
+        self.game.interface.print_at(self.pos[0], self.pos[1], self.tile)
 
     def show_status(self):
-        self.game.interface.print_at(4, self.game.interface.status_line,
-                                     '%2d/%d' % (
+        self.game.interface.print_at(2, 0, '%2d/%d' % (
                                          self.hitPoints, self.maxHealth),
-                                     self.game.interface.colors['GREEN'])
-        self.game.interface.print_at(16, self.game.interface.status_line,
-                                     '%2d' % self.armorClass,
-                                     self.game.interface.colors['LIGHTBLUE'])
-        self.game.interface.print_at(26, self.game.interface.status_line,
-                                     '%d/%s' % (self.hit, self.damage),
-                                     self.game.interface.colors['RED'])
+                                     self.game.interface.colors['WHITE'])
+        self.game.interface.print_at(14, 0, '%2d' % self.armorClass,
+                                     self.game.interface.colors['WHITE'])
+        self.game.interface.print_at(23, 0, '%d/%s' % (self.hit, self.damage),
+                                     self.game.interface.colors['WHITE'])

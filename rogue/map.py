@@ -3,7 +3,6 @@
 import logging
 import math
 import random
-from rogue import types
 
 min_room_size = (6, 3)
 max_room_size = (19, 6)
@@ -33,7 +32,7 @@ class Room(object):
             self.x + self.width, self.y + self.height))
         for i in range(self.x, self.x + self.width):
             for j in range(self.y, self.y + self.height):
-                dungeon.mapArray[j][i] = {'type': types['floor'],
+                dungeon.mapArray[j][i] = {'type': dungeon.tiles['floor'],
                                           'visible': False,
                                           'seen': False,
                                           'blockMove': False,
@@ -56,21 +55,27 @@ class RogueMap(object):
     mapTop = 1
     min_rooms = 1
     max_rooms = 1
+    tiles = {}
 
     def __init__(self, game):
-        self.mapDim = (game.interface.dimensions[1],
-                       game.interface.dimensions[0] - 1)
+        self.mapDim = (game.interface.dimensions[0],
+                       game.interface.dimensions[1] - 1)
         self.game = game
         self.min_rooms = 5
         self.max_rooms = int(self.mapDim[0] / max_room_size[0] *
                              self.mapDim[1] / max_room_size[1])
         logging.debug('self.max_rooms is {}'.format(self.max_rooms))
+        self.tiles = {
+            'wall': {'visible': self.game.interface.tileset[1047],
+                     'seen': self.game.interface.tileset[854]},
+            'floor': {'visible': self.game.interface.tileset[809],
+                      'seen': self.game.interface.tileset[861]}}
         self.create_map()
 
     def create_map(self):
         self.mapArray = [
             [
-                {'type': '#',
+                {'type': self.tiles['wall'],
                  'visible': False,
                  'seen': False,
                  'blockMove': True,
@@ -185,9 +190,9 @@ class RogueMap(object):
             else:
                 y1 += dy
             distance += 1
-            if self.mapArray[y1][x1]['type'] == '#':
+            if self.mapArray[y1][x1]['type'] == self.tiles['wall']:
                 broken = distance
-            self.mapArray[y1][x1] = {'type': types['tunnel'],
+            self.mapArray[y1][x1] = {'type': self.tiles['floor'],
                                      'visible': False,
                                      'seen': False,
                                      'blockMove': False,
@@ -206,7 +211,7 @@ class RogueMap(object):
     def already_taken(self, x1, y1, x2, y2):
         for x in range(x1 - 1, x2 + 1):
             for y in range(y1 - 1, y2 + 1):
-                if self.mapArray[y][x]['type'] == types['floor']:
+                if self.mapArray[y][x]['type'] == self.tiles['floor']:
                     return True
         return False
 
@@ -277,7 +282,7 @@ class RogueMap(object):
 
     def movement(self, unit, check):
         if self.mapArray[unit.pos[1] + check[1]][
-             unit.pos[0] + check[0]]['blockMove']:
+            unit.pos[0] + check[0]]['blockMove']:
             if unit.control is not 'ai':
                 self.game.messenger.add('You can\'t move there.')
             return False
@@ -298,17 +303,15 @@ class RogueMap(object):
         return True
 
     def draw_map(self):
-        curs = self.game.interface
+        itfc = self.game.interface
         for x in range(len(self.mapArray[0])):
             for y in range(self.mapTop, len(self.mapArray)):
                 if self.mapArray[y][x]['visible']:
-                    curs.print_at(x, y, self.mapArray[y][x]['type'],
-                                  curs.colors['GRAY'])
+                    itfc.print_at(x, y, self.mapArray[y][x]['type']['visible'])
                 elif self.mapArray[y][x]['seen']:
-                    curs.print_at(x, y, self.mapArray[y][x]['type'],
-                                  curs.colors['DARKGRAY'])
+                    itfc.print_at(x, y, self.mapArray[y][x]['type']['seen'])
                 else:
-                    curs.print_at(x, y, ' ')
+                    itfc.print_at(x, y, itfc.tileset[0])  # TODO: designate empty tile or find a way to remove tile from screen
         for mon in self.game.monsters.monsterList:
             if self.mapArray[mon.pos[1]][mon.pos[0]]['visible']:
-                curs.print_at(mon.pos[0], mon.pos[1], mon.letter, mon.color)
+                itfc.print_at(mon.pos[0], mon.pos[1], mon.tile)

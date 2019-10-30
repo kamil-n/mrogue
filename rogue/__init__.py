@@ -3,12 +3,6 @@
 import logging
 import random
 
-types = {
-    'tunnel': '.',
-    'floor': '.',
-}
-
-
 def roll(die_string, crit=False):
     separator_index = die_string.index('d')
     num_die = int(die_string[:separator_index])

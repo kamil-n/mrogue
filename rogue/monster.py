@@ -14,8 +14,7 @@ class Menagerie(object):
         monster_templates = [
             {
                 'name': 'rat',
-                'letter': 'r',
-                'color': 'DARKGRAY',
+                'tile': 255,
                 'hit_die': '1d4-1',
                 'dmg_die': '1d4-1',
                 'to_hit': 2,
@@ -23,8 +22,7 @@ class Menagerie(object):
             },
             {
                 'name': 'kobold',
-                'letter': 'k',
-                'color': 'RED',
+                'tile': 147,
                 'hit_die': '1d6-1',
                 'dmg_die': '1d6-1',
                 'to_hit': 1,
@@ -32,8 +30,7 @@ class Menagerie(object):
             },
             {
                 'name': 'goblin',
-                'letter': 'g',
-                'color': 'GREEN',
+                'tile': 119,
                 'hit_die': '1d6-1',
                 'dmg_die': '1d8-1',
                 'to_hit': 2,
@@ -41,8 +38,7 @@ class Menagerie(object):
             },
             {
                 'name': 'orc',
-                'letter': 'o',
-                'color': 'DARKGREEN',
+                'tile': 621,
                 'hit_die': '1d8',
                 'dmg_die': '1d8',
                 'to_hit': 3,
@@ -50,8 +46,7 @@ class Menagerie(object):
             },
             {
                 'name': 'skeleton',
-                'letter': 's',
-                'color': 'WHITE',
+                'tile': 534,
                 'hit_die': '1d8',
                 'dmg_die': '1d4+1',
                 'to_hit': 3,
@@ -84,8 +79,7 @@ class Menagerie(object):
 class Monster(object):
     game = None
     name = ''
-    letter = 0
-    color = None
+    tile = None
     pos = None
     hit = 0
     damage = ''
@@ -97,8 +91,7 @@ class Monster(object):
         self.game = game
         self.pos = pos
         self.name = template['name']
-        self.letter = template['letter']
-        self.color = game.interface.colors[template['color']]
+        self.tile = game.interface.tileset[template['tile']]
         self.hitPoints = roll(template['hit_die'])
         self.damage = template['dmg_die']
         self.hit = template['to_hit']

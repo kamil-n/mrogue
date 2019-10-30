@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import logging
+# import logging
 
 
 class Messenger(object):
@@ -15,9 +15,8 @@ class Messenger(object):
                        game.interface.dimensions[0])
 
     def show(self):
-        # TODO: zrobic to w nowym oknie
         msg_buffer = ' '.join(self.messageList)
-        buffer_length = len(msg_buffer)
+        '''buffer_length = len(msg_buffer)
         msg_buffer = msg_buffer.split(' ')
         while buffer_length > 0:
             msg_piece = ''
@@ -28,8 +27,7 @@ class Messenger(object):
                 if buffer_length == 0:
                     break
             message_end = len(msg_piece)
-            self.game.interface.print_at(0,
-                                         self.game.interface.message_line,
+            self.game.interface.print_at(0, 0,
                                          msg_piece,
                                          self.game.interface.colors[
                                              'WHITE'])
@@ -37,22 +35,18 @@ class Messenger(object):
                 if message_end == self.scrDim[0] - 6:
                     logging.warning('Last character of "-more-" is screen end!')
                 logging.debug('still {} words left.'.format(len(msg_buffer)))
-                self.game.interface.print_at(message_end,
-                                             self.game.interface.message_line,
+                self.game.interface.print_at(message_end, 0,
                                              '-more-',
                                              self.game.interface.colors[
-                                                 'YELLOW'])
+                                                 'WHITE'])
                 self.game.interface.wait(' ')
-                self.game.interface.print_at(0,
-                                             self.game.interface.message_line,
-                                             (self.scrDim[0]) * ' ')
-            self.game.interface.refresh()
+                self.game.interface.print_at(0, 0, (self.scrDim[0]) * ' ')'''
+        self.game.interface.print_at(0, 23, 200 * ' ')
+        self.game.interface.print_at(0, 23, msg_buffer)
+        self.game.interface.refresh()
 
     def add(self, message):
         self.messageList.append(message)
 
     def clear(self):
-        self.game.interface.print_at(0, self.game.interface.message_line,
-                                     (self.scrDim[0] - 1) * ' ')
-        self.game.interface.refresh()
         del self.messageList[:]
