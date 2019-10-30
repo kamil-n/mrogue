@@ -29,34 +29,31 @@ class Rogue(object):
         self.player = Player(self)
         self.monsters = Menagerie(self, 10)
         self.messenger = Messenger(self)
+        self.messenger.add(
+            'Kill all monsters. Move with arrow keys or numpad. Q to exit.')
 
     def mainloop(self):
         key = pygame.K_UNKNOWN
-        pygame.event.set_blocked(pygame.MOUSEMOTION)
-        self.messenger.add(
-            'Kill all monsters. Move with arrow keys or numpad. Q to exit.')
         while key != pygame.K_q:
+            self.turn += 1
             logging.info('== Turn %d. ==' % self.turn)
             self.level.look_around('seethrough' in sys.argv)
-            if not self.monsters.handle_monsters():
-                # win condition
-                break
+            self.monsters.handle_monsters()
             self.level.draw_map()
-            self.player.draw()
-            self.player.show_status()
+            self.player.show()
             self.messenger.show()
-            self.turn += 1
-            if self.player.hitPoints < 1 and 'god' not in sys.argv:
-                # lose condition
+            if len(self.monsters.monsterList) == 0:
+                win = Window(self.interface, title='Congratulations!')
+                win.print_at(1, 3, 'YOU WIN!', (0, 255, 0))
+                win.loop(pygame.K_q)
                 break
-            pygame.event.clear()
-            while True:
-                event = pygame.event.wait()
-                if event.type == pygame.QUIT:
-                    self.interface.close()
-                elif event.type == pygame.KEYDOWN:
-                    key = event.key
-                    break
+            if self.player.hitPoints < 1 and 'god' not in sys.argv:
+                win = Window(self.interface, title='Game over.')
+                win.print_at(1, 3, 'YOU DIED', (255, 0, 0))
+                win.loop(pygame.K_q)
+                break
+            self.interface.refresh()
+            key = self.interface.wait()
             self.messenger.clear()
             # movement:
             checkx = 0
@@ -80,7 +77,8 @@ class Rogue(object):
                 elif key == pygame.K_DOWN:
                     checky += 1
             elif key == pygame.K_w:
-                win = Window(self.interface)
+                win = Window(self.interface, bg_color=(32, 32, 32))
+                win.print_at(1, 3, "Test", (0, 0, 255))
                 win.loop(pygame.K_q)
                 win.close()
             elif key == pygame.K_q:
@@ -89,7 +87,6 @@ class Rogue(object):
                 logging.warning('Key \'%d\' not supported.' % key)
                 self.messenger.add('Unknown command: %s.' % key)
             self.level.movement(self.player, (checkx, checky))
-            self.interface.refresh()
 
 
 if __name__ == '__main__':

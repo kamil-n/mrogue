@@ -311,7 +311,7 @@ class RogueMap(object):
                 elif self.mapArray[y][x]['seen']:
                     itfc.print_at(x, y, self.mapArray[y][x]['type']['seen'])
                 else:
-                    itfc.print_at(x, y, itfc.tileset[0])  # TODO: designate empty tile or find a way to remove tile from screen
+                    itfc.print_at(x, y, itfc.tileset[0])  # TODO: optimize!
         for mon in self.game.monsters.monsterList:
             if self.mapArray[mon.pos[1]][mon.pos[0]]['visible']:
                 itfc.print_at(mon.pos[0], mon.pos[1], mon.tile)

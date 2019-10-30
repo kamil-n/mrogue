@@ -73,7 +73,6 @@ class Menagerie(object):
                         monster.attack(self.game.player.armorClass)
                     else:
                         monster.approach(self.game.player.pos)
-        return len(self.monsterList) > 0
 
 
 class Monster(object):

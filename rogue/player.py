@@ -69,14 +69,12 @@ class Player(object):
         else:
             logging.debug('current hit points: %d.' % self.hitPoints)
 
-    def draw(self):
+    def show(self):
         self.game.interface.print_at(self.pos[0], self.pos[1], self.tile)
-
-    def show_status(self):
         self.game.interface.print_at(2, 0, '%2d/%d' % (
                                          self.hitPoints, self.maxHealth),
-                                     self.game.interface.colors['WHITE'])
+                                     (0, 255, 0))
         self.game.interface.print_at(14, 0, '%2d' % self.armorClass,
-                                     self.game.interface.colors['WHITE'])
+                                     (0, 0, 255))
         self.game.interface.print_at(23, 0, '%d/%s' % (self.hit, self.damage),
-                                     self.game.interface.colors['WHITE'])
+                                     (255, 0, 0))
