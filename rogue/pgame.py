@@ -13,6 +13,7 @@ class PygameHelper(object):
     dimensions = ()
     resolution = ()
     tileset = []
+    highlight = None
 
     def __init__(self):
         pygame.init()
@@ -28,6 +29,8 @@ class PygameHelper(object):
         self.load_tile_file('tiles.png')
         self.font = pygame.font.SysFont(pygame.font.get_default_font(),
                                         tile_size)
+        self.highlight = pygame.Surface((32, 32), flags=pygame.SRCALPHA)
+        self.highlight.fill((128, 128, 64, 32))
 
     def print_at(self, x, y, item, color=(255, 255, 255)):
         if type(item) == str:
@@ -69,7 +72,6 @@ class PygameWindow(object):
     engine = None
     left = 0
     top = 0
-    under = None
 
     def __init__(self, pgame,
                  left=2 * tile_size,
@@ -78,15 +80,16 @@ class PygameWindow(object):
                  height=3 * tile_size,
                  title='Window title',
                  title_color=(255, 255, 255),
-                 bg_color=(0, 0, 0)):
+                 bg_color=(0, 0, 0),
+                 border=True):
         self.engine = pgame
         self.left = left
         self.top = top
         self.window = pygame.Surface((left + width, top + height))
-        self.under = self.engine.screen.copy().subsurface(
-            (left, top), (left+width, top+height))
         self.window.fill(bg_color)
         self.print_at(1, 1, title, title_color)
+        if border:
+            pygame.draw.rect(self.window, title_color, self.window.get_rect(), 1)
 
     def loop(self, until=pygame.K_UNKNOWN):
         self.engine.screen.blit(self.window, (self.left, self.top))
@@ -105,4 +108,16 @@ class PygameWindow(object):
 
     def close(self):
         del self.window
-        self.engine.screen.blit(self.under, (self.left, self.top))
+
+
+class MapImage(object):
+    surf = None
+
+    def __init__(self, w, h):
+        self.surf = pygame.Surface((w * tile_size, h * tile_size))
+
+    def add(self, tile, coords):
+        self.surf.blit(tile, (coords[0] * tile_size, coords[1] * tile_size))
+
+    def show(self, screen_surface):
+        screen_surface.blit(self.surf, (0, 0))

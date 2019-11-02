@@ -3,9 +3,10 @@
 import logging
 import math
 import random
+from rogue.pgame import MapImage
 
 min_room_size = (6, 3)
-max_room_size = (19, 6)
+max_room_size = (12, 6)
 
 
 class Room(object):
@@ -34,7 +35,6 @@ class Room(object):
             for j in range(self.y, self.y + self.height):
                 dungeon.mapArray[j][i] = {'type': dungeon.tiles['floor'],
                                           'visible': False,
-                                          'seen': False,
                                           'blockMove': False,
                                           'blockLOS': False}
 
@@ -52,6 +52,7 @@ class RogueMap(object):
     mapArray = []
     rooms = []
     mapDim = (0, 0)
+    map_image = None
     mapTop = 1
     min_rooms = 1
     max_rooms = 1
@@ -60,16 +61,15 @@ class RogueMap(object):
     def __init__(self, game):
         self.mapDim = (game.interface.dimensions[0],
                        game.interface.dimensions[1] - 1)
+        self.map_image = MapImage(self.mapDim[0], self.mapDim[1])
         self.game = game
         self.min_rooms = 5
         self.max_rooms = int(self.mapDim[0] / max_room_size[0] *
                              self.mapDim[1] / max_room_size[1])
         logging.debug('self.max_rooms is {}'.format(self.max_rooms))
         self.tiles = {
-            'wall': {'visible': self.game.interface.tileset[1047],
-                     'seen': self.game.interface.tileset[854]},
-            'floor': {'visible': self.game.interface.tileset[809],
-                      'seen': self.game.interface.tileset[861]}}
+            'wall': self.game.interface.tileset[854],
+            'floor': self.game.interface.tileset[861]}
         self.create_map()
 
     def create_map(self):
@@ -77,7 +77,6 @@ class RogueMap(object):
             [
                 {'type': self.tiles['wall'],
                  'visible': False,
-                 'seen': False,
                  'blockMove': True,
                  'blockLOS': True}
                 for x in range(self.mapDim[0])
@@ -194,7 +193,6 @@ class RogueMap(object):
                 broken = distance
             self.mapArray[y1][x1] = {'type': self.tiles['floor'],
                                      'visible': False,
-                                     'seen': False,
                                      'blockMove': False,
                                      'blockLOS': False}
             if random.random() > 0.7 and distance - broken > 1:
@@ -215,22 +213,44 @@ class RogueMap(object):
                     return True
         return False
 
-    def look_around(self, cheat):
-        for y in range(self.mapTop, len(self.mapArray)):
-            for x in range(len(self.mapArray[0])):
-                if self.mapArray[y][x]['visible'] or cheat:
-                    self.mapArray[y][x]['seen'] = True
-                self.mapArray[y][x]['visible'] = False
+    def movement(self, unit, check):
+        if self.mapArray[unit.pos[1] + check[1]][
+            unit.pos[0] + check[0]]['blockMove']:
+            if unit.control is not 'ai':
+                self.game.messenger.add('You can\'t move there.')
+            return False
+        monster = None
+        for mon in self.game.monsters.monsterList:
+            if mon.pos == (unit.pos[0] + check[0], unit.pos[1] + check[1]):
+                monster = mon
+        if monster:
+            if unit.control is 'player':
+                logging.debug('Engaged %s.' % monster.name)
+                unit.attack(monster)
+                return False
+            else:
+                return False
+        # elif Player.get_pos() == ( unit.pos[0] + check[0],
+        # unit.pos[1] + check[1] ) and unit.control is 'ai':
+        unit.pos = (unit.pos[0] + check[0], unit.pos[1] + check[1])
+        return True
+
+    def look_around(self):
         radius = self.game.player.range
         pos = self.game.player.pos
-        for xx in range(-radius, radius + 1):
-            for yy in range(-radius, radius + 1):
-                if xx == 0 and yy == 0:
+        for x in range(pos[0] - radius - 1, pos[0] + radius + 2):
+            for y in range(pos[1] - radius - 1, pos[1] + radius + 2):
+                if 0 < x >= self.mapDim[0] or 0 < y >= self.mapDim[1]:
                     continue
-                if xx * xx + yy * yy > radius * radius or \
-                        xx * xx + yy * yy < radius * radius - radius - 1:
+                self.mapArray[y][x]['visible'] = False
+        for x in range(-radius, radius + 1):
+            for y in range(-radius, radius + 1):
+                if x == 0 and y == 0:
                     continue
-                self.line_of_sight(pos[0], pos[1], pos[0] + xx, pos[1] + yy)
+                if x * x + y * y > radius * radius or \
+                        x * x + y * y < radius * radius - radius - 1:
+                    continue
+                self.line_of_sight(pos[0], pos[1], pos[0] + x, pos[1] + y)
 
     def line_of_sight(self, origin_x, origin_y, target_x, target_y):
         target_x += 0.5 if target_x < origin_x else -0.5
@@ -246,6 +266,7 @@ class RogueMap(object):
             ix = int(xx + 0.5)
             iy = int(yy + 0.5)
             self.mapArray[iy][ix]['visible'] = True
+            self.map_image.add(self.mapArray[iy][ix]['type'], (ix, iy))
             if self.mapArray[iy][ix]['blockLOS'] or (
                     ix == target_x and iy == target_y):
                 break
@@ -280,38 +301,18 @@ class RogueMap(object):
             length -= 1
         return there_is
 
-    def movement(self, unit, check):
-        if self.mapArray[unit.pos[1] + check[1]][
-            unit.pos[0] + check[0]]['blockMove']:
-            if unit.control is not 'ai':
-                self.game.messenger.add('You can\'t move there.')
-            return False
-        monster = None
-        for mon in self.game.monsters.monsterList:
-            if mon.pos == (unit.pos[0] + check[0], unit.pos[1] + check[1]):
-                monster = mon
-        if monster:
-            if unit.control is 'player':
-                logging.debug('Engaged %s.' % monster.name)
-                unit.attack(monster)
-                return False
-            else:
-                return False
-        # elif Player.get_pos() == ( unit.pos[0] + check[0],
-        # unit.pos[1] + check[1] ) and unit.control is 'ai':
-        unit.pos = (unit.pos[0] + check[0], unit.pos[1] + check[1])
-        return True
-
     def draw_map(self):
         itfc = self.game.interface
-        for x in range(len(self.mapArray[0])):
-            for y in range(self.mapTop, len(self.mapArray)):
+        radius = self.game.player.range
+        pos = self.game.player.pos
+        self.map_image.show(itfc.screen)
+        for x in range(pos[0] - radius, pos[0] + radius + 1):
+            for y in range(pos[1] - radius, pos[1] + radius + 1):
+                if 0 < x >= self.mapDim[0] or 0 < y >= self.mapDim[1]:
+                    continue
                 if self.mapArray[y][x]['visible']:
-                    itfc.print_at(x, y, self.mapArray[y][x]['type']['visible'])
-                elif self.mapArray[y][x]['seen']:
-                    itfc.print_at(x, y, self.mapArray[y][x]['type']['seen'])
-                else:
-                    itfc.print_at(x, y, itfc.tileset[0])  # TODO: optimize!
+                    itfc.print_at(x, y, itfc.highlight)
+        # TODO: move this out
         for mon in self.game.monsters.monsterList:
             if self.mapArray[mon.pos[1]][mon.pos[0]]['visible']:
                 itfc.print_at(mon.pos[0], mon.pos[1], mon.tile)

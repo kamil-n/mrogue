@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 import pygame
-from rogue.interface import Interface, Window
+from rogue.pgame import PygameHelper, PygameWindow
 from rogue.map import RogueMap
 from rogue.message import Messenger
 from rogue.monster import Menagerie
@@ -24,31 +24,31 @@ class Rogue(object):
             os.remove('rogue.log')
         logging.basicConfig(filename='rogue.log', level=logging.DEBUG)
         logging.info('======== Game start. ========')
-        self.interface = Interface()
+        self.interface = PygameHelper()
         self.level = RogueMap(self)
         self.player = Player(self)
         self.monsters = Menagerie(self, 10)
         self.messenger = Messenger(self)
         self.messenger.add(
-            'Kill all monsters. Move with arrow keys or numpad. Q to exit.')
+            'Kill all monsters. Move with arrow keys or numpad. Press q to exit.')
 
     def mainloop(self):
         key = pygame.K_UNKNOWN
         while key != pygame.K_q:
             self.turn += 1
             logging.info('== Turn %d. ==' % self.turn)
-            self.level.look_around('seethrough' in sys.argv)
+            self.level.look_around()
             self.monsters.handle_monsters()
             self.level.draw_map()
             self.player.show()
             self.messenger.show()
             if len(self.monsters.monsterList) == 0:
-                win = Window(self.interface, title='Congratulations!')
+                win = PygameWindow(self.interface, title='Congratulations!')
                 win.print_at(1, 3, 'YOU WIN!', (0, 255, 0))
                 win.loop(pygame.K_q)
                 break
             if self.player.hitPoints < 1 and 'god' not in sys.argv:
-                win = Window(self.interface, title='Game over.')
+                win = PygameWindow(self.interface, title='Game over.')
                 win.print_at(1, 3, 'YOU DIED', (255, 0, 0))
                 win.loop(pygame.K_q)
                 break
@@ -56,37 +56,30 @@ class Rogue(object):
             key = self.interface.wait()
             self.messenger.clear()
             # movement:
-            checkx = 0
-            checky = 0
-            if key in range(49, 57 + 1):
+            if key in range(49, 57 + 1):  # numpad
+                dx, dy = 0, 0
                 if key in (49, 52, 55):
-                    checkx -= 1
+                    dx = -1
                 elif key in (51, 54, 57):
-                    checkx += 1
+                    dx = 1
                 if key > 54:
-                    checky -= 1
+                    dy = -1
                 elif key < 52:
-                    checky += 1
-            elif key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN):
-                if key == pygame.K_LEFT:
-                    checkx -= 1
-                elif key == pygame.K_RIGHT:
-                    checkx += 1
-                elif key == pygame.K_UP:
-                    checky -= 1
-                elif key == pygame.K_DOWN:
-                    checky += 1
-            elif key == pygame.K_w:
-                win = Window(self.interface, bg_color=(32, 32, 32))
-                win.print_at(1, 3, "Test", (0, 0, 255))
-                win.loop(pygame.K_q)
-                win.close()
+                    dy = 1
+                self.level.movement(self.player, (dx, dy))
+            elif key == pygame.K_LEFT:
+                self.level.movement(self.player, (-1, 0))
+            elif key == pygame.K_RIGHT:
+                self.level.movement(self.player, (1, 0))
+            elif key == pygame.K_UP:
+                self.level.movement(self.player, (0, -1))
+            elif key == pygame.K_DOWN:
+                self.level.movement(self.player, (0, 1))
             elif key == pygame.K_q:
                 logging.info('Game exit on Q press.')
             else:
                 logging.warning('Key \'%d\' not supported.' % key)
                 self.messenger.add('Unknown command: %s.' % key)
-            self.level.movement(self.player, (checkx, checky))
 
 
 if __name__ == '__main__':
