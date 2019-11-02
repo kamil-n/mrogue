@@ -47,7 +47,7 @@ class Rogue(object):
                 win.print_at(1, 3, 'YOU WIN!', (0, 255, 0))
                 win.loop(pygame.K_q)
                 break
-            if self.player.hitPoints < 1 and 'god' not in sys.argv:
+            if self.player.current_HP < 1 and 'god' not in sys.argv:
                 win = PygameWindow(self.interface, title='Game over.')
                 win.print_at(1, 3, 'YOU DIED', (255, 0, 0))
                 win.loop(pygame.K_q)

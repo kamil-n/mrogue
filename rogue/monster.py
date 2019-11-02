@@ -3,6 +3,7 @@
 import logging
 import random
 from rogue import roll
+import rogue.unit
 
 
 class Menagerie(object):
@@ -22,7 +23,8 @@ class Menagerie(object):
             },
             {
                 'name': 'kobold',
-                'tile': 147,
+                'tile': 467,
+                'wields': 491,
                 'hit_die': '1d6-1',
                 'dmg_die': '1d6-1',
                 'to_hit': 1,
@@ -31,6 +33,7 @@ class Menagerie(object):
             {
                 'name': 'goblin',
                 'tile': 119,
+                'wields': 491,
                 'hit_die': '1d6-1',
                 'dmg_die': '1d8-1',
                 'to_hit': 2,
@@ -38,7 +41,8 @@ class Menagerie(object):
             },
             {
                 'name': 'orc',
-                'tile': 621,
+                'tile': 179,
+                'wields': 484,
                 'hit_die': '1d8',
                 'dmg_die': '1d8',
                 'to_hit': 3,
@@ -46,7 +50,8 @@ class Menagerie(object):
             },
             {
                 'name': 'skeleton',
-                'tile': 534,
+                'tile': 521,
+                'wields': 488,
                 'hit_die': '1d8',
                 'dmg_die': '1d4+1',
                 'to_hit': 3,
@@ -54,93 +59,37 @@ class Menagerie(object):
             }
         ]
         for i in range(num):
-            start_position = game.level.find_spot()
-            temp_monster = Monster(self.game, start_position,
-                                   random.choice(monster_templates))
+            temp_monster = Monster(self.game, random.choice(monster_templates))
             self.monsterList.append(temp_monster)
-            logging.debug('Created monster %s at %d,%d' % (temp_monster.name,
-                                                           temp_monster.pos[0],
-                                                           temp_monster.pos[1]))
+            logging.debug('Created monster {} at {},{}'.format(
+                temp_monster.name, temp_monster.pos[0], temp_monster.pos[1]))
 
     def handle_monsters(self):
         for monster in self.monsterList:
-            if monster.is_in_range(self.game.player.pos, 5):
+            if monster.is_in_range(self.game.player.pos):
                 if self.game.level.is_los_between(monster.pos,
                                                   self.game.player.pos):
-                    if monster.is_in_range(self.game.player.pos, 1):
+                    if abs(monster.pos[0] - self.game.player.pos[0]) <= 1 and \
+                            abs(monster.pos[1] - self.game.player.pos[1]) <= 1:
                         logging.debug('%s is in melee range - attacking' %
                                       monster.name)
-                        monster.attack(self.game.player.armorClass)
+                        monster.attack(self.game.player)
                     else:
                         monster.approach(self.game.player.pos)
 
 
-class Monster(object):
-    game = None
-    name = ''
-    tile = None
-    pos = None
-    hit = 0
-    damage = ''
-    armorClass = 0
-    hitPoints = 0
-    control = 'ai'
+class Monster(rogue.unit.Unit):
 
-    def __init__(self, game, pos, template):
-        self.game = game
-        self.pos = pos
-        self.name = template['name']
-        self.tile = game.interface.tileset[template['tile']]
-        self.hitPoints = roll(template['hit_die'])
-        self.damage = template['dmg_die']
-        self.hit = template['to_hit']
-        self.armorClass = template['ac']
+    def __init__(self, game, template):
+        super().__init__(template['name'], game, template['tile'], 5,
+                         template['to_hit'], template['dmg_die'],
+                         template['ac'], roll(template['hit_die']))
+        if 'wields' in template:
+            self.tile.blit(game.interface.tileset[template['wields']], (-2, 6))
 
-    def take_damage(self, damage):
-        logging.debug('%s is taking %d damage.' % (self.name, damage))
-        self.hitPoints -= damage
-        if self.hitPoints < 1:
-            self.die()
-        else:
-            logging.debug('current hit points: %d.' % self.hitPoints)
-
-    def die(self):
-        logging.info('%s dies. (%d hp)' % (self.name, self.hitPoints))
-        self.game.messenger.add(
-            '%s dies.' % (str.upper(self.name[0]) + self.name[1:]))
-        Menagerie.monsterList.remove(self)
-
-    def attack(self, target_ac):
-        logging.info('%s attacks player.' % self.name)
-        attack_roll = roll('1d20')
-        logging.debug('attack roll = %d + %d' % (attack_roll, self.hit))
-        critical_hit = attack_roll == 20
-        critical_miss = attack_roll == 1
-        if critical_hit or attack_roll + self.hit >= target_ac:
-            if critical_hit:
-                logging.debug('Critical hit.')
-                self.game.messenger.add('%s critically hits you.' % (
-                        str.upper(self.name[0]) + self.name[1:]))
-            else:
-                logging.debug('Attack hit.')
-                self.game.messenger.add('%s hits you.' % (
-                        str.upper(self.name[0]) + self.name[1:]))
-            damage_roll = roll(self.damage, critical_hit)
-            logging.debug('damage roll = %d' % damage_roll)
-            self.game.player.take_damage(damage_roll)
-        else:
-            if critical_miss:
-                logging.debug('Critical miss')
-                self.game.messenger.add('%s critically misses you.' % (
-                        str.upper(self.name[0]) + self.name[1:]))
-            else:
-                logging.debug('Attack missed')
-                self.game.messenger.add('%s misses you.' % (
-                        str.upper(self.name[0]) + self.name[1:]))
-
-    def is_in_range(self, target_position, radius):
-        return abs(self.pos[0] - target_position[0]) <= radius and \
-               abs(self.pos[1] - target_position[1]) <= radius
+    def is_in_range(self, target_position):
+        return abs(self.pos[0] - target_position[0]) <= self.sight_range and \
+               abs(self.pos[1] - target_position[1]) <= self.sight_range
 
     def approach(self, goal):
         difx = goal[0] - self.pos[0]

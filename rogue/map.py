@@ -216,7 +216,7 @@ class RogueMap(object):
     def movement(self, unit, check):
         if self.mapArray[unit.pos[1] + check[1]][
             unit.pos[0] + check[0]]['blockMove']:
-            if unit.control is not 'ai':
+            if unit.name == 'Player':
                 self.game.messenger.add('You can\'t move there.')
             return False
         monster = None
@@ -224,7 +224,7 @@ class RogueMap(object):
             if mon.pos == (unit.pos[0] + check[0], unit.pos[1] + check[1]):
                 monster = mon
         if monster:
-            if unit.control is 'player':
+            if unit.name is 'Player':
                 logging.debug('Engaged %s.' % monster.name)
                 unit.attack(monster)
                 return False
@@ -236,7 +236,7 @@ class RogueMap(object):
         return True
 
     def look_around(self):
-        radius = self.game.player.range
+        radius = self.game.player.sight_range
         pos = self.game.player.pos
         for x in range(pos[0] - radius - 1, pos[0] + radius + 2):
             for y in range(pos[1] - radius - 1, pos[1] + radius + 2):
@@ -303,7 +303,7 @@ class RogueMap(object):
 
     def draw_map(self):
         itfc = self.game.interface
-        radius = self.game.player.range
+        radius = self.game.player.sight_range
         pos = self.game.player.pos
         self.map_image.show(itfc.screen)
         for x in range(pos[0] - radius, pos[0] + radius + 1):

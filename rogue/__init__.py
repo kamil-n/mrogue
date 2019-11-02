@@ -3,6 +3,7 @@
 import logging
 import random
 
+
 def roll(die_string, crit=False):
     separator_index = die_string.index('d')
     num_die = int(die_string[:separator_index])
@@ -35,7 +36,5 @@ def roll(die_string, crit=False):
         result_string += str(modifier)
     elif modifier > 0:
         result_string += '+' + str(modifier)
-    logging.debug('rolling {}: {} = {}'.format(die_string,
-                                               result_string,
-                                               roll_result))
+    # logging.debug('rolling {}: {} = {}'.format(die_string, result_string, roll_result))
     return roll_result
