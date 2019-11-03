@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import json
 import logging
 import random
 from rogue import roll
@@ -12,52 +13,8 @@ class Menagerie(object):
 
     def __init__(self, game, num):
         self.game = game
-        monster_templates = [
-            {
-                'name': 'rat',
-                'tile': 255,
-                'hit_die': '1d4-1',
-                'dmg_die': '1d4-1',
-                'to_hit': 2,
-                'ac': 12
-            },
-            {
-                'name': 'kobold',
-                'tile': 467,
-                'wields': 491,
-                'hit_die': '1d6-1',
-                'dmg_die': '1d6-1',
-                'to_hit': 1,
-                'ac': 13
-            },
-            {
-                'name': 'goblin',
-                'tile': 119,
-                'wields': 491,
-                'hit_die': '1d6-1',
-                'dmg_die': '1d8-1',
-                'to_hit': 2,
-                'ac': 13
-            },
-            {
-                'name': 'orc',
-                'tile': 179,
-                'wields': 484,
-                'hit_die': '1d8',
-                'dmg_die': '1d8',
-                'to_hit': 3,
-                'ac': 14
-            },
-            {
-                'name': 'skeleton',
-                'tile': 521,
-                'wields': 488,
-                'hit_die': '1d8',
-                'dmg_die': '1d4+1',
-                'to_hit': 3,
-                'ac': 11
-            }
-        ]
+        with open('rogue/monster_templates.json') as f:
+            monster_templates = json.loads(f.read())
         for i in range(num):
             temp_monster = Monster(self.game, random.choice(monster_templates))
             self.monsterList.append(temp_monster)
