@@ -267,6 +267,9 @@ class RogueMap(object):
             iy = int(yy + 0.5)
             self.mapArray[iy][ix]['visible'] = True
             self.map_image.add(self.mapArray[iy][ix]['type'], (ix, iy))
+            self.game.interface.visible_objects.add(
+                self.game.interface.objects_on_map.get_sprites_at(
+                    (ix * 32 + 16, iy * 32 + 16)))
             if self.mapArray[iy][ix]['blockLOS'] or (
                     ix == target_x and iy == target_y):
                 break
@@ -312,7 +315,3 @@ class RogueMap(object):
                     continue
                 if self.mapArray[y][x]['visible']:
                     itfc.print_at(x, y, itfc.highlight)
-        # TODO: move this out
-        for mon in self.game.monsters.monsterList:
-            if self.mapArray[mon.pos[1]][mon.pos[0]]['visible']:
-                itfc.print_at(mon.pos[0], mon.pos[1], mon.tile)

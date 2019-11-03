@@ -3,23 +3,22 @@
 import json
 import logging
 import random
+from pygame import sprite
 from rogue import roll
 import rogue.unit
 
 
 class Menagerie(object):
     game = None
-    monsterList = []
+    monsterList = sprite.Group()
 
     def __init__(self, game, num):
         self.game = game
         with open('rogue/monster_templates.json') as f:
             monster_templates = json.loads(f.read())
         for i in range(num):
-            temp_monster = Monster(self.game, random.choice(monster_templates))
-            self.monsterList.append(temp_monster)
-            logging.debug('Created monster {} at {},{}'.format(
-                temp_monster.name, temp_monster.pos[0], temp_monster.pos[1]))
+            Monster(self.game, random.choice(monster_templates),
+                    (self.monsterList, game.interface.objects_on_map))
 
     def handle_monsters(self):
         for monster in self.monsterList:
@@ -37,12 +36,15 @@ class Menagerie(object):
 
 class Monster(rogue.unit.Unit):
 
-    def __init__(self, game, template):
+    def __init__(self, game, template, groups):
         super().__init__(template['name'], game, template['tile'], 5,
                          template['to_hit'], template['dmg_die'],
                          template['ac'], roll(template['hit_die']))
         if 'wields' in template:
-            self.tile.blit(game.interface.tileset[template['wields']], (-2, 6))
+            self.image.blit(game.interface.tileset[template['wields']], (-2, 6))
+        self.add(groups)
+        logging.debug('Created monster {} at {},{}'.format(
+            self.name, self.pos[0], self.pos[1]))
 
     def is_in_range(self, target_position):
         return abs(self.pos[0] - target_position[0]) <= self.sight_range and \

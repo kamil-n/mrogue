@@ -37,10 +37,12 @@ class Rogue(object):
         while key != pygame.K_q:
             self.turn += 1
             logging.info('== Turn %d. ==' % self.turn)
-            self.level.look_around()
             self.monsters.handle_monsters()
+            self.interface.objects_on_map.update()  # TODO: refactor
+            self.level.look_around()
             self.level.draw_map()
-            self.player.show()
+            self.interface.show_objects()
+            self.player.show_stats()
             self.messenger.show()
             if len(self.monsters.monsterList) == 0:
                 win = PygameWindow(self.interface, title='Congratulations!',

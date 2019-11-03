@@ -8,12 +8,13 @@ class Player(rogue.unit.Unit):
     def __init__(self, game):
         super().__init__('Player', game, 1956, 6, 3, '1d6+1', 14, 12)
         # equipment icons
-        self.tile.blit(game.interface.tileset[2100], (0, 0))  # armor
-        self.tile.blit(game.interface.tileset[2674], (0, 0))  # pants
-        self.tile.blit(game.interface.tileset[2186], (0, 0))  # boots
-        self.tile.blit(game.interface.tileset[2304], (0, 0))  # weapon
+        self.image.blit(game.interface.tileset[2100], (0, 0))  # armor
+        self.image.blit(game.interface.tileset[2674], (0, 0))  # pants
+        self.image.blit(game.interface.tileset[2186], (0, 0))  # boots
+        self.image.blit(game.interface.tileset[2304], (0, 0))  # weapon
+        self.add(game.interface.objects_on_map)
 
-    def show(self):
+    def show_stats(self):
         show = self.game.interface.print_at
         # show(self.pos[0], self.pos[1], self.image)
         show(0, 0, 'HP:', self.game.interface.colors['WHITE'])

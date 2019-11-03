@@ -13,6 +13,8 @@ class PygameHelper(object):
     dimensions = ()
     resolution = ()
     tileset = []
+    objects_on_map = pygame.sprite.LayeredUpdates()
+    visible_objects = pygame.sprite.LayeredUpdates()
     highlight = None
 
     def __init__(self):
@@ -37,8 +39,12 @@ class PygameHelper(object):
             item = self.font.render(item, True, color, self.colors['BLACK'])
         self.screen.blit(item, (x * tile_size, y * tile_size))
 
+    def show_objects(self):
+        self.visible_objects.draw(self.screen)
+
     def refresh(self):
-        pygame.display.flip()
+        pygame.display.update()
+        self.visible_objects.empty()
 
     def close(self):
         pygame.quit()

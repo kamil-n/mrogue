@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from pygame import sprite
 from rogue import roll
 
 
-class Unit(object):
+class Unit(sprite.Sprite):
     game = None
     name = ''
-    tile = None
+    image = None
+    rect = None
     pos = None
     to_hit = 0
     sight_range = 0
@@ -16,19 +18,23 @@ class Unit(object):
     current_HP = 0
     max_HP = 0
 
-    def __init__(self, name, game, tile_id, sight_range, to_hit, damage_dice, armor_class, current_hp, container=None):
+    def __init__(self, name, game, tile_id, sight_range, to_hit, damage_dice,
+                 armor_class, current_hp):
+        super().__init__()
         self.game = game
         self.name = name
         self.pos = game.level.find_spot()
-        self.tile = game.interface.tileset[tile_id].copy()
+        self.image = game.interface.tileset[tile_id].copy()
+        self.rect = self.image.get_rect()
         self.sight_range = sight_range
         self.to_hit = to_hit
         self.damage_dice = damage_dice
         self.armor_class = armor_class
         self.current_HP = current_hp
         self.max_HP = current_hp
-        if container:
-            self.container = container
+
+    def update(self):
+        self.rect.topleft = (self.pos[0] * 32, self.pos[1] * 32)
 
     def attack(self, target):
         uname = str.upper(self.name[0]) + self.name[1:]
@@ -70,7 +76,6 @@ class Unit(object):
 
     def die(self):
         logging.info('{} dies. ({} hp)'.format(self.name, self.current_HP))
-        self.game.messenger.add('{} dies.'.format(str.upper(self.name[0]) + self.name[1:]))
-        if self.name != 'Player':
-            from rogue.monster import Menagerie
-            Menagerie.monsterList.remove(self)
+        self.game.messenger.add('{} dies.'.format(
+            str.upper(self.name[0]) + self.name[1:]))
+        self.kill()
