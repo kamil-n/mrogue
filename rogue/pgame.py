@@ -72,22 +72,20 @@ class PygameWindow(object):
     engine = None
     left = 0
     top = 0
+    width = 0
+    height = 0
 
-    def __init__(self, pgame,
-                 left=2 * tile_size,
-                 top=2 * tile_size,
-                 width=10 * tile_size,
-                 height=3 * tile_size,
-                 title='Window title',
-                 title_color=(255, 255, 255),
-                 bg_color=(0, 0, 0),
-                 border=True):
+    def __init__(self, pgame, left=2, top=2, width=10, height=3,
+                 title='Window title', title_color=(255, 255, 255),
+                 bg_color=(0, 0, 0), border=True):
         self.engine = pgame
-        self.left = left
-        self.top = top
-        self.window = pygame.Surface((left + width, top + height))
+        self.left = left * tile_size
+        self.top = top * tile_size
+        self.width = width * tile_size
+        self.height = height * tile_size
+        self.window = pygame.Surface((self.width, self.height))
         self.window.fill(bg_color)
-        self.print_at(1, 1, title, title_color)
+        self.print_at(1, 0, title, title_color)
         if border:
             pygame.draw.rect(self.window, title_color, self.window.get_rect(), 1)
 

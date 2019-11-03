@@ -43,13 +43,17 @@ class Rogue(object):
             self.player.show()
             self.messenger.show()
             if len(self.monsters.monsterList) == 0:
-                win = PygameWindow(self.interface, title='Congratulations!')
-                win.print_at(1, 3, 'YOU WIN!', (0, 255, 0))
+                win = PygameWindow(self.interface, title='Congratulations!',
+                                   left=self.interface.dimensions[0] // 2 - 5,
+                                   top=self.interface.dimensions[1] // 2 - 2)
+                win.print_at(1, 2, 'YOU WIN!', (0, 255, 0))
                 win.loop(pygame.K_q)
                 break
             if self.player.current_HP < 1 and 'god' not in sys.argv:
-                win = PygameWindow(self.interface, title='Game over.')
-                win.print_at(1, 3, 'YOU DIED', (255, 0, 0))
+                win = PygameWindow(self.interface, title='Game over.',
+                                   left=self.interface.dimensions[0] // 2 - 5,
+                                   top=self.interface.dimensions[1] // 2 - 2)
+                win.print_at(1, 2, 'YOU DIED', (255, 0, 0))
                 win.loop(pygame.K_q)
                 break
             self.interface.refresh()
