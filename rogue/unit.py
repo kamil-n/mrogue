@@ -31,7 +31,8 @@ class Unit(object):
             self.container = container
 
     def attack(self, target):
-        logging.info('{} attacks {}.'.format(str.upper(self.name[0]) + self.name[1:], target.name))
+        uname = str.upper(self.name[0]) + self.name[1:]
+        logging.info('{} attacks {}.'.format(uname, target.name))
         attack_roll = roll('1d20')
         logging.debug('attack roll = %d + %d' % (attack_roll, self.to_hit))
         critical_hit = attack_roll == 20
@@ -39,23 +40,28 @@ class Unit(object):
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
             if critical_hit:
                 logging.debug('Critical hit.')
-                self.game.messenger.add('{} critically hits {}.'.format(str.upper(self.name[0]) + self.name[1:], target.name))
+                self.game.messenger.add('{} critically hits {}.'.format(
+                    uname, target.name))
             else:
                 logging.debug('Attack hit.')
-                self.game.messenger.add('{} hits {}.'.format(str.upper(self.name[0]) + self.name[1:], target.name))
+                self.game.messenger.add('{} hits {}.'.format(
+                    uname, target.name))
             damage_roll = roll(self.damage_dice, critical_hit)
             logging.debug('damage roll = %d' % damage_roll)
             target.take_damage(damage_roll)
         else:
             if critical_miss:
                 logging.debug('Critical miss')
-                self.game.messenger.add('{} critically misses {}.'.format(str.upper(self.name[0]) + self.name[1:], target.name))
+                self.game.messenger.add('{} critically misses {}.'.format(
+                    uname, target.name))
             else:
                 logging.debug('Attack missed')
-                self.game.messenger.add('{} misses {}.'.format(str.upper(self.name[0]) + self.name[1:], target.name))
+                self.game.messenger.add('{} misses {}.'.format(
+                    uname, target.name))
 
     def take_damage(self, damage):
-        logging.debug('{} is taking {} damage.'.format(str.upper(self.name[0]) + self.name[1:], damage))
+        logging.debug('{} is taking {} damage.'.format(
+            str.upper(self.name[0]) + self.name[1:], damage))
         self.current_HP -= damage
         if self.current_HP < 1:
             self.die()

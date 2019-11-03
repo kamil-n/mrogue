@@ -54,58 +54,27 @@ class Monster(rogue.unit.Unit):
         vertical = abs(dify) > abs(difx)
         if vertical:
             if difx == 0:
-                success = self.game.level.movement(self,
-                                                   (0,
-                                                    int(dify / abs(dify))))
+                success = self.game.level.movement(self, (0, int(dify / abs(dify))))
                 if not success:
-                    success = self.game.level.movement(self,
-                                                       (-1,
-                                                        int(dify / abs(
-                                                            dify))))
+                    success = self.game.level.movement(self, (-1, int(dify / abs(dify))))
                     if not success:
-                        self.game.level.movement(self,
-                                                 (1,
-                                                  int(dify / abs(dify))))
+                        self.game.level.movement(self, (1, int(dify / abs(dify))))
             else:
-                success = self.game.level.movement(self,
-                                                   (int(difx / abs(difx)),
-                                                    int(dify / abs(dify))))
+                success = self.game.level.movement(self, (int(difx / abs(difx)), int(dify / abs(dify))))
                 if not success:
-                    success = self.game.level.movement(self,
-                                                       (0,
-                                                        int(dify / abs(
-                                                            dify))))
+                    success = self.game.level.movement(self, (0, int(dify / abs(dify))))
                     if not success:
-                        self.game.level.movement(self,
-                                                 (-1 * int(difx / abs(difx)),
-                                                  int(dify / abs(dify))))
+                        self.game.level.movement(self, (-1 * int(difx / abs(difx)), int(dify / abs(dify))))
         else:
             if dify == 0:
-                success = self.game.level.movement(self,
-                                                   (int(difx / abs(difx)),
-                                                    0))
+                success = self.game.level.movement(self, (int(difx / abs(difx)), 0))
                 if not success:
-                    success = self.game.level.movement(self,
-                                                       (
-                                                           int(difx / abs(
-                                                               difx)),
-                                                           -1))
+                    success = self.game.level.movement(self, (int(difx / abs(difx)), -1))
                     if not success:
-                        self.game.level.movement(self,
-                                                 (int(difx / abs(difx)),
-                                                  1))
+                        self.game.level.movement(self, (int(difx / abs(difx)), 1))
             else:
-                success = self.game.level.movement(self,
-                                                   (int(difx / abs(difx)),
-                                                    int(dify / abs(dify))))
+                success = self.game.level.movement(self, (int(difx / abs(difx)), int(dify / abs(dify))))
                 if not success:
-                    success = self.game.level.movement(self,
-                                                       (
-                                                           int(difx / abs(
-                                                               difx)),
-                                                           0))
+                    success = self.game.level.movement(self, (int(difx / abs(difx)), 0))
                     if not success:
-                        self.game.level.movement(self,
-                                                 (int(difx / abs(difx)),
-                                                  -1 * int(
-                                                      dify / abs(dify))))
+                        self.game.level.movement(self, (int(difx / abs(difx)), -1 * int(dify / abs(dify))))

@@ -65,7 +65,7 @@ class RogueMap(object):
         self.game = game
         self.min_rooms = 5
         self.max_rooms = int(self.mapDim[0] / max_room_size[0] *
-                             self.mapDim[1] / max_room_size[1])
+                             self.mapDim[1] / max_room_size[1]) - self.min_rooms
         logging.debug('self.max_rooms is {}'.format(self.max_rooms))
         self.tiles = {
             'wall': self.game.interface.tileset[854],
