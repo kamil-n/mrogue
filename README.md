@@ -1,0 +1,21 @@
+##### TODO list:
+- [ ] clean up code up to this point
+- [ ] items
+  - [ ] equipment
+    - [ ] items contribute to stats
+    - [ ] can be un/equipped
+    - [ ] interface for equipment
+  - [ ] inventory
+    - [ ] can drop/pick up items
+    - [ ] interface for inventory
+  - [ ] random items on the ground
+  - [ ] defeated enemies drop eqiuipment
+- [ ] add more dungeon levels
+  - [ ] introduce way to regen life
+  - [ ] add more monsters that scale with dungeon depth
+- [ ] experience
+  - [ ] defeated enemies grant xp
+  - [ ] on gained xp breakpoints increase stats
+ - skills...
+ - statuses (timers...)
+ - character customization...
