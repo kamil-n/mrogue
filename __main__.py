@@ -37,7 +37,7 @@ class Rogue(object):
         while key != pygame.K_q:
             self.turn += 1
             logging.info('== Turn %d. ==' % self.turn)
-            self.monsters.handle_monsters()
+            self.monsters.handle_monsters(self.player)
             self.interface.objects_on_map.update()  # TODO: refactor
             self.level.look_around()
             self.level.draw_map()
@@ -58,29 +58,45 @@ class Rogue(object):
                 win.print_at(1, 2, 'YOU DIED', (255, 0, 0))
                 win.loop(pygame.K_q)
                 break
+            # pathfinding visualisation
+            if 'debug' in sys.argv:
+                for monster in self.monsters.monsterList:
+                    if monster.path:
+                        previous = monster.pos
+                        for step in monster.path:
+                            pygame.draw.line(self.interface.screen, (0, 255, 0),
+                                             (previous[0] * 32 + 16,
+                                              previous[1] * 32 + 16),
+                                             (step[0] * 32 + 15,
+                                              step[1] * 32 + 16))
+                            previous = step
             self.interface.refresh()
             key = self.interface.wait()
             self.messenger.clear()
             # movement:
-            if key in range(49, 57 + 1):  # numpad
-                dx, dy = 0, 0
+            if key in range(49, 57 + 1):
+                x, y = self.player.pos
                 if key in (49, 52, 55):
-                    dx = -1
+                    x -= 1
                 elif key in (51, 54, 57):
-                    dx = 1
+                    x += 1
                 if key > 54:
-                    dy = -1
+                    y -= 1
                 elif key < 52:
-                    dy = 1
-                self.level.movement(self.player, (dx, dy))
-            elif key == pygame.K_LEFT:
-                self.level.movement(self.player, (-1, 0))
-            elif key == pygame.K_RIGHT:
-                self.level.movement(self.player, (1, 0))
-            elif key == pygame.K_UP:
-                self.level.movement(self.player, (0, -1))
-            elif key == pygame.K_DOWN:
-                self.level.movement(self.player, (0, 1))
+                    y += 1
+                self.level.movement(self.player, (x, y))
+            elif key in (
+                    pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN):
+                x, y = self.player.pos
+                if key == pygame.K_LEFT:
+                    x -= 1
+                elif key == pygame.K_RIGHT:
+                    x += 1
+                elif key == pygame.K_UP:
+                    y -= 1
+                elif key == pygame.K_DOWN:
+                    y += 1
+                self.level.movement(self.player, (x, y))
             elif key == pygame.K_q:
                 logging.info('Game exit on Q press.')
             else:

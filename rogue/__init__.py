@@ -4,6 +4,10 @@ import logging
 import random
 
 
+def adjacent(fr, to):
+    return abs(fr[0] - to[0]) <= 1 and abs(fr[1] - to[1]) <= 1
+
+
 def roll(die_string, crit=False):
     separator_index = die_string.index('d')
     num_die = int(die_string[:separator_index])

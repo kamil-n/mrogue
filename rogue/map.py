@@ -2,7 +2,9 @@
 
 import logging
 import math
+from queue import PriorityQueue
 import random
+from rogue import adjacent
 from rogue.pgame import MapImage
 
 min_room_size = (6, 3)
@@ -203,7 +205,8 @@ class RogueMap(object):
             x = random.randint(1, self.mapDim[0] - 1)
             y = random.randint(self.mapTop + 1,
                                self.mapDim[1] - 1)
-            if not self.mapArray[y][x]['blockMove']:
+            if not self.mapArray[y][x]['blockMove'] and \
+                    not self.game.interface.unit_at((x, y)):
                 return x, y
 
     def already_taken(self, x1, y1, x2, y2):
@@ -214,26 +217,20 @@ class RogueMap(object):
         return False
 
     def movement(self, unit, check):
-        if self.mapArray[unit.pos[1] + check[1]][
-            unit.pos[0] + check[0]]['blockMove']:
-            if unit.name == 'Player':
-                self.game.messenger.add('You can\'t move there.')
-            return False
-        monster = None
-        for mon in self.game.monsters.monsterList:
-            if mon.pos == (unit.pos[0] + check[0], unit.pos[1] + check[1]):
-                monster = mon
-        if monster:
-            if unit.name is 'Player':
-                logging.debug('Engaged %s.' % monster.name)
-                unit.attack(monster)
-                return False
-            else:
-                return False
-        # elif Player.get_pos() == ( unit.pos[0] + check[0],
-        # unit.pos[1] + check[1] ) and unit.control is 'ai':
-        unit.pos = (unit.pos[0] + check[0], unit.pos[1] + check[1])
-        return True
+        if not adjacent(unit.pos, check):
+            logging.warning('{} tried to move more than 1 cell!'.format(unit.name))
+            return
+        if self.mapArray[check[1]][check[0]]['blockMove']:
+            self.game.messenger.add('{} runs into the wall.'.format(unit.name))
+            return
+        target = self.game.interface.unit_at(check)
+        if target:
+            if unit.name == 'Player' and unit != target:
+                logging.debug('{} engaged {}.'.format(unit.name, target.name))
+                unit.attack(target)
+                return
+        else:
+            unit.pos = check
 
     def look_around(self):
         radius = self.game.player.sight_range
@@ -315,3 +312,56 @@ class RogueMap(object):
                     continue
                 if self.mapArray[y][x]['visible']:
                     itfc.print_at(x, y, itfc.highlight)
+
+    def neighbors(self, of):
+        x, y = of
+        results = [(x-1, y), (x, y+1), (x+1, y), (x, y-1),
+                   (x-1, y-1), (x+1, y-1), (x-1, y+1), (x+1, y+1)]
+        results = list(filter(lambda p: 0 < p[0] <= self.mapDim[0] and 0 < p[1] <= self.mapDim[1], results))
+        results = list(filter(lambda p: not self.mapArray[p[1]][p[0]]['blockMove'], results))
+        return results
+
+
+class Pathfinder(object):
+    def __init__(self, level, start):
+        self.frontier = PriorityQueue()
+        self.came_from = {}
+        self.cost_so_far = {}
+        self.level = level
+        self.frontier.put((0, start))
+        self.came_from[start] = None
+        self.cost_so_far[start] = 0
+
+    def heuristic(self, goal, current):
+        dx = abs(current[0] - goal[0])
+        dy = abs(current[1] - goal[1])
+        return dx + dy - min(dx, dy) / 2
+
+    def cost(self, fr, to):
+        if abs(fr[0] - to[0]) == 0 or abs(fr[1] - to[1]) == 0:
+            return 1
+        return 1.5
+
+    def find(self, goal):
+        while not self.frontier.empty():
+            current = self.frontier.get()[1]
+            if current == goal:
+                break
+            for nxt in self.level.neighbors(current):
+                new_cost = self.cost_so_far[current] + self.cost(current, nxt)
+                if nxt not in self.cost_so_far or new_cost < self.cost_so_far[nxt]:
+                    self.cost_so_far[nxt] = new_cost
+                    priority = new_cost + self.heuristic(goal, nxt)
+                    self.frontier.put((priority, nxt))
+                    self.came_from[nxt] = current
+        return self
+
+    def path(self, start, goal):
+        current = goal
+        path = []
+        while current != start:
+            path.append(current)
+            current = self.came_from[current]
+        path.reverse()
+        logging.debug('Pathfinder {} -> {}: {}'.format(start, goal, path))
+        return path

@@ -12,11 +12,10 @@ class Player(rogue.unit.Unit):
         self.image.blit(game.interface.tileset[2674], (0, 0))  # pants
         self.image.blit(game.interface.tileset[2186], (0, 0))  # boots
         self.image.blit(game.interface.tileset[2304], (0, 0))  # weapon
-        self.add(game.interface.objects_on_map)
+        self.add((game.interface.objects_on_map, game.interface.units))
 
     def show_stats(self):
         show = self.game.interface.print_at
-        # show(self.pos[0], self.pos[1], self.image)
         show(0, 0, 'HP:', self.game.interface.colors['WHITE'])
         show(12, 0, 'AC:', self.game.interface.colors['WHITE'])
         show(21, 0, 'ATK:', self.game.interface.colors['WHITE'])

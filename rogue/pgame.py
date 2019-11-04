@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import pygame
 import pygame.locals
 
@@ -15,6 +16,7 @@ class PygameHelper(object):
     tileset = []
     objects_on_map = pygame.sprite.LayeredUpdates()
     visible_objects = pygame.sprite.LayeredUpdates()
+    units = pygame.sprite.Group()
     highlight = None
 
     def __init__(self):
@@ -40,7 +42,16 @@ class PygameHelper(object):
         self.screen.blit(item, (x * tile_size, y * tile_size))
 
     def show_objects(self):
-        self.visible_objects.draw(self.screen)
+        container = self.visible_objects
+        if 'debug' in sys.argv:
+            container = self.objects_on_map
+        container.draw(self.screen)
+
+    def unit_at(self, where):
+        for unit in self.units:
+            if unit.pos == where:
+                return unit
+        return None
 
     def refresh(self):
         pygame.display.update()

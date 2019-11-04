@@ -2,10 +2,12 @@
 
 import json
 import logging
+import os
 import random
 from pygame import sprite
-from rogue import roll
+from rogue import roll, adjacent
 import rogue.unit
+from rogue.map import Pathfinder
 
 
 class Menagerie(object):
@@ -14,27 +16,29 @@ class Menagerie(object):
 
     def __init__(self, game, num):
         self.game = game
-        with open('rogue/monster_templates.json') as f:
+        basedir = os.path.dirname(os.path.abspath( __file__ ))
+        with open(os.path.join(basedir, 'monster_templates.json')) as f:
             monster_templates = json.loads(f.read())
         for i in range(num):
             Monster(self.game, random.choice(monster_templates),
-                    (self.monsterList, game.interface.objects_on_map))
+                    (self.monsterList, game.interface.objects_on_map,
+                     game.interface.units))
 
-    def handle_monsters(self):
+    def handle_monsters(self, target):
         for monster in self.monsterList:
-            if monster.is_in_range(self.game.player.pos):
-                if self.game.level.is_los_between(monster.pos,
-                                                  self.game.player.pos):
-                    if abs(monster.pos[0] - self.game.player.pos[0]) <= 1 and \
-                            abs(monster.pos[1] - self.game.player.pos[1]) <= 1:
-                        logging.debug('%s is in melee range - attacking' %
-                                      monster.name)
-                        monster.attack(self.game.player)
-                    else:
-                        monster.approach(self.game.player.pos)
+            if monster.is_in_range(target.pos):
+                # if monster.senses_or_reacts_in_some_way_to(target)
+                if adjacent(monster.pos, target.pos):
+                    logging.debug('{} is in melee range - attacking {}'.format(
+                        monster.name, target.name))
+                    monster.path = None
+                    monster.attack(target)
+                else:
+                    monster.approach(target.pos)
 
 
 class Monster(rogue.unit.Unit):
+    path = None
 
     def __init__(self, game, template, groups):
         super().__init__(template['name'], game, template['tile'], 5,
@@ -51,32 +55,18 @@ class Monster(rogue.unit.Unit):
                abs(self.pos[1] - target_position[1]) <= self.sight_range
 
     def approach(self, goal):
-        difx = goal[0] - self.pos[0]
-        dify = goal[1] - self.pos[1]
-        vertical = abs(dify) > abs(difx)
-        if vertical:
-            if difx == 0:
-                success = self.game.level.movement(self, (0, int(dify / abs(dify))))
-                if not success:
-                    success = self.game.level.movement(self, (-1, int(dify / abs(dify))))
-                    if not success:
-                        self.game.level.movement(self, (1, int(dify / abs(dify))))
-            else:
-                success = self.game.level.movement(self, (int(difx / abs(difx)), int(dify / abs(dify))))
-                if not success:
-                    success = self.game.level.movement(self, (0, int(dify / abs(dify))))
-                    if not success:
-                        self.game.level.movement(self, (-1 * int(difx / abs(difx)), int(dify / abs(dify))))
-        else:
-            if dify == 0:
-                success = self.game.level.movement(self, (int(difx / abs(difx)), 0))
-                if not success:
-                    success = self.game.level.movement(self, (int(difx / abs(difx)), -1))
-                    if not success:
-                        self.game.level.movement(self, (int(difx / abs(difx)), 1))
-            else:
-                success = self.game.level.movement(self, (int(difx / abs(difx)), int(dify / abs(dify))))
-                if not success:
-                    success = self.game.level.movement(self, (int(difx / abs(difx)), 0))
-                    if not success:
-                        self.game.level.movement(self, (int(difx / abs(difx)), -1 * int(dify / abs(dify))))
+        if self.path:  # if already on a path
+            if goal != self.path[-1]:  # if target moved, find new path
+                self.path = Pathfinder(self.game.level, self.pos).find(goal).path(self.pos, goal)
+        else:  # find a path to target
+            self.path = Pathfinder(self.game.level, self.pos).find(goal).path(self.pos, goal)
+        if self.game.interface.unit_at(self.path[0]):
+            tiles = self.game.level.neighbors(self.pos)
+            tiles = list(filter(lambda p: not self.game.interface.unit_at(p), tiles))
+            pairs = [(abs(goal[0] - x), abs(goal[1] - y), (x, y)) for x, y in tiles]
+            if not pairs:
+                return
+            nearest = min(pairs, key=lambda v: v[0] * v[0] + v[1] * v[1])[2]
+            self.game.level.movement(self, nearest)
+            return
+        self.game.level.movement(self, self.path.pop(0))
