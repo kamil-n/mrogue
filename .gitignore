@@ -5,3 +5,4 @@ __pycache__
 /rogue/*.pyc
 /rogue/__pycache__
 .idea
+venv

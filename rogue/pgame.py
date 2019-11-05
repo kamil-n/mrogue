@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import pygame
 import pygame.locals
@@ -30,9 +31,12 @@ class PygameHelper(object):
         self.screen = pygame.display.set_mode(
             (self.dimensions[0] * tile_size, self.dimensions[1] * tile_size))
         self.screen.fill(self.colors['BLACK'])
-        self.load_tile_file('tiles.png')
-        self.font = pygame.font.SysFont(pygame.font.get_default_font(),
-                                        tile_size)
+        basedir = os.path.dirname(os.path.abspath(__file__))
+        self.load_tile_file(os.path.join(basedir, 'tiles.png'))
+        ''' Since get_system_font() returns pygame's freesansbold.ttf and pyinstaller '''
+        ''' can't seem to include this in the bundle, actual system font needs to be '''
+        ''' called. Unfortunately system font sizes are inconsistent. '''
+        self.font = pygame.font.SysFont('lucida_console, consolas', tile_size * 3 // 4)
         self.highlight = pygame.Surface((32, 32), flags=pygame.SRCALPHA)
         self.highlight.fill((128, 128, 64, 32))
 

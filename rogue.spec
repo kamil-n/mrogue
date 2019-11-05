@@ -3,10 +3,11 @@
 block_cipher = None
 
 
-a = Analysis(['main.py'],
-             pathex=['./includes', 'C:\\Users\\kamil\\python\\rogue'],
+a = Analysis(['__main__.py'],
+             pathex=['./includes', 'C:\\Users\\kamilnienaltowski\\Python\\rogue'],
              binaries=[],
-             datas=[],
+             datas=[('rogue/tiles.png', 'rogue'),
+             	('rogue/monster_templates.json', 'rogue')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
@@ -29,4 +30,4 @@ exe = EXE(pyz,
           strip=False,
           upx=True,
           runtime_tmpdir=None,
-          console=True )
+          console=False)

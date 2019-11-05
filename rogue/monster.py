@@ -16,7 +16,7 @@ class Menagerie(object):
 
     def __init__(self, game, num):
         self.game = game
-        basedir = os.path.dirname(os.path.abspath( __file__ ))
+        basedir = os.path.dirname(os.path.abspath(__file__))
         with open(os.path.join(basedir, 'monster_templates.json')) as f:
             monster_templates = json.loads(f.read())
         for i in range(num):
