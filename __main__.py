@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import pygame
+from rogue import __version__
 from rogue.pgame import PygameHelper, PygameWindow
 from rogue.map import RogueMap
 from rogue.message import Messenger
@@ -23,7 +24,8 @@ class Rogue(object):
         if os.path.isfile('rogue.log'):
             os.remove('rogue.log')
         logging.basicConfig(filename='rogue.log', level=logging.DEBUG)
-        logging.info('======== Game start. ========')
+        logging.info('Welcome to Rogue {}!\n======== Game start. ========'.format(
+            __version__))
         self.interface = PygameHelper()
         self.level = RogueMap(self)
         self.player = Player(self)

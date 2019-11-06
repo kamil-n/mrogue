@@ -3,6 +3,8 @@
 # import logging
 import random
 
+__version__ = 'v0.2.0.1'
+
 
 def adjacent(fr, to):
     return abs(fr[0] - to[0]) <= 1 and abs(fr[1] - to[1]) <= 1

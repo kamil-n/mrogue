@@ -11,6 +11,7 @@ import os
 import sys
 import pygame
 import pygame.locals
+from rogue import __version__
 
 tile_size = 32
 
@@ -51,6 +52,7 @@ class PygameHelper(object):
         }
         self.screen = pygame.display.set_mode(
             (self.dimensions[0] * tile_size, self.dimensions[1] * tile_size))
+        pygame.display.set_caption('Rogue ' + __version__)
         self.screen.fill(self.colors['BLACK'])
         basedir = os.path.dirname(os.path.abspath(__file__))
         self.load_tile_file(os.path.join(basedir, 'tiles.png'))
