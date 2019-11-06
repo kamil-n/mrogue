@@ -33,10 +33,17 @@ class PygameHelper(object):
         self.screen.fill(self.colors['BLACK'])
         basedir = os.path.dirname(os.path.abspath(__file__))
         self.load_tile_file(os.path.join(basedir, 'tiles.png'))
-        ''' Since get_system_font() returns pygame's freesansbold.ttf and pyinstaller '''
-        ''' can't seem to include this in the bundle, actual system font needs to be '''
-        ''' called. Unfortunately system font sizes are inconsistent. '''
-        self.font = pygame.font.SysFont('lucida_console, consolas', tile_size * 3 // 4)
+        ''' Since get_system_font() returns pygame's freesansbold.ttf and '''
+        ''' pyinstaller can't seem to include this in the bundle, actual '''
+        ''' system font needs to be called. Unfortunately system font sizes '''
+        ''' are inconsistent. '''
+        system_fonts = pygame.font.get_fonts()
+        if 'lucida_console' in system_fonts or 'consolas' in system_fonts:
+            self.font = pygame.font.SysFont('lucida_console, consolas',
+                                            tile_size * 3 // 4)
+        elif 'sourcecodepro' in system_fonts:
+            self.font = pygame.font.SysFont('sourcecodepro', tile_size * 3 // 4)
+        logging.info('Font letter size is {}.'.format(self.font.size('i')))
         self.highlight = pygame.Surface((32, 32), flags=pygame.SRCALPHA)
         self.highlight.fill((128, 128, 64, 32))
 
