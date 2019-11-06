@@ -74,15 +74,15 @@ class Rogue(object):
             key = self.interface.wait()
             self.messenger.clear()
             # movement:
-            if key in range(49, 57 + 1):
+            if key in range(257, 266 + 1):
                 x, y = self.player.pos
-                if key in (49, 52, 55):
+                if key in (257, 260, 263):
                     x -= 1
-                elif key in (51, 54, 57):
+                elif key in (259, 262, 265):
                     x += 1
-                if key > 54:
+                if key > 262:
                     y -= 1
-                elif key < 52:
+                elif key < 260:
                     y += 1
                 self.level.movement(self.player, (x, y))
             elif key in (
