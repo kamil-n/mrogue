@@ -40,6 +40,7 @@ class PygameHelper(object):
     objects_on_map = pygame.sprite.LayeredUpdates()
     visible_objects = pygame.sprite.LayeredUpdates()
     units = pygame.sprite.Group()
+    items = pygame.sprite.Group()
     highlight = None
 
     def __init__(self):

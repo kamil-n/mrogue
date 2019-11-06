@@ -8,6 +8,7 @@ from rogue import __version__
 from rogue.pgame import PygameHelper, PygameWindow
 from rogue.map import RogueMap
 from rogue.message import Messenger
+from rogue.item import ItemManager
 from rogue.monster import Menagerie
 from rogue.player import Player
 
@@ -16,6 +17,7 @@ class Rogue(object):
     turn = 0
     interface = None
     level = None
+    items = None
     player = None
     monsters = None
     messenger = None
@@ -28,11 +30,15 @@ class Rogue(object):
             __version__))
         self.interface = PygameHelper()
         self.level = RogueMap(self)
+        self.items = ItemManager(self, 1)
         self.player = Player(self)
         self.monsters = Menagerie(self, 10)
         self.messenger = Messenger(self)
         self.messenger.add(
             'Kill all monsters. Move with arrow keys or numpad. Press q to exit.')
+        #BONUS
+        self.player.add_item(self.items.item_templates['weapons']['maces'][0])
+        self.player.add_item(self.items.item_templates['armor']['chest'][0])
 
     def mainloop(self):
         key = pygame.K_UNKNOWN
@@ -75,8 +81,12 @@ class Rogue(object):
             self.interface.refresh()
             key = self.interface.wait()
             self.messenger.clear()
+            if key == pygame.K_e:
+                self.items.show_inventory()
+            elif key == pygame.K_u:
+                self.items.show_equipment()
             # movement:
-            if key in range(257, 266 + 1):
+            elif key in range(257, 266 + 1):
                 x, y = self.player.pos
                 if key in (257, 260, 263):
                     x -= 1

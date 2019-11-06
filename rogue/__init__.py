@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# import logging
 import random
 
-__version__ = 'v0.2.0.1'
+__version__ = 'v0.2.1.0'
 
 
 def adjacent(fr, to):
@@ -11,36 +10,33 @@ def adjacent(fr, to):
 
 
 def roll(die_string, crit=False):
-    separator_index = die_string.index('d')
-    num_die = int(die_string[:separator_index])
-    type_die = die_string[separator_index + 1:]
+    num_die, sides, mod = decompile_dmg_die(die_string)
     if crit:
         num_die *= 2
-        die_string = str(num_die) + die_string[separator_index:]
+    roll_result = sum([random.randint(1, sides) for i in range(num_die)]) + mod
+    return 1 if roll_result < 1 else roll_result
+
+
+def decompile_dmg_die(die_string):
+    separator_index = die_string.index('d')
+    num_die = int(die_string[:separator_index])
+    sides = die_string[separator_index + 1:]
     modifier = 0
     modifier_index = -1
-    if '-' in type_die:
-        modifier_index = type_die.index('-')
-    elif '+' in type_die:
-        modifier_index = type_die.index('+')
+    if '-' in sides:
+        modifier_index = sides.index('-')
+    elif '+' in sides:
+        modifier_index = sides.index('+')
     if not modifier_index == -1:
-        modifier = int(type_die[modifier_index:])
-        type_die = int(type_die[:modifier_index])
+        modifier = int(sides[modifier_index:])
+        sides = int(sides[:modifier_index])
     else:
-        type_die = int(type_die)
-    roll_result = 0
-    result_string = ''
-    for i in range(num_die):
-        cast = random.randint(1, type_die)
-        result_string += str(cast) + '+'
-        roll_result += cast
-    roll_result += modifier
-    result_string = result_string[:-1]
-    if roll_result < 1:
-        roll_result = 1
-    if modifier < 0:
-        result_string += str(modifier)
-    elif modifier > 0:
-        result_string += '+' + str(modifier)
-    # logging.debug('rolling {}: {} = {}'.format(die_string, result_string, roll_result))
-    return roll_result
+        sides = int(sides)
+    return num_die, sides, modifier
+
+
+def compile_dmg_die(num_die, sides, modifier):
+    die_string = '{}d{}'.format(num_die, sides)
+    if modifier != 0:
+        die_string += '{:+d}'.format(modifier)
+    return die_string

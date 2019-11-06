@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import json
+from json import loads
 import logging
-import os
+from os import path
 import random
 from pygame import sprite
 from rogue import roll, adjacent
@@ -16,9 +16,9 @@ class Menagerie(object):
 
     def __init__(self, game, num):
         self.game = game
-        basedir = os.path.dirname(os.path.abspath(__file__))
-        with open(os.path.join(basedir, 'monster_templates.json')) as f:
-            monster_templates = json.loads(f.read())
+        basedir = path.dirname(path.abspath(__file__))
+        with open(path.join(basedir, 'monster_templates.json')) as f:
+            monster_templates = loads(f.read())
         for i in range(num):
             Monster(self.game, random.choice(monster_templates),
                     (self.monsterList, game.interface.objects_on_map,
