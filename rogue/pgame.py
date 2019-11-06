@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+Contains various helper classes to simplify usage of pygame.
 
+Attributes:
+    tile_size (int): square size as taken from source .png for tiles
+"""
+
+import logging
 import os
 import sys
 import pygame
@@ -9,11 +16,25 @@ tile_size = 32
 
 
 class PygameHelper(object):
+    """ Main bridge between the game and pygame library.
+
+    Attributes:
+        screen (pygame.display): main Surface to draw on
+        font (pygame.font.Font): main font for displaying game text
+        colors (dict): dictionary of color names to RGB tuples (0..255)
+        dimensions (tuple): width & height of game map in cells (not pixels)
+        tileset (list): list of Subsurfaces with tiles from .png image
+        objects_on_map: group of Sprites having (x, y) coordinates on map
+        visible_objects: group of Sprites that will be rendered
+        units: list of Unit instances that have (x, y) coordinates on map
+        highlight (pygame.Surface): color highlight to mark visible tiles
+
+    """
+
     screen = None
     font = None
     colors = {}
     dimensions = ()
-    resolution = ()
     tileset = []
     objects_on_map = pygame.sprite.LayeredUpdates()
     visible_objects = pygame.sprite.LayeredUpdates()
@@ -47,31 +68,71 @@ class PygameHelper(object):
         self.highlight = pygame.Surface((32, 32), flags=pygame.SRCALPHA)
         self.highlight.fill((128, 128, 64, 32))
 
-    def print_at(self, x, y, item, color=(255, 255, 255)):
+    def print_at(self,
+                 x: int,
+                 y: int,
+                 item: str or pygame.Surface,
+                 color: tuple = (255, 255, 255)):
+        """ Blits item onto main screen surface.
+
+        Args:
+            x: map coord x where to put the item
+            y: map coord y where to put the item
+            item: text to render or existing Surface
+            color: color of the text
+
+        """
         if type(item) == str:
             item = self.font.render(item, True, color, self.colors['BLACK'])
         self.screen.blit(item, (x * tile_size, y * tile_size))
 
-    def show_objects(self):
+    def show_objects(self) -> None:
+        """ Will blit all items from appropriate Sprite list onto the main
+        surface.
+
+        """
         container = self.visible_objects
         if 'debug' in sys.argv:
             container = self.objects_on_map
         container.draw(self.screen)
 
-    def unit_at(self, where):
+    def unit_at(self, where: tuple) -> pygame.sprite.Sprite or None:
+        """ Loops through Units to find which is at supplied coordinates.
+        Used for checking if space is occupied.
+
+        Args:
+            where: tuple of (x, y) with map coordinates
+
+        Returns:
+            First Unit (monster or player) at coordinates.
+
+        """
         for unit in self.units:
             if unit.pos == where:
                 return unit
         return None
 
-    def refresh(self):
+    def refresh(self) -> None:
+        """ Calls pygame display update and then resets visible_objects group.
+
+        """
         pygame.display.update()
         self.visible_objects.empty()
 
     def close(self):
+        """ Calls pygame cleanup & quit routine.
+
+        """
         pygame.quit()
 
-    def wait(self, character=None):
+    def wait(self, character: pygame.key = None) -> pygame.key or bool:
+        """ Freezes the game until a key is pressed.
+
+        Args:
+            character: (optional) wait only for this character
+        Returns:
+            key if no character was specified, True if expected key was pressed
+        """
         pygame.event.clear()
         while True:
             event = pygame.event.wait()
@@ -85,6 +146,11 @@ class PygameHelper(object):
                     return event.key
 
     def load_tile_file(self, filename):
+        """
+        Creates a list of Subsurfaces from single image with tiles.
+        Args:
+            filename: name of image with tiles
+        """
         image = pygame.image.load(filename).convert_alpha()
         image_width, image_height = image.get_size()
         for tile_y in range(int(image_height / tile_size)):
@@ -95,30 +161,39 @@ class PygameHelper(object):
                 self.tileset.append(image.subsurface(rect))
 
 
-class PygameWindow(object):
-    window = None
+class PygameWindow(pygame.Surface):
+    """ Subwindow closable with 'q' key for short messages etc.
+
+    Attributes:
+        engine (PygameHelper): reference to invoking pygame helper object
+        left (int): x position on main pygame screen Surface
+        top (int): y position on main pygame screen Surface
+
+    """
     engine = None
     left = 0
     top = 0
-    width = 0
-    height = 0
 
     def __init__(self, pgame, left=2, top=2, width=10, height=3,
                  title='Window title', title_color=(255, 255, 255),
                  bg_color=(0, 0, 0), border=True):
+        super().__init__((width * tile_size, height * tile_size))
         self.engine = pgame
         self.left = left * tile_size
         self.top = top * tile_size
-        self.width = width * tile_size
-        self.height = height * tile_size
-        self.window = pygame.Surface((self.width, self.height))
-        self.window.fill(bg_color)
+        self.fill(bg_color)
         self.print_at(1, 0, title, title_color)
         if border:
-            pygame.draw.rect(self.window, title_color, self.window.get_rect(), 1)
+            pygame.draw.rect(self, title_color, self.get_rect(), 1)
 
-    def loop(self, until=pygame.K_UNKNOWN):
-        self.engine.screen.blit(self.window, (self.left, self.top))
+    def loop(self, until: pygame.key = pygame.K_UNKNOWN):
+        """ Will freeze game until a certain key is pressed
+
+        Args:
+            until: break only if this key is pressed
+
+        """
+        self.engine.screen.blit(self, (self.left, self.top))
         self.engine.refresh()
         while True:
             event = pygame.event.wait()
@@ -126,24 +201,39 @@ class PygameWindow(object):
                 if event.key == until:
                     break
 
-    def print_at(self, x, y, item, color=(255, 255, 255)):
+    def print_at(self,
+                 x: int,
+                 y: int,
+                 item: str or pygame.Surface,
+                 color: tuple = (255, 255, 255)):
+        """ Blits text or image inside own coordinate space.
+
+        Args:
+            x: map coord x where to put the item
+            y: map coord y where to put the item
+            item: text to render or existing Surface
+            color: color of the text
+        """
         if type(item) == str:
             item = self.engine.font.render(item, True, color,
                                            self.engine.colors['BLACK'])
-        self.window.blit(item, (x * tile_size, y * tile_size))
+        self.blit(item, (x * tile_size, y * tile_size))
 
     def close(self):
-        del self.window
+        del self
 
 
-class MapImage(object):
-    surf = None
+class MapImage(pygame.Surface):
+    """ Image for the known (discovered cells) map.
 
+    This will grow having new cells added in the "look around" routine.
+
+    """
     def __init__(self, w, h):
-        self.surf = pygame.Surface((w * tile_size, h * tile_size))
+        super().__init__((w * tile_size, h * tile_size))
 
     def add(self, tile, coords):
-        self.surf.blit(tile, (coords[0] * tile_size, coords[1] * tile_size))
+        self.blit(tile, (coords[0] * tile_size, coords[1] * tile_size))
 
     def show(self, screen_surface):
-        screen_surface.blit(self.surf, (0, 0))
+        screen_surface.blit(self, (0, 0))
