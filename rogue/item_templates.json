@@ -7,7 +7,7 @@
         "material": "wooden 0.8 0.5",
         "base_weight": 1.0,
         "base_value": 10.0,
-        "icon_ids": "63 2304 63",
+        "icon_ids": "1825 2304 1825",
         "slot": "hand",
         "quality": 0,
         "ench_lvl": 0,
@@ -25,11 +25,24 @@
         "material": "leather 0.2 0.3",
         "base_weight": 10.0,
         "base_value": 100.0,
-        "icon_ids": "63 2100 63",
+        "icon_ids": "1407 2100 1407, 64 2674 64",
         "slot": "chest",
         "quality": 0,
         "ench_lvl": 0,
         "armor_class_modifier": 2
+      }
+    ],
+    "feet": [
+      {
+        "name": "boots",
+        "material": "leather 0.2 0.3",
+        "base_weight": 10.0,
+        "base_value": 100.0,
+        "icon_ids": "1340 2186 1340",
+        "slot": "chest",
+        "quality": 0,
+        "ench_lvl": 0,
+        "armor_class_modifier": 1
       }
     ]
   }

@@ -16,6 +16,7 @@ class Menagerie(object):
 
     def __init__(self, game, num):
         self.game = game
+        self.log = logging.getLogger(__name__)
         basedir = path.dirname(path.abspath(__file__))
         with open(path.join(basedir, 'monster_templates.json')) as f:
             monster_templates = loads(f.read())
@@ -29,8 +30,7 @@ class Menagerie(object):
             if monster.is_in_range(target.pos):
                 # if monster.senses_or_reacts_in_some_way_to(target)
                 if adjacent(monster.pos, target.pos):
-                    logging.debug('{} is in melee range - attacking {}'.format(
-                        monster.name, target.name))
+                    self.log.debug('{} is in melee range - attacking {}'.format(monster.name, target.name))
                     monster.path = None
                     monster.attack(target)
                 else:
@@ -38,16 +38,16 @@ class Menagerie(object):
 
 
 class Monster(rogue.unit.Unit):
-    path = None
-
     def __init__(self, game, template, groups):
         super().__init__(template['name'], game, template['tile'], 5,
                          template['to_hit'], template['dmg_die'],
                          template['ac'], roll(template['hit_die']))
+        self.path = None
+        self.log = logging.getLogger(__name__)
         if 'wields' in template:
             self.image.blit(game.interface.tileset[template['wields']], (-2, 6))
         self.add(groups)
-        logging.debug('Created monster {} at {},{}'.format(
+        self.log.debug('Created monster {} at {},{}'.format(
             self.name, self.pos[0], self.pos[1]))
 
     def is_in_range(self, target_position):

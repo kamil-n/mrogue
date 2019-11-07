@@ -12,12 +12,8 @@ max_room_size = (12, 6)
 
 
 class Room(object):
-    width = 0
-    height = 0
-    x = 0
-    y = 0
-
     def __init__(self, dungeon, num):
+        self.log = logging.getLogger(__name__)
         while True:
             self.width = random.randint(min_room_size[0], max_room_size[0])
             self.height = random.randint(min_room_size[1], max_room_size[1])
@@ -30,7 +26,7 @@ class Room(object):
                 break
         self.num = num
         self.connected = []
-        logging.debug('Created room %d (w%d h%d) ( %d,%d - %d,%d )' % (
+        self.log.debug('Created room %d (w%d h%d) ( %d,%d - %d,%d )' % (
             num, self.width, self.height, self.x, self.y,
             self.x + self.width, self.y + self.height))
         for i in range(self.x, self.x + self.width):
@@ -51,24 +47,20 @@ class Room(object):
 
 class RogueMap(object):
     game = None
-    mapArray = []
-    rooms = []
-    mapDim = (0, 0)
-    map_image = None
     mapTop = 1
-    min_rooms = 1
-    max_rooms = 1
-    tiles = {}
 
     def __init__(self, game):
+        self.rooms = []
+        self.mapArray = []
         self.mapDim = (game.interface.dimensions[0],
                        game.interface.dimensions[1] - 1)
         self.map_image = MapImage(self.mapDim[0], self.mapDim[1])
         self.game = game
+        self.log = logging.getLogger(__name__)
         self.min_rooms = 5
         self.max_rooms = int(self.mapDim[0] / max_room_size[0] *
                              self.mapDim[1] / max_room_size[1]) - self.min_rooms
-        logging.debug('self.max_rooms is {}'.format(self.max_rooms))
+        self.log.debug('self.max_rooms is {}'.format(self.max_rooms))
         self.tiles = {
             'wall': self.game.interface.tileset[854],
             'floor': self.game.interface.tileset[861]}
@@ -85,7 +77,7 @@ class RogueMap(object):
             ] for y in range(self.mapDim[1])]
         num_rooms = random.randint(self.min_rooms, self.max_rooms)
         self.rooms = [Room(self, i) for i in range(num_rooms)]
-        logging.info('Trying with ' + str(len(self.rooms)) + ' rooms...')
+        self.log.info('Trying with ' + str(len(self.rooms)) + ' rooms...')
         self.connect_rooms()
         self.check_connections()
 
@@ -101,7 +93,7 @@ class RogueMap(object):
             self.dig_tunnel(x1, y1, x2, y2)
             first.connected.append(second.num)
             second.connected.append(first.num)
-            logging.debug('Connected rooms %d and %d' % (first.num, second.num))
+            self.log.debug('Connected rooms %d and %d' % (first.num, second.num))
 
     def get_nearest_room(self, source, room_list):
         vectors = [(abs(source.x - r.x), abs(source.y - r.y), r.num) for r in
@@ -128,7 +120,7 @@ class RogueMap(object):
             self.collect_connected_rooms(room, temp_set)
             if temp_set not in room_groups:
                 room_groups.append(temp_set)
-        logging.info('Number of room groups: %d.' % len(room_groups))
+        self.log.info('Number of room groups: %d.' % len(room_groups))
         if len(room_groups) > 1:
             matching = []
             for num, thisGroup in enumerate(room_groups):
@@ -149,11 +141,11 @@ class RogueMap(object):
                     group_candidates.append((candidate, dist, group, source))
                 result, distance, group, source = min(group_candidates,
                                                       key=lambda v: v[1])
-                logging.debug('connection between room %2d - group %d and %d - '
-                              'is room %2d with distance %d.'
-                              % (source, num, group, result.num, distance))
+                self.log.debug(
+                    'connection between room %2d - group %d and %d - is room %2d with distance %d.'
+                    % (source, num, group, result.num, distance))
                 matching.append(({num, group}, {source, result.num}, distance))
-            logging.debug(matching)
+            self.log.debug(matching)
             dungeon = []
             for groupPair, roomPair, distance in matching:
                 if groupPair not in [pair[0] for pair in dungeon]:
@@ -165,7 +157,7 @@ class RogueMap(object):
                         dungeon[dungeon.index(stored)] = (groupPair,
                                                           roomPair,
                                                           distance)
-            logging.debug('Number of necessary connections: %d.' % len(dungeon))
+            self.log.debug('Number of necessary connections: %d.' % len(dungeon))
             for room1, room2 in [tup[1] for tup in dungeon]:
                 first = self.rooms[room1]
                 second = self.rooms[room2]
@@ -218,7 +210,7 @@ class RogueMap(object):
 
     def movement(self, unit, check):
         if not adjacent(unit.pos, check):
-            logging.warning('{} tried to move more than 1 cell!'.format(unit.name))
+            self.log.warning('{} tried to move more than 1 cell!'.format(unit.name))
             return
         if self.mapArray[check[1]][check[0]]['blockMove']:
             self.game.messenger.add('{} runs into the wall.'.format(unit.name))
@@ -226,7 +218,7 @@ class RogueMap(object):
         target = self.game.interface.unit_at(check)
         if target:
             if unit.name == 'Player' and unit != target:
-                logging.debug('{} engaged {}.'.format(unit.name, target.name))
+                self.log.debug('{} engaged {}.'.format(unit.name, target.name))
                 unit.attack(target)
                 return
         else:
@@ -324,6 +316,7 @@ class RogueMap(object):
 
 class Pathfinder(object):
     def __init__(self, level, start):
+        self.log = logging.getLogger(__name__)
         self.frontier = PriorityQueue()
         self.came_from = {}
         self.cost_so_far = {}
@@ -363,5 +356,5 @@ class Pathfinder(object):
             path.append(current)
             current = self.came_from[current]
         path.reverse()
-        logging.debug('Pathfinder {} -> {}: {}'.format(start, goal, path))
+        self.log.debug('Pathfinder {} -> {}: {}'.format(start, goal, path))
         return path

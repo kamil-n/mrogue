@@ -2,8 +2,8 @@
 - [ ] clean up code up to this point
 - [ ] items
   - [ ] equipment
-    - [ ] items contribute to stats
-    - [ ] can be un/equipped
+    - [x] items contribute to stats
+    - [x] can be un/equipped
     - [ ] interface for equipment
   - [ ] inventory
     - [ ] can drop/pick up items

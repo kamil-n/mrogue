@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import os
 import sys
 import pygame
 from rogue import __version__
@@ -13,38 +12,39 @@ from rogue.monster import Menagerie
 from rogue.player import Player
 
 
+def direction_from(key, x, y):
+    if key in (49, 52, 55) or key in (257, 260, 263) or key == 276:
+        x -= 1
+    elif key in (51, 54, 57) or key in (259, 262, 265) or key == 275:
+        x += 1
+    if key in (55, 56, 57) or key in (263, 264, 265) or key == 273:
+        y -= 1
+    elif key in (49, 50, 51) or key in (257, 258, 259) or key == 274:
+        y += 1
+    return x, y
+
+
 class Rogue(object):
     turn = 0
-    interface = None
-    level = None
-    items = None
-    player = None
-    monsters = None
-    messenger = None
 
     def __init__(self):
-        if os.path.isfile('rogue.log'):
-            os.remove('rogue.log')
-        logging.basicConfig(filename='rogue.log', level=logging.DEBUG)
-        logging.info('Welcome to Rogue {}!\n======== Game start. ========'.format(
-            __version__))
+        logging.basicConfig(filename='rogue.log', level=logging.DEBUG, filemode='w',
+                            format='%(name)s - %(levelname)s - %(message)s')
+        self.log = logging.getLogger(__name__)
+        self.log.info('Welcome to Rogue {}!'.format(__version__))
         self.interface = PygameHelper()
         self.level = RogueMap(self)
-        self.items = ItemManager(self, 1)
+        self.items = ItemManager(self)
         self.player = Player(self)
         self.monsters = Menagerie(self, 10)
         self.messenger = Messenger(self)
-        self.messenger.add(
-            'Kill all monsters. Move with arrow keys or numpad. Press q to exit.')
-        #BONUS
-        self.player.add_item(self.items.item_templates['weapons']['maces'][0])
-        self.player.add_item(self.items.item_templates['armor']['chest'][0])
+        self.messenger.add('Kill all monsters. Move with arrow keys or numpad. Press q to exit.')
 
     def mainloop(self):
         key = pygame.K_UNKNOWN
         while key != pygame.K_q:
             self.turn += 1
-            logging.info('== Turn %d. ==' % self.turn)
+            self.log.info('== Turn %d. ==' % self.turn)
             self.monsters.handle_monsters(self.player)
             self.interface.objects_on_map.update()  # TODO: refactor
             self.level.look_around()
@@ -52,6 +52,7 @@ class Rogue(object):
             self.interface.show_objects()
             self.player.show_stats()
             self.messenger.show()
+            self.interface.refresh()
             if len(self.monsters.monsterList) == 0:
                 win = PygameWindow(self.interface, title='Congratulations!',
                                    left=self.interface.dimensions[0] // 2 - 5,
@@ -85,34 +86,12 @@ class Rogue(object):
                 self.items.show_inventory()
             elif key == pygame.K_u:
                 self.items.show_equipment()
-            # movement:
-            elif key in range(257, 266 + 1):
-                x, y = self.player.pos
-                if key in (257, 260, 263):
-                    x -= 1
-                elif key in (259, 262, 265):
-                    x += 1
-                if key > 262:
-                    y -= 1
-                elif key < 260:
-                    y += 1
-                self.level.movement(self.player, (x, y))
-            elif key in (
-                    pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN):
-                x, y = self.player.pos
-                if key == pygame.K_LEFT:
-                    x -= 1
-                elif key == pygame.K_RIGHT:
-                    x += 1
-                elif key == pygame.K_UP:
-                    y -= 1
-                elif key == pygame.K_DOWN:
-                    y += 1
-                self.level.movement(self.player, (x, y))
+            elif key in range(257, 266 + 1) or key in range(49, 57 + 1) or key in range(273, 276 + 1):
+                self.level.movement(self.player, direction_from(key, *self.player.pos))
             elif key == pygame.K_q:
-                logging.info('Game exit on Q press.')
+                self.log.info('Game exit on Q press.')
             else:
-                logging.warning('Key \'%d\' not supported.' % key)
+                self.log.warning('Key \'%d\' not supported.' % key)
                 self.messenger.add('Unknown command: %s.' % key)
 
 
@@ -120,11 +99,9 @@ if __name__ == '__main__':
     rogue = Rogue()
     try:
         rogue.mainloop()
-    except Exception:  # TODO: jakie konkretnie mogą to być wyjątki
-        print('ERROR')
-        logging.error(sys.exc_info()[1])
+    except Exception:
+        rogue.log.exception(sys.exc_info()[1])
         rogue.interface.close()
-        print(sys.exc_info()[1])
         raise
     else:
         rogue.interface.close()

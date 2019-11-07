@@ -42,31 +42,31 @@ enchantment_levels = {
 
 
 class ItemManager(object):
-    game = None
     loot = pygame.sprite.Group()
     templates = pygame.sprite.Group()
     item_templates = {}
 
-    def __init__(self, game, num):
+    def __init__(self, game):
         self.game = game
+        self.log = logging.getLogger(__name__)
         basedir = path.dirname(path.abspath(__file__))
         with open(path.join(basedir, 'item_templates.json')) as f:
             templates_file = loads(f.read())
         for category, category_dict in templates_file.items():
             self.item_templates[category] = {}
-            for type, type_list in category_dict.items():
-                self.item_templates[category][type] = []
+            for subtype, type_list in category_dict.items():
+                self.item_templates[category][subtype] = []
                 for item in type_list:
                     new_item = None
                     if category == 'weapons':
                         new_item = Weapon(self.game, item, self.templates)
                     elif category == 'armor':
                         new_item = Armor(self.game, item, self.templates)
-                    self.item_templates[category][type].append(new_item)
+                    self.item_templates[category][subtype].append(new_item)
 
     def show_inventory(self):
         window = PygameWindow(self.game.interface, 4, 4, 20, 3 + len(self.game.player.inventory), 'Inventory')
-        window.print_at(2, 1, 'Press a letter or Esc to close:')
+        window.print_at(2, 1, 'Select an item to equip or Esc to close:')
         for i, item in enumerate(self.game.player.inventory):
             window.print_at(1, 3 + i, item.icon['inv'])
             summary = '{}) {} ('.format(chr(i+97), item.full_name)
@@ -87,22 +87,20 @@ class ItemManager(object):
                 if event.key == 27:
                     break
                 elif event.key in range(97, last_letter + 1):
-                    logging.debug('Selected valid key {} from a-{}'.format(chr(event.key), chr(last_letter)))
+                    self.log.debug('Selected valid key {} from a-{}'.format(chr(event.key), chr(last_letter)))
                     self.game.player.equip(list(self.game.player.inventory)[event.key-97])
                     break
                 else:
-                    logging.debug('Selected wrong key {} ({}?)'.format(event.key, chr(event.key)))
+                    self.log.debug('Selected wrong key {} ({}?)'.format(event.key, chr(event.key)))
 
     def show_equipment(self):
-        window = PygameWindow(self.game.interface, 4, 4, 20,
-                              3 + len(self.game.player.equipped), 'Equipped items')
-        window.print_at(2, 1, 'Press a letter or Esc to close:')
+        window = PygameWindow(self.game.interface, 4, 4, 21, 3 + len(self.game.player.equipped), 'Equipped items')
+        window.print_at(2, 1, 'Select an item to unequip or Esc to close:')
         for i, item in enumerate(self.game.player.equipped):
             window.print_at(1, 3 + i, item.icon['inv'])
             summary = '{}) {} ('.format(chr(i + 97), item.full_name)
             if item.type == Weapon:
-                summary += '{:+d}/{})'.format(item.to_hit_modifier,
-                                              item.damage_string)
+                summary += '{:+d}/{})'.format(item.to_hit_modifier, item.damage_string)
             elif item.type == Armor:
                 summary += '{:+d})'.format(item.armor_class_modifier)
             window.print_at(2, 3 + i, summary)
@@ -118,11 +116,11 @@ class ItemManager(object):
                 if event.key == 27:
                     break
                 elif event.key in range(97, last_letter + 1):
-                    logging.debug('Selected valid key {} from a-{}'.format(chr(event.key), chr(last_letter)))
+                    self.log.debug('Selected valid key {} from a-{}'.format(chr(event.key), chr(last_letter)))
                     self.game.player.unequip(list(self.game.player.equipped)[event.key - 97])
                     break
                 else:
-                    logging.debug('Selected wrong key {} ({}?)'.format(event.key, chr(event.key)))
+                    self.log.debug('Selected wrong key {} ({}?)'.format(event.key, chr(event.key)))
 
 
 class Item(pygame.sprite.Sprite):
@@ -144,8 +142,8 @@ class Item(pygame.sprite.Sprite):
         self.icon_id_world, self.icon_id_equipped, self.icon_id_inv = icon_ids
         self.icon = {
             'world': parent.game.interface.tileset[icon_ids[0]].copy(),
-            'equip': parent.game.interface.tileset[icon_ids[1]].copy(),
-            'inv': parent.game.interface.tileset[icon_ids[2]].copy() }
+            'equip': [parent.game.interface.tileset[i].copy() for i in icon_ids[1]],
+            'inv': parent.game.interface.tileset[icon_ids[2]].copy()}
         self.slot = slot
         self.quality = int(quality)
         self.enchantment_level = int(ench_lvl)
@@ -161,6 +159,7 @@ class Weapon(Item):
 
     def __init__(self, game, template, groups, randomize=False):
         self.game = game
+        self.log = logging.getLogger(__name__)
         value = template['base_value']
         quality = template['quality']
         ench_lvl = template['ench_lvl']
@@ -168,12 +167,15 @@ class Weapon(Item):
             quality = random.choice(list(quality_levels))
             ench_lvl = random.choice(list(enchantment_levels))
             value = value * (1 + 0.4 * quality) * (1 + 0.8 * ench_lvl)
+        icon_triplet_list = template['icon_ids'].split(', ')
         super().__init__(self,
                          template['name'],
                          template['material'],
                          template['base_weight'],
                          value,
-                         tuple(int(id) for id in template['icon_ids'].split()),
+                         (int(icon_triplet_list[0].split()[0]),
+                          [int(icon_set.split()[1]) for icon_set in icon_triplet_list],
+                          int(icon_triplet_list[0].split()[2])),
                          template['slot'],
                          quality,
                          ench_lvl)
@@ -182,7 +184,7 @@ class Weapon(Item):
         num, sides, mod = decompile_dmg_die(template['damage_string'])
         self.damage_string = compile_dmg_die(num, sides, mod + ench_lvl)
         self.add(groups)
-        logging.debug('Created item {}'.format(self.full_name))
+        self.log.debug('Created item {}'.format(self.full_name))
 
 
 class Armor(Item):
@@ -190,6 +192,7 @@ class Armor(Item):
 
     def __init__(self, game, template, groups, randomize=False):
         self.game = game
+        self.log = logging.getLogger(__name__)
         value = template['base_value']
         quality = template['quality']
         ench_lvl = template['ench_lvl']
@@ -197,16 +200,18 @@ class Armor(Item):
             quality = random.choice(list(quality_levels))
             ench_lvl = random.choice(list(enchantment_levels))
             value = value * (1 + 0.4 * quality) * (1 + 0.8 * ench_lvl)
+        icon_triplet_list = template['icon_ids'].split(', ')
         super().__init__(self,
                          template['name'],
                          template['material'],
                          template['base_weight'],
                          value,
-                         tuple(int(id) for id in template['icon_ids'].split()),
+                         (int(icon_triplet_list[0].split()[0]),
+                          [int(icon_set.split()[1]) for icon_set in icon_triplet_list],
+                          int(icon_triplet_list[0].split()[2])),
                          template['slot'],
                          quality,
                          ench_lvl)
-        self.armor_class_modifier = template['armor_class_modifier'] + quality +\
-                                    ench_lvl * 3
+        self.armor_class_modifier = template['armor_class_modifier'] + quality + ench_lvl * 3
         self.add(groups)
-        logging.debug('Created item {}'.format(self.full_name))
+        self.log.debug('Created item {}'.format(self.full_name))
