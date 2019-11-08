@@ -37,9 +37,8 @@ class Unit(sprite.Sprite):
         item.add(self.inventory)
         self.log.debug('{} received {}.'.format(self.name, item.full_name))
 
-    def equip(self, item: Weapon or Armor):
+    def equip(self, item: Weapon or Armor, quiet=False):
         item.add(self.equipped)
-
         if item.type == Weapon:
             self.to_hit += item.to_hit_modifier
             self.damage_dice = item.damage_string
@@ -49,10 +48,11 @@ class Unit(sprite.Sprite):
             self.image.blit(icon, (0, 0))
         msg = '{} equipped {}.'.format(self.name, item.full_name)
         item.remove(self.inventory)
-        self.game.messenger.add(msg)
+        if not quiet:
+            self.game.messenger.add(msg)
         self.log.debug(msg)
 
-    def unequip(self, item: Weapon or Armor):
+    def unequip(self, item: Weapon or Armor, quiet=False):
         item.add(self.inventory)
         if item.type == Weapon:
             self.to_hit -= item.to_hit_modifier  # TODO: should recalculate
@@ -65,7 +65,8 @@ class Unit(sprite.Sprite):
         for item in self.equipped:
             for icon in item.icon['equip']:
                 self.image.blit(icon, (0, 0))
-        self.game.messenger.add(msg)
+        if not quiet:
+            self.game.messenger.add(msg)
         self.log.debug(msg)
 
     def drop_item(self, item: Item):

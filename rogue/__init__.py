@@ -17,6 +17,33 @@ def roll(die_string, crit=False):
     return 1 if roll_result < 1 else roll_result
 
 
+def test_gauss(left, right, deviation, iterations):
+    """ This should be ran before any new limits for roll_gaussian are
+    introduced to tweak the standard deviation. Optimal deviations:
+    1-3: 0.8
+    1-5: 1.0
+    1-7: 1.2
+    etc. """
+    offset = 0 - left
+    results = [0 for i in range(right - left + 1)]
+    for i in range(iterations):
+        num = roll_gaussian(left, right, deviation)
+        # num = roll_triangular(left, right)
+        results[num + offset] += 1
+    print('gauss for {}-{} is:.'.format(left, right))
+    for i in range(len(results)):
+        print('{}: {}'.format(i + (-1 * offset), results[i]))
+
+
+def roll_gaussian(left, right, deviation=1.0):
+    return min(right, max(left, round(random.gauss((right - left) // 2 + 1,
+                                                   deviation))))
+
+
+def roll_triangular(left, right):
+    return round(random.triangular(left, right))
+
+
 def decompile_dmg_die(die_string):
     separator_index = die_string.index('d')
     num_die = int(die_string[:separator_index])

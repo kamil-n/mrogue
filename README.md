@@ -9,7 +9,7 @@
     - [ ] can drop/pick up items
     - [ ] interface for inventory
   - [ ] random items on the ground
-  - [ ] defeated enemies drop eqiuipment
+  - [ ] defeated enemies drop equipment
 - [ ] add more dungeon levels
   - [ ] introduce way to regen life
   - [ ] add more monsters that scale with dungeon depth

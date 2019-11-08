@@ -11,7 +11,7 @@ from json import loads
 from os import path
 import pygame
 import random
-from rogue import decompile_dmg_die, compile_dmg_die
+from rogue import decompile_dmg_die, compile_dmg_die, roll_gaussian
 from rogue.pgame import PygameWindow
 
 slots = {
@@ -31,7 +31,7 @@ quality_levels = {
     -1: 'flimsy',
     0: '',
     1: 'masterwork',
-    2: 'extraordinary'
+    2: 'unique'
 }
 
 enchantment_levels = {
@@ -39,6 +39,43 @@ enchantment_levels = {
     0: '',
     1: 'blessed'
 }
+
+materials = {
+    'weapons': [
+        'wooden 0.7 0.5',
+        'bone 0.8 0.6',
+        'copper 0.8 0.6',
+        'bronze 0.8 0.8',
+        'iron 1.0 1.0',
+        'steel 1.0 1.25',
+        'silver 0.8 2.0',
+        'alloy 0.9 3.0'
+    ],
+    'armor': [
+        'cloth 0.1 0.1',
+        'fur 0.2 0.2',
+        'leather 0.2 0.3',
+        'hide 0.3 0.4',
+        'copper 0.8 0.6',
+        'bronze 0.8 0.8',
+        'iron 1.0 1.0',
+        'steel 1.0 1.25',
+        'silver 0.8 2.0',
+        'alloy 0.9 3.0'
+    ]
+}
+
+
+def get_random_template(data) -> (dict, type):
+    while type(data) != list:
+        key, data = random.choice(list(data.items()))
+    template = random.choice(data)
+    guess_type = Item
+    if 'damage_string' in template:
+        guess_type = Weapon
+    elif 'armor_class_modifier' in template:
+        guess_type = Armor
+    return template, guess_type
 
 
 class ItemManager(object):
@@ -63,6 +100,15 @@ class ItemManager(object):
                     elif category == 'armor':
                         new_item = Armor(self.game, item, self.templates)
                     self.item_templates[category][subtype].append(new_item)
+        # create pre-set, default item
+        preset = self.item_templates['weapons']['maces'][0]
+        # create random mace
+        Weapon(self.game, get_random_template(templates_file['weapons']['maces'])[0], self.loot, True)
+        # create random piece of armor
+        Armor(self.game, get_random_template(templates_file['armor'])[0], self.loot, True)
+        # create random item
+        random_template, random_type = get_random_template(templates_file)
+        random_type(self.game, random_template, self.loot, True)
 
     def show_inventory(self):
         window = PygameWindow(self.game.interface, 4, 4, 20, 3 + len(self.game.player.inventory), 'Inventory')
@@ -124,9 +170,6 @@ class ItemManager(object):
 
 
 class Item(pygame.sprite.Sprite):
-    """ Generic item class to hold universal data and methods.
-
-    """
     def __init__(self, parent, name, material, base_weight, base_value,
                  icon_ids, slot, quality, ench_lvl):
         super().__init__()
@@ -152,6 +195,7 @@ class Item(pygame.sprite.Sprite):
             enchantment_levels[self.enchantment_level],
             self.material,
             name)).strip()
+        self.full_name = ' '.join(self.full_name.split())
 
 
 class Weapon(Item):
@@ -163,14 +207,16 @@ class Weapon(Item):
         value = template['base_value']
         quality = template['quality']
         ench_lvl = template['ench_lvl']
+        material = template['material']
         if randomize:
-            quality = random.choice(list(quality_levels))
-            ench_lvl = random.choice(list(enchantment_levels))
+            quality = roll_gaussian(1, 5, 1.15) - 3
+            ench_lvl = roll_gaussian(1, 3, 0.5) - 2
+            material = random.choice(materials['weapons'])
             value = value * (1 + 0.4 * quality) * (1 + 0.8 * ench_lvl)
         icon_triplet_list = template['icon_ids'].split(', ')
         super().__init__(self,
                          template['name'],
-                         template['material'],
+                         material,
                          template['base_weight'],
                          value,
                          (int(icon_triplet_list[0].split()[0]),
@@ -196,14 +242,16 @@ class Armor(Item):
         value = template['base_value']
         quality = template['quality']
         ench_lvl = template['ench_lvl']
+        material = template['material']
         if randomize:
-            quality = random.choice(list(quality_levels))
-            ench_lvl = random.choice(list(enchantment_levels))
+            quality = roll_gaussian(1, 5, 1.15) - 3
+            ench_lvl = roll_gaussian(1, 3, 0.5) - 2
+            material = random.choice(materials['armor'])
             value = value * (1 + 0.4 * quality) * (1 + 0.8 * ench_lvl)
         icon_triplet_list = template['icon_ids'].split(', ')
         super().__init__(self,
                          template['name'],
-                         template['material'],
+                         material,
                          template['base_weight'],
                          value,
                          (int(icon_triplet_list[0].split()[0]),

@@ -12,6 +12,8 @@ class Player(rogue.unit.Unit):
         self.add_item(game.items.item_templates['weapons']['maces'][0])
         self.add_item(game.items.item_templates['armor']['chest'][0])
         self.add_item(game.items.item_templates['armor']['feet'][0])
+        for item in self.inventory:
+            self.equip(item, quiet=True)
         self.add((game.interface.objects_on_map, game.interface.units))
 
     def show_stats(self):
