@@ -1,13 +1,16 @@
 ##### TODO list:
 - [ ] clean up code up to this point
+- [ ] fix map bug
 - [ ] items
   - [ ] equipment
     - [x] items contribute to stats
     - [x] can be un/equipped
-    - [ ] interface for equipment
+    - [x] interface for equipment
+      - [ ] refine it
+    - [ ] monsters use items
   - [ ] inventory
     - [ ] can drop/pick up items
-    - [ ] interface for inventory
+    - [x] interface for inventory
   - [ ] random items on the ground
   - [ ] defeated enemies drop equipment
 - [ ] add more dungeon levels

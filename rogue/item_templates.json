@@ -1,6 +1,62 @@
 {
   "weapons":
   {
+    "daggers": [
+      {
+        "name": "knife",
+        "material": "bronze 0.8 0.8",
+        "base_weight": 0.5,
+        "base_value": 20.0,
+        "icon_ids": "1809 2326 1809",
+        "slot": "hand",
+        "quality": 0,
+        "ench_lvl": 0,
+        "speed_modifier": 0.5,
+        "to_hit_modifier": 0,
+        "damage_string": "1d4"
+      },
+      {
+        "name": "dagger",
+        "material": "iron 1.0 1.0",
+        "base_weight": 0.7,
+        "base_value": 30.0,
+        "icon_ids": "1782 2452 1782",
+        "slot": "hand",
+        "quality": 0,
+        "ench_lvl": 0,
+        "speed_modifier": 0.5,
+        "to_hit_modifier": 0,
+        "damage_string": "1d4"
+      }
+    ],
+    "swords": [
+      {
+        "name": "shortsword",
+        "material": "iron 1.0 1.0",
+        "base_weight": 2.0,
+        "base_value": 5.0,
+        "icon_ids": "1834 2392 1834",
+        "slot": "hand",
+        "quality": 0,
+        "ench_lvl": 0,
+        "speed_modifier": 1.0,
+        "to_hit_modifier": 0,
+        "damage_string": "1d6"
+      },
+      {
+        "name": "longsword",
+        "material": "steel 1.0 1.25",
+        "base_weight": 3.5,
+        "base_value": 80.0,
+        "icon_ids": "1867 2451 1867",
+        "slot": "hand",
+        "quality": 0,
+        "ench_lvl": 0,
+        "speed_modifier": 1.2,
+        "to_hit_modifier": 0,
+        "damage_string": "1d8"
+      }
+    ],
     "maces": [
       {
         "name": "stick",
@@ -14,18 +70,94 @@
         "speed_modifier": 1.0,
         "to_hit_modifier": 0,
         "damage_string": "1d6"
+      },
+      {
+        "name": "mace",
+        "material": "iron 1.0 1.0",
+        "base_weight": 4.0,
+        "base_value": 60.0,
+        "icon_ids": "1814 2303 1814",
+        "slot": "hand",
+        "quality": 0,
+        "ench_lvl": 0,
+        "speed_modifier": 1.2,
+        "to_hit_modifier": 0,
+        "damage_string": "1d8"
+      }
+    ],
+    "axes": [
+      {
+        "name": "axe",
+        "material": "iron 1.0 1.0",
+        "base_weight": 3.0,
+        "base_value": 40,
+        "icon_ids": "1804 2290 1804",
+        "slot": "hand",
+        "quality": 0,
+        "ench_lvl": 0,
+        "speed_modifier": 1.0,
+        "to_hit_modifier": 0,
+        "damage_string": "1d6"
+      },
+      {
+        "name": "battleaxe",
+        "material": "steel 1.0 1.25",
+        "base_weight": 5.0,
+        "base_value": 80.0,
+        "icon_ids": "1772 2337 1772",
+        "slot": "hand",
+        "quality": 0,
+        "ench_lvl": 0,
+        "speed_modifier": 1.5,
+        "to_hit_modifier": 0,
+        "damage_string": "1d8"
       }
     ]
   },
   "armor":
   {
+    "head": [
+      {
+        "name": "cap",
+        "material": "leather 0.2 0.3",
+        "base_weight": 1.0,
+        "base_value": 25.0,
+        "icon_ids": "1447 2599 1447",
+        "slot": "head",
+        "quality": 0,
+        "ench_lvl": 0,
+        "armor_class_modifier": 1
+      },
+      {
+        "name": "helmet",
+        "material": "bronze 0.8 0.8",
+        "base_weight": 2.0,
+        "base_value": 65.0,
+        "icon_ids": "1449 2576 1449",
+        "slot": "head",
+        "quality": 0,
+        "ench_lvl": 0,
+        "armor_class_modifier": 2
+      }
+    ],
     "chest": [
+      {
+        "name": "tunic",
+        "material": "fur 0.2 0.2",
+        "base_weight": 5.0,
+        "base_value": 35.0,
+        "icon_ids": "1407 2132 1407",
+        "slot": "chest",
+        "quality": 0,
+        "ench_lvl": 0,
+        "armor_class_modifier": 1
+      },
       {
         "name": "breastplate",
         "material": "leather 0.2 0.3",
         "base_weight": 10.0,
         "base_value": 100.0,
-        "icon_ids": "1407 2100 1407, 64 2674 64",
+        "icon_ids": "1366 2100 1366, 64 2674 64",
         "slot": "chest",
         "quality": 0,
         "ench_lvl": 0,
@@ -34,12 +166,23 @@
     ],
     "feet": [
       {
+        "name": "shoes",
+        "material": "cloth 0.1 0.1",
+        "base_weight": 0.7,
+        "base_value": 8.0,
+        "icon_ids": "1393 2188 1393",
+        "slot": "feet",
+        "quality": 0,
+        "ench_lvl": 0,
+        "armor_class_modifier": 0
+      },
+      {
         "name": "boots",
         "material": "leather 0.2 0.3",
-        "base_weight": 10.0,
-        "base_value": 100.0,
-        "icon_ids": "1340 2186 1340",
-        "slot": "chest",
+        "base_weight": 2.0,
+        "base_value": 40.0,
+        "icon_ids": "1340 2191 1340",
+        "slot": "feet",
         "quality": 0,
         "ench_lvl": 0,
         "armor_class_modifier": 1

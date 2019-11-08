@@ -23,7 +23,7 @@ class Unit(sprite.Sprite):
         self.sight_range = sight_range
         self.base_to_hit = to_hit  # i.e. from Strength or size
         self.to_hit = self.base_to_hit
-        self.default_damage_dice = damage_dice  # inherent (unarmed / natural attacks)
+        self.default_damage_dice = damage_dice  # unarmed attacks
         self.damage_dice = self.default_damage_dice
         self.base_armor_class = armor_class  # i.e. from Dexterity or natural
         self.armor_class = self.base_armor_class
@@ -38,6 +38,9 @@ class Unit(sprite.Sprite):
         self.log.debug('{} received {}.'.format(self.name, item.full_name))
 
     def equip(self, item: Weapon or Armor, quiet=False):
+        for i in self.equipped:
+            if item.slot == i.slot:
+                self.unequip(i)
         item.add(self.equipped)
         if item.type == Weapon:
             self.to_hit += item.to_hit_modifier
@@ -83,20 +86,24 @@ class Unit(sprite.Sprite):
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
             if critical_hit:
                 self.log.debug('Critical hit.')
-                self.game.messenger.add('{} critically hits {}.'.format(uname, target.name))
+                self.game.messenger.add('{} critically hits {}.'.format(
+                    uname, target.name))
             else:
                 self.log.debug('Attack hit.')
-                self.game.messenger.add('{} hits {}.'.format(uname, target.name))
+                self.game.messenger.add('{} hits {}.'.format(
+                    uname, target.name))
             damage_roll = roll(self.damage_dice, critical_hit)
             self.log.debug('damage roll = %d' % damage_roll)
             target.take_damage(damage_roll)
         else:
             if critical_miss:
                 self.log.debug('Critical miss')
-                self.game.messenger.add('{} critically misses {}.'.format(uname, target.name))
+                self.game.messenger.add('{} critically misses {}.'.format(
+                    uname, target.name))
             else:
                 self.log.debug('Attack missed')
-                self.game.messenger.add('{} misses {}.'.format(uname, target.name))
+                self.game.messenger.add('{} misses {}.'.format(
+                    uname, target.name))
 
     def take_damage(self, damage):
         self.log.debug('{} is taking {} damage.'.format(
@@ -109,6 +116,7 @@ class Unit(sprite.Sprite):
 
     def die(self):
         self.log.info('{} dies. ({} hp)'.format(self.name, self.current_HP))
-        self.game.messenger.add('{} dies.'.format(str.upper(self.name[0]) + self.name[1:]))
-        if not (self.name == 'Player' and 'god' in argv):
+        self.game.messenger.add('{} dies.'.format(
+            str.upper(self.name[0]) + self.name[1:]))
+        if not (self.name == 'Player' and 'debug' in argv):
             self.kill()

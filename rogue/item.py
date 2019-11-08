@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Module to support items (equipment) implementation.
-Attributes:
-    slots (dict): list of (body) slots where an item can be equipped
 
 """
 
@@ -13,18 +11,6 @@ import pygame
 import random
 from rogue import decompile_dmg_die, compile_dmg_die, roll_gaussian
 from rogue.pgame import PygameWindow
-
-slots = {
-    # 'head': 1,
-    # 'neck': 1,
-    'torso': 1,
-    # 'waist': 1,
-    # 'wrist': 2,
-    'hand': 2,
-    # 'finger': 10,
-    # 'legs': 1,
-    # 'foot': 2
-}
 
 quality_levels = {
     -2: 'broken',
@@ -89,6 +75,7 @@ class ItemManager(object):
         basedir = path.dirname(path.abspath(__file__))
         with open(path.join(basedir, 'item_templates.json')) as f:
             templates_file = loads(f.read())
+        self.log.debug('Creating pre-set items from templates:')
         for category, category_dict in templates_file.items():
             self.item_templates[category] = {}
             for subtype, type_list in category_dict.items():
@@ -100,73 +87,120 @@ class ItemManager(object):
                     elif category == 'armor':
                         new_item = Armor(self.game, item, self.templates)
                     self.item_templates[category][subtype].append(new_item)
-        # create pre-set, default item
-        preset = self.item_templates['weapons']['maces'][0]
-        # create random mace
-        Weapon(self.game, get_random_template(templates_file['weapons']['maces'])[0], self.loot, True)
-        # create random piece of armor
-        Armor(self.game, get_random_template(templates_file['armor'])[0], self.loot, True)
-        # create random item
+        ''' create pre-set, default item
+        preset = self.item_templates['weapons']['maces'][0].copy()
+        create random mace
+        Weapon(self.game, get_random_template(templates_file[
+            'weapons']['maces'])[0], self.loot, True)
+        create random piece of armor
+        Armor(self.game, get_random_template(templates_file[
+            'armor'])[0], self.loot, True)
+        create random item
         random_template, random_type = get_random_template(templates_file)
-        random_type(self.game, random_template, self.loot, True)
+        random_type(self.game, random_template, self.loot, True) '''
 
     def show_inventory(self):
-        window = PygameWindow(self.game.interface, 4, 4, 20, 3 + len(self.game.player.inventory), 'Inventory')
-        window.print_at(2, 1, 'Select an item to equip or Esc to close:')
-        for i, item in enumerate(self.game.player.inventory):
-            window.print_at(1, 3 + i, item.icon['inv'])
-            summary = '{}) {} ('.format(chr(i+97), item.full_name)
-            if item.type == Weapon:
-                summary += '{:+d}/{})'.format(item.to_hit_modifier, item.damage_string)
-            elif item.type == Armor:
-                summary += '{:+d})'.format(item.armor_class_modifier)
-            window.print_at(2, 3 + i, summary)
-        self.game.interface.screen.blit(window, (window.left, window.top))
-        self.game.interface.refresh()
+        total_items = len(self.game.player.inventory)
+        item_limit = 14
+        window_height = 4 + total_items
+        if total_items > item_limit:
+            window_height = 4 + item_limit
+        last_letter = 96 + total_items
+        window = PygameWindow(self.game.interface, 4, 3, 32, window_height)
+        scroll = 0
+        inventory = dict(zip(range(len(self.game.player.inventory)),
+                             self.game.player.inventory))
         pygame.event.clear()
         while True:
+            window.clear()
+            window.print_at(1, 0, 'Inventory')
+            window.print_at(2, 1, 'Select an item to equip or Esc to close:')
+            window.print_at(3, 2, 'Name')
+            window.print_at(22, 2, 'Slot     Wt    Val')
+            if scroll > 0:
+                window.print_at(0, 3, '^')
+            for i in range(len(inventory)):
+                if i > item_limit - 1:
+                    break
+                j = i + scroll
+                window.print_at(1, 3 + i, inventory[j].icon['inv'])
+                summary = '{}) {:29.29}{}('.format(
+                    chr(j + 97),
+                    inventory[j].full_name,
+                    '\u2026' if len(inventory[j].full_name) > 29 else ' ')
+                if inventory[j].type == Weapon:
+                    summary += '{:+d}/{})'.format(
+                        inventory[j].to_hit_modifier,
+                        inventory[j].damage_string).ljust(10)
+                elif inventory[j].type == Armor:
+                    summary += '{:+d})'.format(
+                        inventory[j].armor_class_modifier).ljust(10)
+                summary += '{:>6} {:6.2f} {:>6.2f}'.format(
+                    inventory[j].slot,
+                    inventory[j].weight,
+                    inventory[j].value)
+                window.print_at(2, 3 + i, summary)
+            if item_limit + scroll < total_items:
+                window.print_at(0, window_height - 2, 'v')
+            window.update()
             event = pygame.event.wait()
             if event.type == pygame.QUIT:
                 self.game.interface.close()
             elif event.type == pygame.KEYDOWN:
-                last_letter = 96 + len(self.game.player.inventory)
                 if event.key == 27:
                     break
+                elif event.key == 274:
+                    scroll += 1 if item_limit + scroll < total_items else 0
+                elif event.key == 273:
+                    scroll -= 1 if scroll > 0 else 0
                 elif event.key in range(97, last_letter + 1):
-                    self.log.debug('Selected valid key {} from a-{}'.format(chr(event.key), chr(last_letter)))
-                    self.game.player.equip(list(self.game.player.inventory)[event.key-97])
+                    self.game.player.equip(
+                        list(self.game.player.inventory)[event.key-97])
                     break
-                else:
-                    self.log.debug('Selected wrong key {} ({}?)'.format(event.key, chr(event.key)))
+
+    def get_item_equipped_in_slot(self, slot):
+        for item in self.game.player.equipped:
+            if item.slot == slot:
+                return item
+        return None
 
     def show_equipment(self):
-        window = PygameWindow(self.game.interface, 4, 4, 21, 3 + len(self.game.player.equipped), 'Equipped items')
-        window.print_at(2, 1, 'Select an item to unequip or Esc to close:')
-        for i, item in enumerate(self.game.player.equipped):
-            window.print_at(1, 3 + i, item.icon['inv'])
-            summary = '{}) {} ('.format(chr(i + 97), item.full_name)
-            if item.type == Weapon:
-                summary += '{:+d}/{})'.format(item.to_hit_modifier, item.damage_string)
-            elif item.type == Armor:
-                summary += '{:+d})'.format(item.armor_class_modifier)
-            window.print_at(2, 3 + i, summary)
-        self.game.interface.screen.blit(window, (window.left, window.top))
-        self.game.interface.refresh()
+        window = PygameWindow(self.game.interface, 4, 3, 22, 10)
+        window.print_at(1, 0, 'Equipment')
+        window.print_at(2, 1, 'Select a slot to unequip or Esc to close:')
+        i = 3
+        slots = ('hand', 'head', 'chest', 'feet')
+        for slot in slots:
+            window.print_at(1, i, '{}) {:>6}:'.format(
+                chr(94 + i),
+                slot[0].upper() + slot[1:]))
+            item = self.get_item_equipped_in_slot(slot)
+            if item:
+                summary = '{:22.22}{}('.format(
+                    item.full_name,
+                    '\u2026' if len(item.full_name) > 22 else ' ')
+                if item.type == Weapon:
+                    summary += '{:+d}/{})'.format(item.to_hit_modifier,
+                                                  item.damage_string)
+                elif item.type == Armor:
+                    summary += '{:+d})'.format(item.armor_class_modifier)
+                window.print_at(6, i, item.icon['inv'])
+                window.print_at(7, i, summary)
+            i += 1
+        window.update()
         pygame.event.clear()
         while True:
             event = pygame.event.wait()
             if event.type == pygame.QUIT:
                 self.game.interface.close()
             elif event.type == pygame.KEYDOWN:
-                last_letter = 96 + len(self.game.player.equipped)
                 if event.key == 27:
                     break
-                elif event.key in range(97, last_letter + 1):
-                    self.log.debug('Selected valid key {} from a-{}'.format(chr(event.key), chr(last_letter)))
-                    self.game.player.unequip(list(self.game.player.equipped)[event.key - 97])
-                    break
-                else:
-                    self.log.debug('Selected wrong key {} ({}?)'.format(event.key, chr(event.key)))
+                elif event.key in range(97, 97 + len(slots)):
+                    item = self.get_item_equipped_in_slot(slots[event.key - 97])
+                    if item:
+                        self.game.player.unequip(item)
+                        break
 
 
 class Item(pygame.sprite.Sprite):
@@ -183,10 +217,11 @@ class Item(pygame.sprite.Sprite):
         self.base_value = base_value
         self.value = self.base_value * float(tmp_material[2])
         self.icon_id_world, self.icon_id_equipped, self.icon_id_inv = icon_ids
+        tileset = parent.game.interface.tileset
         self.icon = {
-            'world': parent.game.interface.tileset[icon_ids[0]].copy(),
-            'equip': [parent.game.interface.tileset[i].copy() for i in icon_ids[1]],
-            'inv': parent.game.interface.tileset[icon_ids[2]].copy()}
+            'world': tileset[icon_ids[0]].copy(),
+            'equip': [tileset[i].copy() for i in icon_ids[1]],
+            'inv': tileset[icon_ids[2]].copy()}
         self.slot = slot
         self.quality = int(quality)
         self.enchantment_level = int(ench_lvl)
@@ -214,17 +249,18 @@ class Weapon(Item):
             material = random.choice(materials['weapons'])
             value = value * (1 + 0.4 * quality) * (1 + 0.8 * ench_lvl)
         icon_triplet_list = template['icon_ids'].split(', ')
-        super().__init__(self,
-                         template['name'],
-                         material,
-                         template['base_weight'],
-                         value,
-                         (int(icon_triplet_list[0].split()[0]),
-                          [int(icon_set.split()[1]) for icon_set in icon_triplet_list],
-                          int(icon_triplet_list[0].split()[2])),
-                         template['slot'],
-                         quality,
-                         ench_lvl)
+        super().__init__(
+             self,
+             template['name'],
+             material,
+             template['base_weight'],
+             value,
+             (int(icon_triplet_list[0].split()[0]),
+              [int(icon_set.split()[1]) for icon_set in icon_triplet_list],
+              int(icon_triplet_list[0].split()[2])),
+             template['slot'],
+             quality,
+             ench_lvl)
         self.speed_modifier = template['speed_modifier']
         self.to_hit_modifier = template['to_hit_modifier'] + quality + ench_lvl
         num, sides, mod = decompile_dmg_die(template['damage_string'])
@@ -249,17 +285,19 @@ class Armor(Item):
             material = random.choice(materials['armor'])
             value = value * (1 + 0.4 * quality) * (1 + 0.8 * ench_lvl)
         icon_triplet_list = template['icon_ids'].split(', ')
-        super().__init__(self,
-                         template['name'],
-                         material,
-                         template['base_weight'],
-                         value,
-                         (int(icon_triplet_list[0].split()[0]),
-                          [int(icon_set.split()[1]) for icon_set in icon_triplet_list],
-                          int(icon_triplet_list[0].split()[2])),
-                         template['slot'],
-                         quality,
-                         ench_lvl)
-        self.armor_class_modifier = template['armor_class_modifier'] + quality + ench_lvl * 3
+        super().__init__(
+             self,
+             template['name'],
+             material,
+             template['base_weight'],
+             value,
+             (int(icon_triplet_list[0].split()[0]),
+              [int(icon_set.split()[1]) for icon_set in icon_triplet_list],
+              int(icon_triplet_list[0].split()[2])),
+             template['slot'],
+             quality,
+             ench_lvl)
+        ac_mod = template['armor_class_modifier']
+        self.armor_class_modifier = ac_mod + quality + ench_lvl * 3
         self.add(groups)
         self.log.debug('Created item {}'.format(self.full_name))
