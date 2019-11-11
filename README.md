@@ -6,12 +6,13 @@
     - [x] items contribute to stats
     - [x] can be un/equipped
     - [x] interface for equipment
-      - [ ] refine it
+      - [ ] refine it (total weight, colors, etc)
     - [ ] monsters use items
   - [ ] inventory
-    - [ ] can drop/pick up items
+    - [x] can drop/pick up items
     - [x] interface for inventory
-  - [ ] random items on the ground
+    - [ ] refine the interface  (stackable items, etc)
+  - [x] random items on the ground
   - [ ] defeated enemies drop equipment
 - [ ] add more dungeon levels
   - [ ] introduce way to regen life

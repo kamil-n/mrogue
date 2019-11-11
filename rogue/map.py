@@ -222,6 +222,7 @@ class RogueMap(object):
                 unit.attack(target)
                 return
         else:
+            unit.last_pos = unit.pos
             unit.pos = check
 
     def look_around(self):

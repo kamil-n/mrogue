@@ -29,9 +29,13 @@ class Unit(sprite.Sprite):
         self.armor_class = self.base_armor_class
         self.current_HP = current_hp
         self.max_HP = current_hp
+        self.last_pos = self.pos
+        self.moved = False
 
     def update(self):
         self.rect.topleft = (self.pos[0] * 32, self.pos[1] * 32)
+        self.moved = self.pos != self.last_pos
+        self.last_pos = self.pos
 
     def add_item(self, item: Item):
         item.add(self.inventory)

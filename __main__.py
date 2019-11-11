@@ -76,6 +76,23 @@ class Rogue(object):
                 self.items.show_equipment()
             elif key in range(257, 266 + 1) or key in range(49, 57 + 1) or key in range(273, 276 + 1):
                 self.level.movement(self.player, direction_from(key, *self.player.pos))
+            elif key == pygame.K_h:
+                win = PygameWindow(self.interface, width=30, height=16,
+                                   title='Welcome to Python Rogue {}!'.format(__version__))
+                win.print_at(1, 2, 'Kill all monsters. To attack, \'walk\' into them.')
+                win.print_at(1, 3, 'Move with keyboard arrows, numpad or number keys.')
+                win.print_at(1, 4, 'Directions for number keys:')
+                win.print_at(1, 5, '7\ 8 /9')
+                win.print_at(1, 6, '4- @ -6      (press 5 to pass turn)')
+                win.print_at(1, 7, '1/ 2 \\3')
+                win.print_at(1, 8, 'Other keys:')
+                win.print_at(1, 9, 'e - open equipment screen. Press slot hotkeys to unequip items.')
+                win.print_at(1, 10, 'i - open inventory screen. Press hotkeys to manage items.')
+                win.print_at(1, 11, ', (comma) - pick up items')
+                win.print_at(1, 12, 'h - show this help screen.')
+                win.print_at(1, 13, 'q - close game when on main screen or when game is finished.')
+                win.print_at(1, 15, 'Esc - close pop-up windows like this one.')
+                win.loop(27)
             elif key == pygame.K_q:
                 self.log.info('Game exit on Q press.')
             else:
