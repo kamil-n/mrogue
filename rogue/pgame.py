@@ -141,6 +141,33 @@ class PygameWindow(pygame.Surface):
         del self
 
 
+class PygameDialog(pygame.Surface):
+    def __init__(self, engine, prompt, options):
+        self.engine = engine
+        super().__init__((16 * tile_size, (1 + len(options)) * tile_size))
+        self.fill((0, 0, 0))
+        text = engine.font.render('{} (Esc to cancel)'.format(prompt), True, engine.colors['WHITE'])
+        self.blit(text, (0, 0))
+        pygame.draw.rect(self, (255, 255, 255), self.get_rect(), 1)
+        i = 0
+        for key, description in options:
+            text = engine.font.render('{}) {}'.format(chr(key), description), True, engine.colors['WHITE'])
+            self.blit(text, (1 * tile_size, (1 + i) * tile_size))
+            i += 1
+        engine.screen.blit(self, (14 * tile_size, 12 * tile_size))
+        pygame.display.update()
+        self.keys = [option[0] for option in options]
+
+    def loop(self):
+        while True:
+            event = pygame.event.wait()
+            if event.type == pygame.KEYDOWN:
+                if event.key == 27:
+                    return False
+                if event.key in self.keys:
+                    return event.key
+
+
 class MapImage(pygame.Surface):
     def __init__(self, w, h):
         super().__init__((w * tile_size, h * tile_size))

@@ -10,7 +10,7 @@ from os import path
 import pygame
 import random
 from rogue import decompile_dmg_die, compile_dmg_die, roll_gaussian
-from rogue.pgame import PygameWindow
+from rogue.pgame import PygameWindow, PygameDialog
 
 quality_levels = {
     -2: 'broken',
@@ -119,7 +119,7 @@ class ItemManager(object):
         while True:
             window.clear()
             window.print_at(1, 0, 'Inventory')
-            window.print_at(2, 1, 'Select an item to equip or Esc to close:')
+            window.print_at(2, 1, 'Select an item or Esc to close:')
             window.print_at(3, 2, 'Name')
             window.print_at(22, 2, 'Slot     Wt    Val')
             if scroll > 0:
@@ -159,9 +159,21 @@ class ItemManager(object):
                 elif event.key == 273:
                     scroll -= 1 if scroll > 0 else 0
                 elif event.key in range(97, last_letter + 1):
-                    self.game.player.equip(
-                        list(self.game.player.inventory)[event.key-97])
-                    break
+                    rect = (14 * 32, 12 * 32, 20 * 32, 3 * 32)
+                    save = self.game.interface.screen.subsurface(rect).copy()
+                    dialog = PygameDialog(self.game.interface, 'Select an action:', [(pygame.K_a, 'Equip item'), (pygame.K_b, 'Drop item')])
+                    key = dialog.loop()
+                    self.game.interface.screen.blit(save, (14 * 32, 12 * 32))
+                    pygame.display.update(rect)
+                    if key:
+                        if key == pygame.K_a:
+                            self.game.player.equip(list(self.game.player.inventory)[event.key - 97])
+                            break
+                        elif key == pygame.K_b:
+                            self.game.player.drop_item(list(self.game.player.inventory)[event.key - 97])
+                            break
+                    else:
+                        continue
 
     def get_item_equipped_in_slot(self, slot):
         for item in self.game.player.equipped:
@@ -245,9 +257,13 @@ class Item(pygame.sprite.Sprite):
             name)).strip()
         self.full_name = ' '.join(self.full_name.split())
 
+    def update(self):
+        self.rect.topleft = (self.pos[0] * 32, self.pos[1] * 32)
 
-class Weapon(Item):
-    game = None
+    def dropped(self, coords):
+        self.manager.items_on_ground.add(self)
+        self.manager.game.interface.objects_on_map.add(self)
+        self.pos = coords
 
     def picked(self, unit):
         self.remove((self.manager.items_on_ground,
