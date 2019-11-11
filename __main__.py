@@ -34,7 +34,7 @@ class Rogue(object):
         self.log.info('Welcome to Rogue {}!'.format(__version__))
         self.interface = PygameHelper()
         self.level = RogueMap(self)
-        self.items = ItemManager(self)
+        self.items = ItemManager(self, 10)
         self.player = Player(self)
         self.monsters = Menagerie(self, 10)
         self.messenger = Messenger(self)

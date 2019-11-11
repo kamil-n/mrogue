@@ -69,7 +69,7 @@ class ItemManager(object):
     templates = pygame.sprite.Group()
     item_templates = {}
 
-    def __init__(self, game):
+    def __init__(self, game, num_items):
         self.game = game
         self.log = logging.getLogger(__name__)
         basedir = path.dirname(path.abspath(__file__))
@@ -98,6 +98,10 @@ class ItemManager(object):
         create random item
         random_template, random_type = get_random_template(templates_file)
         random_type(self.game, random_template, self.loot, True) '''
+        self.log.debug('Creating random loot ({}):'.format(num_items))
+        for i in range(num_items):
+            random_template, random_type = get_random_template(templates_file)
+            random_type(self, random_template, self.loot, True).dropped(game.level.find_spot())
 
     def show_inventory(self):
         total_items = len(self.game.player.inventory)
@@ -197,19 +201,22 @@ class ItemManager(object):
                 if event.key == 27:
                     break
                 elif event.key in range(97, 97 + len(slots)):
-                    item = self.get_item_equipped_in_slot(slots[event.key - 97])
+                    item = self.get_item_equipped_in_slot(
+                        self.game.player, slots[event.key - 97])
                     if item:
                         self.game.player.unequip(item)
                         break
 
 
 class Item(pygame.sprite.Sprite):
-    def __init__(self, parent, name, material, base_weight, base_value,
+    def __init__(self, parent, manager, name, material, base_weight, base_value,
                  icon_ids, slot, quality, ench_lvl):
         super().__init__()
         self.type_str = parent.__class__.__name__
         self.type = parent.__class__
+        self.manager = manager
         self.unidentified_name = name
+        self.pos = None
         tmp_material = tuple(v for v in material.split())
         self.material = tmp_material[0]
         self.base_weight = base_weight
@@ -217,11 +224,13 @@ class Item(pygame.sprite.Sprite):
         self.base_value = base_value
         self.value = self.base_value * float(tmp_material[2])
         self.icon_id_world, self.icon_id_equipped, self.icon_id_inv = icon_ids
-        tileset = parent.game.interface.tileset
+        tileset = manager.game.interface.tileset
         self.icon = {
-            'world': tileset[icon_ids[0]].copy(),
             'equip': [tileset[i].copy() for i in icon_ids[1]],
             'inv': tileset[icon_ids[2]].copy()}
+        self.image = tileset[icon_ids[0]].copy()
+        self.rect = self.image.get_rect()
+        self.layer = 2
         self.slot = slot
         self.quality = int(quality)
         self.enchantment_level = int(ench_lvl)
@@ -236,8 +245,14 @@ class Item(pygame.sprite.Sprite):
 class Weapon(Item):
     game = None
 
-    def __init__(self, game, template, groups, randomize=False):
-        self.game = game
+    def picked(self, unit):
+        self.remove((self.manager.items_on_ground,
+                     self.manager.game.interface.objects_on_map))
+        self.pos = None
+
+
+class Weapon(Item):
+    def __init__(self, manager, template, groups, randomize=False):
         self.log = logging.getLogger(__name__)
         value = template['base_value']
         quality = template['quality']
@@ -251,6 +266,7 @@ class Weapon(Item):
         icon_triplet_list = template['icon_ids'].split(', ')
         super().__init__(
              self,
+             manager,
              template['name'],
              material,
              template['base_weight'],
@@ -270,10 +286,7 @@ class Weapon(Item):
 
 
 class Armor(Item):
-    game = None
-
-    def __init__(self, game, template, groups, randomize=False):
-        self.game = game
+    def __init__(self, manager, template, groups, randomize=False):
         self.log = logging.getLogger(__name__)
         value = template['base_value']
         quality = template['quality']
@@ -287,6 +300,7 @@ class Armor(Item):
         icon_triplet_list = template['icon_ids'].split(', ')
         super().__init__(
              self,
+             manager,
              template['name'],
              material,
              template['base_weight'],
