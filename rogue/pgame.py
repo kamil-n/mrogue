@@ -114,16 +114,17 @@ class PygameWindow(pygame.Surface):
 
     def update(self):
         self.engine.screen.blit(self, (self.left, self.top))
-        # self.engine.refresh()
         pygame.display.update()
 
     def loop(self, until: pygame.key = pygame.K_UNKNOWN):
         self.engine.screen.blit(self, (self.left, self.top))
-        # self.engine.refresh()
         pygame.display.update()
         while True:
             event = pygame.event.wait()
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame.QUIT:
+                self.engine.close()
+                break
+            elif event.type == pygame.KEYDOWN:
                 if event.key == until:
                     break
 
