@@ -46,7 +46,8 @@ class Rogue(object):
             self.turn += 1
             self.log.info('== Turn %d. ==' % self.turn)
             self.monsters.handle_monsters(self.player)
-            self.interface.objects_on_map.update()  # TODO: refactor
+            self.interface.update_objects()
+            self.player.check_if_items_on_ground()
             self.level.look_around()
             self.level.draw_map()
             self.interface.show_objects()
@@ -74,6 +75,8 @@ class Rogue(object):
                 self.items.show_inventory()
             elif key == pygame.K_e:
                 self.items.show_equipment()
+            elif key == pygame.K_COMMA:
+                self.player.pickup_item(self.items.get_item_on_map(self.player.pos))
             elif key in range(257, 266 + 1) or key in range(49, 57 + 1) or key in range(273, 276 + 1):
                 self.level.movement(self.player, direction_from(key, *self.player.pos))
             elif key == pygame.K_h:

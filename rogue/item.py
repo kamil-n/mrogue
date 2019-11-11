@@ -67,6 +67,7 @@ def get_random_template(data) -> (dict, type):
 class ItemManager(object):
     loot = pygame.sprite.Group()
     templates = pygame.sprite.Group()
+    items_on_ground = pygame.sprite.LayeredUpdates()
     item_templates = {}
 
     def __init__(self, game, num_items):
@@ -83,9 +84,9 @@ class ItemManager(object):
                 for item in type_list:
                     new_item = None
                     if category == 'weapons':
-                        new_item = Weapon(self.game, item, self.templates)
+                        new_item = Weapon(self, item, self.templates)
                     elif category == 'armor':
-                        new_item = Armor(self.game, item, self.templates)
+                        new_item = Armor(self, item, self.templates)
                     self.item_templates[category][subtype].append(new_item)
         ''' create pre-set, default item
         preset = self.item_templates['weapons']['maces'][0].copy()
@@ -167,6 +168,9 @@ class ItemManager(object):
             if item.slot == slot:
                 return item
         return None
+
+    def get_item_on_map(self, coordinates):
+        return [i for i in self.items_on_ground if i.pos == coordinates]
 
     def show_equipment(self):
         window = PygameWindow(self.game.interface, 4, 3, 22, 10)

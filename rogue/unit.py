@@ -20,6 +20,7 @@ class Unit(sprite.Sprite):
         self.image_no_equip = game.interface.tileset[tile_id].copy()
         self.image = self.image_no_equip.copy()
         self.rect = self.image.get_rect()
+        self.layer = 1
         self.sight_range = sight_range
         self.base_to_hit = to_hit  # i.e. from Strength or size
         self.to_hit = self.base_to_hit
@@ -78,7 +79,23 @@ class Unit(sprite.Sprite):
 
     def drop_item(self, item: Item):
         item.remove((self.inventory, self.equipped))
-        self.log.debug('{} dropped {}.'.format(self.name, item.full_name))
+        item.dropped(self.pos)
+        msg = '{} dropped {}.'.format(self.name, item.full_name)
+        self.game.messenger.add(msg)
+        self.log.debug(msg)
+
+    def pickup_item(self, itemlist: list):
+        if itemlist:
+            item = itemlist.pop(0)
+            item.add(self.inventory)
+            item.picked(self)
+            msg = '{} picked up {}.'.format(self.name, item.full_name)
+            self.game.messenger.add(msg)
+            self.log.debug(msg)
+        else:
+            msg = 'There are no items here.'
+            self.game.messenger.add(msg)
+            self.log.debug(msg)
 
     def attack(self, target):
         uname = str.upper(self.name[0]) + self.name[1:]

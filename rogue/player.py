@@ -28,3 +28,13 @@ class Player(rogue.unit.Unit):
         self.window.print_at(27, 0, 'Inventory(press i): {}'.format(len(self.inventory)))
         self.window.print_at(38, 0, 'Press q to quit.')
         self.window.update()
+
+    def check_if_items_on_ground(self):
+        items = self.game.items.get_item_on_map(self.pos)
+        if items and self.moved:
+            if len(items) > 1:
+                self.game.messenger.add('{} items are lying here.'.format(
+                    len(items)))
+            else:
+                self.game.messenger.add('{} is lying here.'.format(
+                    items[0].full_name[0].upper() + items[0].full_name[1:]))

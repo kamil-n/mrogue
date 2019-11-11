@@ -2,7 +2,7 @@
 
 import random
 
-__version__ = 'v0.2.1.2'
+__version__ = 'v0.3.0.0'
 
 
 def adjacent(fr, to):

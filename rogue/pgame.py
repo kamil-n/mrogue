@@ -10,10 +10,9 @@ tile_size = 32
 
 
 class PygameHelper(object):
-    objects_on_map = pygame.sprite.LayeredUpdates()
-    visible_objects = pygame.sprite.LayeredUpdates()
+    objects_on_map = pygame.sprite.LayeredUpdates(default_layer=3)
+    visible_objects = pygame.sprite.LayeredUpdates(default_layer=3)
     units = pygame.sprite.Group()
-    items = pygame.sprite.Group()
 
     def __init__(self):
         self.log = logging.getLogger(__name__)
@@ -54,6 +53,9 @@ class PygameHelper(object):
         if 'debug' in sys.argv:
             container = self.objects_on_map
         container.draw(self.screen)
+
+    def update_objects(self):
+        self.objects_on_map.update()
 
     def unit_at(self, where: tuple) -> pygame.sprite.Sprite or None:
         for unit in self.units:
