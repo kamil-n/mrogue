@@ -175,8 +175,8 @@ class ItemManager(object):
                     else:
                         continue
 
-    def get_item_equipped_in_slot(self, slot):
-        for item in self.game.player.equipped:
+    def get_item_equipped_in_slot(self, unit, slot):
+        for item in unit.equipped:
             if item.slot == slot:
                 return item
         return None
@@ -194,7 +194,7 @@ class ItemManager(object):
             window.print_at(1, i, '{}) {:>6}:'.format(
                 chr(94 + i),
                 slot[0].upper() + slot[1:]))
-            item = self.get_item_equipped_in_slot(slot)
+            item = self.get_item_equipped_in_slot(self.game.player, slot)
             if item:
                 summary = '{:22.22}{}('.format(
                     item.full_name,
