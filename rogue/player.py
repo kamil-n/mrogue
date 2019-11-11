@@ -19,14 +19,18 @@ class Player(rogue.unit.Unit):
     def show_stats(self):
         self.window.clear()
         self.window.print_at(0, 0, 'HP', self.game.interface.colors['WHITE'])
-        self.window.print_at(5, 0, 'AC', self.game.interface.colors['WHITE'])
-        self.window.print_at(9, 0, 'Atk', self.game.interface.colors['WHITE'])
-        self.window.print_at(1, 0, '%2d/%d' % (self.current_HP, self.max_HP), (0, 255, 0))
-        self.window.print_at(6, 0, '%2d' % self.armor_class, (0, 0, 255))
-        self.window.print_at(11, 0, '{:+d}/{}'.format(self.to_hit, self.damage_dice), (255, 0, 0))
-        self.window.print_at(15, 0, 'Equipment(press e): {}/4'.format(len(self.equipped)))
-        self.window.print_at(27, 0, 'Inventory(press i): {}'.format(len(self.inventory)))
-        self.window.print_at(38, 0, 'Press q to quit.')
+        self.window.print_at(4, 0, 'AC', self.game.interface.colors['WHITE'])
+        self.window.print_at(7, 0, 'Atk', self.game.interface.colors['WHITE'])
+        self.window.print_at(1, 0, '%2d/%d' % (self.current_HP, self.max_HP),
+                             (0, 255, 0))
+        self.window.print_at(5, 0, '%2d' % self.armor_class, (0, 0, 255))
+        self.window.print_at(9, 0, '{:+d}/{}'.format(
+            self.to_hit, self.damage_dice), (255, 0, 0))
+        self.window.print_at(15, 0, 'Equipment: {}/4'.format(
+            len(self.equipped)))
+        self.window.print_at(24, 0, 'Inventory: {}'.format(
+            len(self.inventory)))
+        self.window.print_at(35, 0, 'Press q to quit, h for help.')
         self.window.update()
 
     def check_if_items_on_ground(self):
