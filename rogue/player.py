@@ -5,10 +5,10 @@ from rogue.pgame import PygameWindow
 
 
 class Player(rogue.unit.Unit):
-
     def __init__(self, game):
-        super().__init__('Player', game, 1956, 6, 1, '1d2+1', 11, 12)
-        self.window = PygameWindow(game.interface, 0, 0, game.interface.dimensions[0], 1)
+        super().__init__('Player', game, 1956, 6, 1, '1d2+1', 11, 20)
+        self.window = PygameWindow(game.interface, 0, 0,
+                                   game.interface.dimensions[0], 1)
         self.add_item(game.items.item_templates['weapons']['maces'][0])
         self.add_item(game.items.item_templates['armor']['chest'][0])
         self.add_item(game.items.item_templates['armor']['feet'][0])
