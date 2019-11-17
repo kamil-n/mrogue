@@ -4,15 +4,14 @@ from json import loads
 import logging
 from os import path
 import random
-from pygame import sprite
-from rogue import roll, adjacent
-import rogue.unit
-from rogue.map import Pathfinder
+from modules import roll, adjacent
+import modules.unit
+from modules.map import Pathfinder
 
 
 class Menagerie(object):
     game = None
-    monsterList = sprite.Group()
+    monsterList = []
 
     def __init__(self, game, num):
         self.game = game
@@ -22,8 +21,8 @@ class Menagerie(object):
             monster_templates = loads(f.read())
         for i in range(num):
             Monster(self.game, random.choice(monster_templates),
-                    (self.monsterList, game.interface.objects_on_map,
-                     game.interface.units))
+                    (self.monsterList, game.level.objects_on_map,
+                     game.level.units))
 
     def handle_monsters(self, target):
         for monster in self.monsterList:
@@ -35,18 +34,19 @@ class Menagerie(object):
                     monster.attack(target)
                 else:
                     monster.approach(target.pos)
+        for unit in self.game.level.units:
+            unit.update()
 
 
-class Monster(rogue.unit.Unit):
+class Monster(modules.unit.Unit):
     def __init__(self, game, template, groups):
-        super().__init__(template['name'], game, template['tile'], 5,
-                         template['to_hit'], template['dmg_die'],
+        super().__init__(template['name'], game, (template['icon'], template['color']),
+                         5, template['to_hit'], template['dmg_die'],
                          template['ac'], roll(template['hit_die']))
         self.path = None
         self.log = logging.getLogger(__name__)
-        if 'wields' in template:
-            self.image.blit(game.interface.tileset[template['wields']], (-2, 6))
-        self.add(groups)
+        for group in groups:
+            group.append(self)
         self.log.debug('Created monster {} at {},{}'.format(
             self.name, self.pos[0], self.pos[1]))
 
@@ -60,9 +60,9 @@ class Monster(rogue.unit.Unit):
                 self.path = Pathfinder(self.game.level, self.pos).find(goal).path(self.pos, goal)
         else:  # find a path to target
             self.path = Pathfinder(self.game.level, self.pos).find(goal).path(self.pos, goal)
-        if self.game.interface.unit_at(self.path[0]):
+        if self.game.level.unit_at(self.path[0]):
             tiles = self.game.level.neighbors(self.pos)
-            tiles = list(filter(lambda p: not self.game.interface.unit_at(p), tiles))
+            tiles = list(filter(lambda p: not self.game.level.unit_at(p), tiles))
             pairs = [(abs(goal[0] - x), abs(goal[1] - y), (x, y)) for x, y in tiles]
             if not pairs:
                 return

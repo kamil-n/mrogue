@@ -2,24 +2,24 @@
 
 import logging
 from sys import argv
-from pygame import sprite
-from rogue.item import Item, Weapon, Armor
-from rogue import roll
+import tcod.constants
+from modules.console import Char
+from modules.item import Item, Weapon, Armor
+from modules import roll
 
 
-class Unit(sprite.Sprite):
-    def __init__(self, name, game, tile_id, sight_range, to_hit, damage_dice,
+class Unit(Char):
+    def __init__(self, name, game, icon, sight_range, to_hit, damage_dice,
                  armor_class, current_hp):
         super().__init__()
         self.game = game
         self.log = logging.getLogger(__name__)
-        self.inventory = sprite.Group()
-        self.equipped = sprite.Group()
+        self.inventory = []
+        self.equipped = []
         self.name = name
         self.pos = game.level.find_spot()
-        self.image_no_equip = game.interface.tileset[tile_id].copy()
-        self.image = self.image_no_equip.copy()
-        self.rect = self.image.get_rect()
+        self.icon = icon[0]
+        self.color = vars(tcod.constants)[icon[1]]
         self.layer = 1
         self.sight_range = sight_range
         self.base_to_hit = to_hit  # i.e. from Strength or size
@@ -34,7 +34,6 @@ class Unit(sprite.Sprite):
         self.moved = False
 
     def update(self):
-        self.rect.topleft = (self.pos[0] * 32, self.pos[1] * 32)
         self.moved = self.pos != self.last_pos
         self.last_pos = self.pos
 
@@ -52,8 +51,6 @@ class Unit(sprite.Sprite):
             self.damage_dice = item.damage_string
         elif item.type == Armor:
             self.armor_class += item.armor_class_modifier
-        for icon in item.icon['equip']:
-            self.image.blit(icon, (0, 0))
         msg = '{} equipped {}.'.format(self.name, item.full_name)
         item.remove(self.inventory)
         if not quiet:
@@ -67,18 +64,14 @@ class Unit(sprite.Sprite):
             self.damage_dice = self.default_damage_dice
         elif item.type == Armor:
             self.armor_class -= item.armor_class_modifier  # TODO: ditto
-        self.image = self.image_no_equip.copy()
         msg = '{} unequipped {}.'.format(self.name, item.full_name)
         item.remove(self.equipped)
-        for item in self.equipped:
-            for icon in item.icon['equip']:
-                self.image.blit(icon, (0, 0))
         if not quiet:
             self.game.messenger.add(msg)
         self.log.debug(msg)
 
     def drop_item(self, item: Item):
-        item.remove((self.inventory, self.equipped))
+        item.remove(self.inventory, self.equipped)
         item.dropped(self.pos)
         msg = '{} dropped {}.'.format(self.name, item.full_name)
         self.game.messenger.add(msg)
@@ -140,4 +133,5 @@ class Unit(sprite.Sprite):
         self.game.messenger.add('{} dies.'.format(
             str.upper(self.name[0]) + self.name[1:]))
         if not (self.name == 'Player' and 'debug' in argv):
-            self.kill()
+            self.kill()  # TODO: bugged!
+            self.remove(self.game.level.units, self.game.level.objects_on_map, self.game.monsters.monsterList)

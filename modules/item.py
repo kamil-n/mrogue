@@ -7,10 +7,13 @@ Module to support items (equipment) implementation.
 import logging
 from json import loads
 from os import path
-import pygame
 import random
-from rogue import decompile_dmg_die, compile_dmg_die, roll_gaussian
-from rogue.pgame import PygameWindow, PygameDialog
+import tcod
+import tcod.console
+import tcod.constants
+import tcod.event
+from modules import decompile_dmg_die, compile_dmg_die, roll_gaussian, wait
+from modules.console import Char
 
 quality_levels = {
     -2: 'broken',
@@ -24,6 +27,12 @@ enchantment_levels = {
     -1: 'cursed',
     0: '',
     1: 'blessed'
+}
+
+enchantment_colors = {
+    -1: tcod.red,
+    0: tcod.white,
+    1: tcod.green
 }
 
 materials = {
@@ -65,9 +74,9 @@ def get_random_template(data) -> (dict, type):
 
 
 class ItemManager(object):
-    loot = pygame.sprite.Group()
-    templates = pygame.sprite.Group()
-    items_on_ground = pygame.sprite.LayeredUpdates()
+    loot = []
+    templates = []
+    items_on_ground = []
     item_templates = {}
 
     def __init__(self, game, num_items):
@@ -110,70 +119,72 @@ class ItemManager(object):
         window_height = 4 + total_items
         if total_items > item_limit:
             window_height = 4 + item_limit
+        width = 68
         last_letter = 96 + total_items
-        window = PygameWindow(self.game.interface, 4, 3, 32, window_height)
+        window = tcod.console.Console(width, window_height, 'F')
+        #tcod.console_set_default_foreground(window, tcod.light_orange)
         scroll = 0
         inventory = dict(zip(range(len(self.game.player.inventory)),
                              self.game.player.inventory))
-        pygame.event.clear()
         while True:
             window.clear()
-            window.print_at(1, 0, 'Inventory')
-            window.print_at(2, 1, 'Select an item or Esc to close:')
-            window.print_at(3, 2, 'Name')
-            window.print_at(22, 2, 'Slot     Wt    Val')
+            window.draw_frame(0, 0, width, window_height, 'Inventory')
+            window.print(2, 1, 'Select an item or Esc to close:')
+            window.print(5, 2, 'Name')
+            window.print(48, 2, 'Slot     Wt    Val')
             if scroll > 0:
-                window.print_at(0, 3, '^')
+                window.print(0, 3, '^')
             for i in range(len(inventory)):
                 if i > item_limit - 1:
                     break
                 j = i + scroll
-                window.print_at(1, 3 + i, inventory[j].icon['inv'])
-                summary = '{}) {:29.29}{}('.format(
-                    chr(j + 97),
-                    inventory[j].full_name,
-                    '\u2026' if len(inventory[j].full_name) > 29 else ' ')
+                suffix = ''
                 if inventory[j].type == Weapon:
-                    summary += '{:+d}/{})'.format(
+                    suffix = ' ({:+d}/{})'.format(
                         inventory[j].to_hit_modifier,
-                        inventory[j].damage_string).ljust(10)
+                        inventory[j].damage_string)
                 elif inventory[j].type == Armor:
-                    summary += '{:+d})'.format(
-                        inventory[j].armor_class_modifier).ljust(10)
-                summary += '{:>6} {:6.2f} {:>6.2f}'.format(
+                    suffix = ' ({:+d})'.format(
+                        inventory[j].armor_class_modifier)
+                name = inventory[j].full_name
+                if len(name) + len(suffix) > 40:
+                    name = name[:40-len(suffix)-1] + '+'
+                summary = '{}'.format(name + suffix)
+                details = '{:>6} {:6.2f} {:>6.2f}'.format(
                     inventory[j].slot,
                     inventory[j].weight,
                     inventory[j].value)
-                window.print_at(2, 3 + i, summary)
+                window.print(1, 3 + i, inventory[j].icon, inventory[j].color)
+                window.print(3, 3 + i, '{}) '.format(chr(j + 97)))
+                window.print(6, 3 + i, summary, enchantment_colors[inventory[j].enchantment_level])
+                window.print(46, 3 + i, details)
             if item_limit + scroll < total_items:
-                window.print_at(0, window_height - 2, 'v')
-            window.update()
-            event = pygame.event.wait()
-            if event.type == pygame.QUIT:
-                self.game.interface.close()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == 27:
-                    break
-                elif event.key == 274:
-                    scroll += 1 if item_limit + scroll < total_items else 0
-                elif event.key == 273:
-                    scroll -= 1 if scroll > 0 else 0
-                elif event.key in range(97, last_letter + 1):
-                    rect = (14 * 32, 12 * 32, 20 * 32, 3 * 32)
-                    save = self.game.interface.screen.subsurface(rect).copy()
-                    dialog = PygameDialog(self.game.interface, 'Select an action:', [(pygame.K_a, 'Equip item'), (pygame.K_b, 'Drop item')])
-                    key = dialog.loop()
-                    self.game.interface.screen.blit(save, (14 * 32, 12 * 32))
-                    pygame.display.update(rect)
-                    if key:
-                        if key == pygame.K_a:
-                            self.game.player.equip(list(self.game.player.inventory)[event.key - 97])
-                            break
-                        elif key == pygame.K_b:
-                            self.game.player.drop_item(list(self.game.player.inventory)[event.key - 97])
-                            break
-                    else:
-                        continue
+                window.print(0, window_height - 2, 'v')
+            window.blit(self.game.screen, 4, 4, 0, 0, width, window_height)
+            tcod.console_flush()
+            key = wait()
+            if key == 27:
+                break
+            elif key == tcod.event.K_DOWN:
+                scroll += 1 if item_limit + scroll < total_items else 0
+            elif key == tcod.event.K_UP:
+                scroll -= 1 if scroll > 0 else 0
+            elif key in range(97, last_letter + 1):
+                w, h = 30, 4
+                dialog = tcod.console.Console(w, h, 'F')
+                dialog.draw_frame(0, 0, w, h, 'Select an action:')
+                dialog.print(2, 1, 'a) Equip item')
+                dialog.print(2, 2, 'b) Drop item')
+                dialog.blit(self.game.screen, 6, 6, 0, 0, w, h)
+                tcod.console_flush()
+                selection = wait()
+                if key:
+                    if selection == tcod.event.K_a:
+                        self.game.player.equip(self.game.player.inventory[key-97])
+                        break
+                    elif selection == tcod.event.K_b:
+                        self.game.player.drop_item(self.game.player.inventory[key-97])
+                        break
 
     def get_item_equipped_in_slot(self, unit, slot):
         for item in unit.equipped:
@@ -185,48 +196,46 @@ class ItemManager(object):
         return [i for i in self.items_on_ground if i.pos == coordinates]
 
     def show_equipment(self):
-        window = PygameWindow(self.game.interface, 4, 3, 22, 10)
-        window.print_at(1, 0, 'Equipment')
-        window.print_at(2, 1, 'Select a slot to unequip or Esc to close:')
+        w, h = 50, 8
+        window = tcod.console.Console(w, h, 'F')
+        window.draw_frame(0, 0, w, h, 'Equipment')
+        window.print(2, 1, 'Select a slot to unequip or Esc to close:')
         i = 3
         slots = ('hand', 'head', 'chest', 'feet')
         for slot in slots:
-            window.print_at(1, i, '{}) {:>6}:'.format(
+            window.print(2, i, '{}) {:>5}:'.format(
                 chr(94 + i),
                 slot[0].upper() + slot[1:]))
             item = self.get_item_equipped_in_slot(self.game.player, slot)
             if item:
                 summary = '{:22.22}{}('.format(
                     item.full_name,
-                    '\u2026' if len(item.full_name) > 22 else ' ')
+                    '+' if len(item.full_name) > 22 else ' ')
                 if item.type == Weapon:
                     summary += '{:+d}/{})'.format(item.to_hit_modifier,
                                                   item.damage_string)
                 elif item.type == Armor:
                     summary += '{:+d})'.format(item.armor_class_modifier)
-                window.print_at(6, i, item.icon['inv'])
-                window.print_at(7, i, summary)
+                window.print(12, i, item.icon, item.color)
+                window.print(14, i, summary, enchantment_colors[item.enchantment_level])
             i += 1
-        window.update()
-        pygame.event.clear()
+        window.blit(self.game.screen, 4, 4, 0, 0, w, h)
+        tcod.console_flush()
         while True:
-            event = pygame.event.wait()
-            if event.type == pygame.QUIT:
-                self.game.interface.close()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == 27:
+            key = wait()
+            if key == 27:
+                break
+            elif key in range(97, 97 + len(slots)):
+                item = self.get_item_equipped_in_slot(
+                    self.game.player, slots[key - 97])
+                if item:
+                    self.game.player.unequip(item)
                     break
-                elif event.key in range(97, 97 + len(slots)):
-                    item = self.get_item_equipped_in_slot(
-                        self.game.player, slots[event.key - 97])
-                    if item:
-                        self.game.player.unequip(item)
-                        break
 
 
-class Item(pygame.sprite.Sprite):
+class Item(Char):
     def __init__(self, parent, manager, name, material, base_weight, base_value,
-                 icon_ids, slot, quality, ench_lvl):
+                 icon, slot, quality, ench_lvl):
         super().__init__()
         self.type_str = parent.__class__.__name__
         self.type = parent.__class__
@@ -239,13 +248,8 @@ class Item(pygame.sprite.Sprite):
         self.weight = self.base_weight * float(tmp_material[1])
         self.base_value = base_value
         self.value = self.base_value * float(tmp_material[2])
-        self.icon_id_world, self.icon_id_equipped, self.icon_id_inv = icon_ids
-        tileset = manager.game.interface.tileset
-        self.icon = {
-            'equip': [tileset[i].copy() for i in icon_ids[1]],
-            'inv': tileset[icon_ids[2]].copy()}
-        self.image = tileset[icon_ids[0]].copy()
-        self.rect = self.image.get_rect()
+        self.icon = icon[0]
+        self.color = vars(tcod.constants)[icon[1]]
         self.layer = 2
         self.slot = slot
         self.quality = int(quality)
@@ -257,17 +261,13 @@ class Item(pygame.sprite.Sprite):
             name)).strip()
         self.full_name = ' '.join(self.full_name.split())
 
-    def update(self):
-        self.rect.topleft = (self.pos[0] * 32, self.pos[1] * 32)
-
     def dropped(self, coords):
-        self.manager.items_on_ground.add(self)
-        self.manager.game.interface.objects_on_map.add(self)
+        self.add(self.manager.items_on_ground,
+                  self.manager.game.level.objects_on_map)
         self.pos = coords
 
     def picked(self, unit):
-        self.remove((self.manager.items_on_ground,
-                     self.manager.game.interface.objects_on_map))
+        self.remove(self.manager.items_on_ground, self.manager.game.level.objects_on_map)
         self.pos = None
 
 
@@ -283,7 +283,6 @@ class Weapon(Item):
             ench_lvl = roll_gaussian(1, 3, 0.5) - 2
             material = random.choice(materials['weapons'])
             value = value * (1 + 0.4 * quality) * (1 + 0.8 * ench_lvl)
-        icon_triplet_list = template['icon_ids'].split(', ')
         super().__init__(
              self,
              manager,
@@ -291,9 +290,7 @@ class Weapon(Item):
              material,
              template['base_weight'],
              value,
-             (int(icon_triplet_list[0].split()[0]),
-              [int(icon_set.split()[1]) for icon_set in icon_triplet_list],
-              int(icon_triplet_list[0].split()[2])),
+             (template['icon'], template['color']),
              template['slot'],
              quality,
              ench_lvl)
@@ -317,7 +314,6 @@ class Armor(Item):
             ench_lvl = roll_gaussian(1, 3, 0.5) - 2
             material = random.choice(materials['armor'])
             value = value * (1 + 0.4 * quality) * (1 + 0.8 * ench_lvl)
-        icon_triplet_list = template['icon_ids'].split(', ')
         super().__init__(
              self,
              manager,
@@ -325,9 +321,7 @@ class Armor(Item):
              material,
              template['base_weight'],
              value,
-             (int(icon_triplet_list[0].split()[0]),
-              [int(icon_set.split()[1]) for icon_set in icon_triplet_list],
-              int(icon_triplet_list[0].split()[2])),
+             (template['icon'], template['color']),
              template['slot'],
              quality,
              ench_lvl)

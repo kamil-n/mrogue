@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import random
+import tcod.event
 
-__version__ = 'v0.3.0.0'
+__version__ = 'v0.4.0.0'
 
 
 def adjacent(fr, to):
@@ -67,3 +68,16 @@ def compile_dmg_die(num_die, sides, modifier):
     if modifier != 0:
         die_string += '{:+d}'.format(modifier)
     return die_string
+
+
+def wait(character = None):
+    while True:
+        for event in tcod.event.wait():
+            if event.type == 'QUIT':
+                raise SystemExit
+            elif event.type == 'KEYDOWN':
+                if character:
+                    if event.sym == character:
+                        return True
+                else:
+                    return event.sym
