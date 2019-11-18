@@ -105,7 +105,7 @@ class Rogue(object):
                 self.log.info('Game exit on Q press.')
             else:
                 self.log.warning('Key \'{}\' not supported.'.format(key))
-                self.messenger.add('Unknown command: \'%s\'.' % chr(key))
+                self.messenger.add('Unknown command: \'%s\'.' % (chr(key) if key<256 else '<?>'))
 
 
 if __name__ == '__main__':
