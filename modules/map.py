@@ -34,29 +34,43 @@ class RogueMap(tcod.map.Map):
         self.log = logging.getLogger(__name__)
         self.tileset = {'wall': '#', 'floor': '.'}
         bsp = tcod.bsp.BSP(0, 0, self.mapDim[0], self.mapDim[1])
-        bsp.split_recursive(5, 15, 10, 2.0, 0.1)
+        bsp.split_recursive(7, 10, 8, 1.0, 0.1)
         offset = 2
-        for node in bsp.pre_order():
-            '''if node.horizontal:
-                for x in range(node.x, node.x + node.w):
-                    self.tiles[x][node.position] = 'o'
-            else:
-                for y in range(node.y, node.y + node.h):
-                    self.tiles[node.position][y] = 'o'''''
+        vector = []
+        # collect node centers from childless nodes
+        for node in bsp.inverted_level_order():
             if node.children:
-                n1, n2 = node.children
-                x1, y1 = n1.x + n1.w // 2, n1.y + n1.h // 2
-                x2, y2 = n2.x + n2.w // 2, n2.y + n2.h // 2
-                self.dig_tunnel(x1, y1, x2, y2)
+                continue
+            vector.append((node.x + node.w // 2, node.y + node.h // 2))
+        # place rooms
+        for node in bsp.inverted_level_order():
+            if not node.children and random.random() < 0.6:
+                for x in range(node.x+offset+1, node.x+node.w-offset):
+                    for y in range(node.y+offset+1, node.y + node.h-offset):
+                        self.dig(x, y)
+        # dig tunnels from opposite nodes to partition line center
+        for node in bsp.inverted_level_order():
+            if not node.children:
+                continue
+            if node.horizontal:
+                partition_center = (node.x + node.w // 2, node.position)
             else:
-                if random.random() < 0.5:
-                    for x in range(node.x+offset+1, node.x+node.w-offset):
-                        for y in range(node.y+offset+1, node.y + node.h-offset):
-                            self.tiles[x][y] = self.tileset['floor']
-                            r = random.randint(64, 128)
-                            self.colors[x][y] = tcod.Color(r, r, r)
-                            self.transparent[x][y] = True
-                            self.walkable[x][y] = True
+                partition_center = (node.position, node.y + node.h // 2)
+            dist_pairs = []
+            for node_center in vector:
+                dist = (partition_center[0] - node_center[0]) ** 2 + (partition_center[1] - node_center[1]) ** 2
+                dist_pairs.append((dist, node_center))
+            dist_pairs.sort(key=lambda x:x[0], reverse=True)
+            node1 = dist_pairs.pop()
+            node2 = dist_pairs.pop()
+            if node.horizontal:
+                while node2[1][1] == node1[1][1]:
+                    node2 = dist_pairs.pop()
+            else:
+                while node2[1][0] == node1[1][0]:
+                    node2 = dist_pairs.pop()
+            self.dig_tunnel(*node1[1], *partition_center)
+            self.dig_tunnel(*node2[1], *partition_center)
 
     def dig_tunnel(self, x1, y1, x2, y2):
         absx = abs(x2 - x1)
@@ -66,6 +80,7 @@ class RogueMap(tcod.map.Map):
         horizontal = random.random() > 0.5
         distance = 0
         broken = 100
+        self.dig(x1, y1)
         while x1 != x2 or y1 != y2:
             if y1 == y2 or (horizontal and x1 != x2):
                 x1 += dx
@@ -74,13 +89,17 @@ class RogueMap(tcod.map.Map):
             distance += 1
             if self.tiles[x1][y1] == self.tileset['wall']:
                 broken = distance
-            self.tiles[x1][y1] = self.tileset['floor']
-            r = random.randint(64, 128)
-            self.colors[x1][y1] = tcod.Color(r, r, r)
-            self.transparent[x1][y1] = True
-            self.walkable[x1][y1] = True
+            self.dig(x1, y1)
             if random.random() > 0.7 and distance - broken > 1:
                 horizontal = not horizontal
+        self.dig(x2, y2)
+
+    def dig(self, x, y):
+        self.tiles[x][y] = self.tileset['floor']
+        r = random.randint(64, 128)
+        self.colors[x][y] = tcod.Color(r, r, r)
+        self.transparent[x][y] = True
+        self.walkable[x][y] = True
 
     def find_spot(self):
         while True:
@@ -124,10 +143,6 @@ class RogueMap(tcod.map.Map):
             for x in range(0, self.mapDim[0]):
                 for y in range(1, self.mapDim[1]):
                     self.game.screen.print(x, y, self.tiles[x][y], self.colors[x][y] * 1.00)
-            for item in self.game.items.items_on_ground:
-                self.game.screen.print(*item.pos, item.icon, item.color)
-            for monster in self.game.monsters.monsterList:
-                self.game.screen.print(*monster.pos, monster.icon, monster.color)
         else:
             for x in range(0, self.mapDim[0]):
                 for y in range(1, self.mapDim[1]):
@@ -136,12 +151,12 @@ class RogueMap(tcod.map.Map):
                         self.game.screen.print(x, y, self.tiles[x][y], self.colors[x][y] * 1.00)
                     elif self.explored[x][y]:
                         self.game.screen.print(x, y, self.tiles[x][y], self.colors[x][y] * 0.20)
-            for item in self.game.items.items_on_ground:
-                if self.fov[item.pos[0]][item.pos[1]]:
-                    self.game.screen.print(*item.pos, item.icon, item.color)
-            for monster in self.game.monsters.monsterList:
-                if self.fov[monster.pos[0]][monster.pos[1]]:
-                    self.game.screen.print(*monster.pos, monster.icon, monster.color)
+        for item in self.game.items.items_on_ground:
+            if self.fov[item.pos[0]][item.pos[1]] or 'debug' in argv:
+                self.game.screen.print(*item.pos, item.icon, item.color)
+        for monster in self.game.monsters.monsterList:
+            if self.fov[monster.pos[0]][monster.pos[1]] or 'debug' in argv:
+                self.game.screen.print(*monster.pos, monster.icon, monster.color)
         self.game.screen.print(*self.game.player.pos, self.game.player.icon, self.game.player.color)
 
     def neighbors(self, of):
