@@ -4,6 +4,7 @@ import logging
 import numpy
 from queue import PriorityQueue
 import random
+from sys import argv
 import tcod.bsp
 import tcod.map
 from modules import adjacent
@@ -17,6 +18,15 @@ class RogueMap(tcod.map.Map):
         self.mapDim = (game.screen.width, game.screen.height - 1)
         super().__init__(self.mapDim[0], self.mapDim[1], 'F')
         self.tiles = numpy.full((self.mapDim[0], self.mapDim[1]), '#', order='F')
+        temp = []
+        for i in range(self.mapDim[0]):
+            row = []
+            for j in range(self.mapDim[1]):
+                r = random.randint(64, 128)
+                row.append(tcod.Color(r, r, r))
+            temp.append(row)
+        self.colors = numpy.empty((self.mapDim[0], self.mapDim[1]), object, order='F')
+        self.colors[...] = temp
         self.explored = numpy.zeros((self.mapDim[0], self.mapDim[1]), bool, order='F')
         self.game = game
         self.objects_on_map = []
@@ -43,6 +53,8 @@ class RogueMap(tcod.map.Map):
                     for x in range(node.x+offset+1, node.x+node.w-offset):
                         for y in range(node.y+offset+1, node.y + node.h-offset):
                             self.tiles[x][y] = self.tileset['floor']
+                            r = random.randint(64, 128)
+                            self.colors[x][y] = tcod.Color(r, r, r)
                             self.transparent[x][y] = True
                             self.walkable[x][y] = True
 
@@ -63,6 +75,8 @@ class RogueMap(tcod.map.Map):
             if self.tiles[x1][y1] == self.tileset['wall']:
                 broken = distance
             self.tiles[x1][y1] = self.tileset['floor']
+            r = random.randint(64, 128)
+            self.colors[x1][y1] = tcod.Color(r, r, r)
             self.transparent[x1][y1] = True
             self.walkable[x1][y1] = True
             if random.random() > 0.7 and distance - broken > 1:
@@ -73,7 +87,7 @@ class RogueMap(tcod.map.Map):
             x = random.randint(1, self.mapDim[0] - 1)
             y = random.randint(self.mapTop + 1,
                                self.mapDim[1] - 1)
-            if self.walkable[x][y]:  # and not self.game.interface.unit_at((x, y)):
+            if self.walkable[x][y] and not self.unit_at((x, y)):
                 return x, y
 
     def movement(self, unit, check):
@@ -106,19 +120,28 @@ class RogueMap(tcod.map.Map):
 
     def draw_map(self):
         self.game.screen.clear()
-        for x in range(0, self.mapDim[0]):
-            for y in range(1, self.mapDim[1]):
-                if self.fov[x][y]:
-                    self.explored[x][y] = True
-                    self.game.screen.print(x, y, self.tiles[x][y], (160, 160, 160))
-                elif self.explored[x][y]:
-                    self.game.screen.print(x, y, self.tiles[x][y], (64, 64, 64))
-        for item in self.game.items.items_on_ground:
-            if self.fov[item.pos[0]][item.pos[1]]:
+        if 'debug' in argv:
+            for x in range(0, self.mapDim[0]):
+                for y in range(1, self.mapDim[1]):
+                    self.game.screen.print(x, y, self.tiles[x][y], self.colors[x][y] * 1.00)
+            for item in self.game.items.items_on_ground:
                 self.game.screen.print(*item.pos, item.icon, item.color)
-        for monster in self.game.monsters.monsterList:
-            if self.fov[monster.pos[0]][monster.pos[1]]:
+            for monster in self.game.monsters.monsterList:
                 self.game.screen.print(*monster.pos, monster.icon, monster.color)
+        else:
+            for x in range(0, self.mapDim[0]):
+                for y in range(1, self.mapDim[1]):
+                    if self.fov[x][y]:
+                        self.explored[x][y] = True
+                        self.game.screen.print(x, y, self.tiles[x][y], self.colors[x][y] * 1.00)
+                    elif self.explored[x][y]:
+                        self.game.screen.print(x, y, self.tiles[x][y], self.colors[x][y] * 0.20)
+            for item in self.game.items.items_on_ground:
+                if self.fov[item.pos[0]][item.pos[1]]:
+                    self.game.screen.print(*item.pos, item.icon, item.color)
+            for monster in self.game.monsters.monsterList:
+                if self.fov[monster.pos[0]][monster.pos[1]]:
+                    self.game.screen.print(*monster.pos, monster.icon, monster.color)
         self.game.screen.print(*self.game.player.pos, self.game.player.icon, self.game.player.color)
 
     def neighbors(self, of):
@@ -128,6 +151,7 @@ class RogueMap(tcod.map.Map):
         results = list(filter(lambda p: 0 < p[0] <= self.mapDim[0] and 0 < p[1] <= self.mapDim[1], results))
         results = list(filter(lambda p: self.walkable[p[0]][p[1]], results))
         return results
+
 
 class Pathfinder(object):
     def __init__(self, level, start):
