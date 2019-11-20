@@ -7,7 +7,9 @@ import random
 from sys import argv
 import tcod.bsp
 import tcod.map
-from modules import adjacent
+from modules import adjacent, wait
+
+tileset = {'wall': '#', 'floor': '.'}
 
 
 class RogueMap(tcod.map.Map):
@@ -17,7 +19,7 @@ class RogueMap(tcod.map.Map):
     def __init__(self, game):
         self.mapDim = (game.screen.width, game.screen.height - 1)
         super().__init__(self.mapDim[0], self.mapDim[1], 'F')
-        self.tiles = numpy.full((self.mapDim[0], self.mapDim[1]), '#', order='F')
+        self.tiles = numpy.full((self.mapDim[0], self.mapDim[1]), tileset['wall'], order='F')
         temp = []
         for i in range(self.mapDim[0]):
             row = []
@@ -32,22 +34,29 @@ class RogueMap(tcod.map.Map):
         self.objects_on_map = []
         self.units = []
         self.log = logging.getLogger(__name__)
-        self.tileset = {'wall': '#', 'floor': '.'}
         bsp = tcod.bsp.BSP(0, 0, self.mapDim[0], self.mapDim[1])
-        bsp.split_recursive(7, 10, 8, 1.0, 0.1)
-        offset = 2
+        bsp.split_recursive(4, 11, 8, 1.0, 1.0)
         vector = []
         # collect node centers from childless nodes
         for node in bsp.inverted_level_order():
-            if node.children:
-                continue
-            vector.append((node.x + node.w // 2, node.y + node.h // 2))
+            if not node.children:
+                vector.append((node.x + node.w // 2, node.y + node.h // 2))
+            for x in range(node.x, node.x + node.w):
+                self.colors[x][node.y] = tcod.red
+            for y in range(node.y, node.y + node.h):
+                self.colors[node.x][y] = tcod.red
         # place rooms
         for node in bsp.inverted_level_order():
-            if not node.children and random.random() < 0.6:
-                for x in range(node.x+offset+1, node.x+node.w-offset):
-                    for y in range(node.y+offset+1, node.y + node.h-offset):
-                        self.dig(x, y)
+            if not node.children:  # and random.random() <= 1.0:
+                nx = node.x + node.w // 2
+                ny = node.y + node.h // 2
+                w = random.randint(3, 5)
+                h = random.randint(2, 3)
+                for x in range(nx - w, nx + w + 1):
+                    for y in range(ny - h, ny + h + 1):
+                        if 1 < x < self.mapDim[0] - 1 and 1 < y < self.mapDim[1] - 1:
+                            self.dig(x, y)
+                self.dig(nx, ny, '$', tcod.yellow)
         # dig tunnels from opposite nodes to partition line center
         for node in bsp.inverted_level_order():
             if not node.children:
@@ -71,6 +80,25 @@ class RogueMap(tcod.map.Map):
                     node2 = dist_pairs.pop()
             self.dig_tunnel(*node1[1], *partition_center)
             self.dig_tunnel(*node2[1], *partition_center)
+            self.dig(*partition_center, '%', tcod.yellow)
+            ###############
+            for x in range(0, self.mapDim[0]):
+                for y in range(1, self.mapDim[1]):
+                    self.game.screen.print(x, y, self.tiles[x][y], self.colors[x][y] * 1.00)
+            tcod.console_flush()
+            wait()
+            ###############
+        for node in bsp.inverted_level_order():
+            if not node.children:
+                for x in range(node.x, node.x + node.w):
+                    self.colors[x][node.y] = tcod.red
+                for y in range(node.y, node.y + node.h):
+                    self.colors[node.x][y] = tcod.red
+        for node in bsp.inverted_level_order():
+            if not node.children:  # and random.random() <= 1.0:
+                nx = node.x + node.w // 2
+                ny = node.y + node.h // 2
+                self.dig(nx, ny, '$', tcod.yellow)
 
     def dig_tunnel(self, x1, y1, x2, y2):
         absx = abs(x2 - x1)
@@ -87,19 +115,21 @@ class RogueMap(tcod.map.Map):
             else:
                 y1 += dy
             distance += 1
-            if self.tiles[x1][y1] == self.tileset['wall']:
+            if self.tiles[x1][y1] == tileset['wall']:
                 broken = distance
             self.dig(x1, y1)
             if random.random() > 0.7 and distance - broken > 1:
                 horizontal = not horizontal
         self.dig(x2, y2)
 
-    def dig(self, x, y):
-        self.tiles[x][y] = self.tileset['floor']
-        r = random.randint(64, 128)
-        self.colors[x][y] = tcod.Color(r, r, r)
-        self.transparent[x][y] = True
-        self.walkable[x][y] = True
+    def dig(self, x, y, tile=tileset['floor'], color=None, transparent=True, walkable=True):
+        self.tiles[x][y] = tile
+        if not color:
+            r = random.randint(64, 128)
+            color = tcod.Color(r, r, r)
+        self.colors[x][y] = color
+        self.transparent[x][y] = transparent
+        self.walkable[x][y] = walkable
 
     def find_spot(self):
         while True:
