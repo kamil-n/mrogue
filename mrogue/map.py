@@ -41,10 +41,6 @@ class RogueMap(tcod.map.Map):
         for node in bsp.inverted_level_order():
             if not node.children:
                 vector.append((node.x + node.w // 2, node.y + node.h // 2))
-            for x in range(node.x, node.x + node.w):
-                self.colors[x][node.y] = tcod.red
-            for y in range(node.y, node.y + node.h):
-                self.colors[node.x][y] = tcod.red
         # place rooms
         for node in bsp.inverted_level_order():
             if not node.children:  # and random.random() <= 1.0:
@@ -56,7 +52,6 @@ class RogueMap(tcod.map.Map):
                     for y in range(ny - h, ny + h + 1):
                         if 1 < x < self.mapDim[0] - 1 and 1 < y < self.mapDim[1] - 1:
                             self.dig(x, y)
-                self.dig(nx, ny, '$', tcod.yellow)
         # dig tunnels from opposite nodes to partition line center
         for node in bsp.inverted_level_order():
             if not node.children:
@@ -73,25 +68,13 @@ class RogueMap(tcod.map.Map):
             node1 = dist_pairs.pop()
             node2 = dist_pairs.pop()
             if node.horizontal:
-                print('horizontal; {} <=> {} <=> {}'.format(node1[1][1], partition_center[1], node2[1][1]))
-                while node1[1][1] < partition_center[1] and node2[1][1] < partition_center[1]:
+                while (node1[1][1] < partition_center[1]) == (node2[1][1] < partition_center[1]):
                     node2 = dist_pairs.pop()
-                    print('   drawing another: {}'.format(node2[1][1]))
             else:
-                print('vertical; {} <=> {} <=> {}'.format(node1[1][0], partition_center[0], node2[1][0]))
-                while node2[1][0] < partition_center[0] and node2[1][0] < partition_center[0]:
+                while (node1[1][0] < partition_center[0]) == (node2[1][0] < partition_center[0]):
                     node2 = dist_pairs.pop()
-                    print('   drawing another: {}'.format(node2[1][0]))
             self.dig_tunnel(*node1[1], *partition_center)
             self.dig_tunnel(*node2[1], *partition_center)
-            self.dig(*partition_center, '%', tcod.yellow)
-            ###############
-            for x in range(0, self.mapDim[0]):
-                for y in range(1, self.mapDim[1]):
-                    self.game.screen.print(x, y, self.tiles[x][y], self.colors[x][y] * 1.00)
-            tcod.console_flush()
-            wait()
-            ###############
 
     def dig_tunnel(self, x1, y1, x2, y2):
         absx = abs(x2 - x1)
