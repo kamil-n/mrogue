@@ -82,8 +82,7 @@ class ItemManager(object):
     def __init__(self, game, num_items):
         self.game = game
         self.log = logging.getLogger(__name__)
-        basedir = path.dirname(path.abspath(__file__))
-        with open(path.join(basedir, 'item_templates.json')) as f:
+        with open(path.join(game.dir, 'item_templates.json')) as f:
             templates_file = loads(f.read())
         self.log.debug('Creating pre-set items from templates:')
         for category, category_dict in templates_file.items():

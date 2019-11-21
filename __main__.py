@@ -30,12 +30,15 @@ class Rogue(object):
     turn = 0
 
     def __init__(self):
-        logging.basicConfig(filename='modules.log', level=logging.DEBUG, filemode='w',
+        if getattr(sys, 'frozen', False):
+            self.dir = path.dirname(sys.executable)
+        else:
+            self.dir = path.dirname(__file__)
+        logging.basicConfig(filename=path.join(self.dir, 'modules.log'), level=logging.DEBUG, filemode='w',
                             format='%(name)s - %(levelname)s - %(message)s')
         self.log = logging.getLogger(__name__)
         self.log.info('Welcome to MRogue {}!'.format(__version__))
-        basedir = path.dirname(path.abspath(__file__))
-        tcod.console_set_custom_font(path.join(basedir, 'terminal10x16_gs_ro.png'), tcod.FONT_LAYOUT_ASCII_INROW | tcod.FONT_TYPE_GREYSCALE)
+        tcod.console_set_custom_font(path.join(self.dir, 'terminal10x16_gs_ro.png'), tcod.FONT_LAYOUT_ASCII_INROW | tcod.FONT_TYPE_GREYSCALE)
         self.screen = tcod.console_init_root(100, 40, 'MRogue {}'.format(__version__), renderer=tcod.RENDERER_SDL2, order='F', vsync=True)
         self.level = RogueMap(self)
         self.items = ItemManager(self, 10)
