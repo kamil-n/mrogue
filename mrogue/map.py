@@ -7,7 +7,7 @@ import random
 from sys import argv
 import tcod.bsp
 import tcod.map
-from modules import adjacent, wait
+from mrogue import adjacent, wait
 
 tileset = {'wall': '#', 'floor': '.'}
 
@@ -69,15 +69,19 @@ class RogueMap(tcod.map.Map):
             for node_center in vector:
                 dist = (partition_center[0] - node_center[0]) ** 2 + (partition_center[1] - node_center[1]) ** 2
                 dist_pairs.append((dist, node_center))
-            dist_pairs.sort(key=lambda x:x[0], reverse=True)
+            dist_pairs.sort(key=lambda d: d[0], reverse=True)
             node1 = dist_pairs.pop()
             node2 = dist_pairs.pop()
             if node.horizontal:
-                while node2[1][1] == node1[1][1]:
+                print('horizontal; {} <=> {} <=> {}'.format(node1[1][1], partition_center[1], node2[1][1]))
+                while node1[1][1] < partition_center[1] and node2[1][1] < partition_center[1]:
                     node2 = dist_pairs.pop()
+                    print('   drawing another: {}'.format(node2[1][1]))
             else:
-                while node2[1][0] == node1[1][0]:
+                print('vertical; {} <=> {} <=> {}'.format(node1[1][0], partition_center[0], node2[1][0]))
+                while node2[1][0] < partition_center[0] and node2[1][0] < partition_center[0]:
                     node2 = dist_pairs.pop()
+                    print('   drawing another: {}'.format(node2[1][0]))
             self.dig_tunnel(*node1[1], *partition_center)
             self.dig_tunnel(*node2[1], *partition_center)
             self.dig(*partition_center, '%', tcod.yellow)
@@ -88,17 +92,6 @@ class RogueMap(tcod.map.Map):
             tcod.console_flush()
             wait()
             ###############
-        for node in bsp.inverted_level_order():
-            if not node.children:
-                for x in range(node.x, node.x + node.w):
-                    self.colors[x][node.y] = tcod.red
-                for y in range(node.y, node.y + node.h):
-                    self.colors[node.x][y] = tcod.red
-        for node in bsp.inverted_level_order():
-            if not node.children:  # and random.random() <= 1.0:
-                nx = node.x + node.w // 2
-                ny = node.y + node.h // 2
-                self.dig(nx, ny, '$', tcod.yellow)
 
     def dig_tunnel(self, x1, y1, x2, y2):
         absx = abs(x2 - x1)

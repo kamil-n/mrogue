@@ -3,9 +3,9 @@
 import logging
 from sys import argv
 import tcod.constants
-from modules.console import Char
-from modules.item import Item, Weapon, Armor
-from modules import roll
+from mrogue.console import Char
+from mrogue.item import Item, Weapon, Armor
+from mrogue import roll
 
 
 class Unit(Char):

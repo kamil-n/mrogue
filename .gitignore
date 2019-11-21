@@ -1,7 +1,7 @@
 build
 dist
 __pycache__
-/modules/__pycache__
+/mrogue/__pycache__
 *.log
 .idea
 venv

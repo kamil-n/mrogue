@@ -12,8 +12,8 @@ import tcod
 import tcod.console
 import tcod.constants
 import tcod.event
-from modules import decompile_dmg_die, compile_dmg_die, roll_gaussian, wait
-from modules.console import Char
+from mrogue import decompile_dmg_die, compile_dmg_die, roll_gaussian, wait
+from mrogue.console import Char
 
 quality_levels = {
     -2: 'broken',

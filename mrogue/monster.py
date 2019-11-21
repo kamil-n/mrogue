@@ -4,9 +4,9 @@ from json import loads
 import logging
 from os import path
 import random
-from modules import roll, adjacent
-import modules.unit
-from modules.map import Pathfinder
+from mrogue import roll, adjacent
+import mrogue.unit
+from mrogue.map import Pathfinder
 
 
 class Menagerie(object):
@@ -37,7 +37,7 @@ class Menagerie(object):
             unit.update()
 
 
-class Monster(modules.unit.Unit):
+class Monster(mrogue.unit.Unit):
     def __init__(self, game, template, groups):
         super().__init__(template['name'], game, (template['icon'], template['color']),
                          5, template['to_hit'], template['dmg_die'],

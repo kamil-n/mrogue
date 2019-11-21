@@ -6,12 +6,12 @@ import sys
 import tcod
 import tcod.console
 import tcod.event
-from modules import __version__, wait
-from modules.map import RogueMap
-from modules.message import Messenger
-from modules.item import ItemManager
-from modules.monster import Menagerie
-from modules.player import Player
+from mrogue import __version__, wait
+from mrogue.map import RogueMap
+from mrogue.message import Messenger
+from mrogue.item import ItemManager
+from mrogue.monster import Menagerie
+from mrogue.player import Player
 
 
 def direction_from(key, x, y):
@@ -34,7 +34,7 @@ class Rogue(object):
             self.dir = path.dirname(sys.executable)
         else:
             self.dir = path.dirname(__file__)
-        logging.basicConfig(filename=path.join(self.dir, 'modules.log'), level=logging.DEBUG, filemode='w',
+        logging.basicConfig(filename=path.join(self.dir, 'mrogue.log'), level=logging.DEBUG, filemode='w',
                             format='%(name)s - %(levelname)s - %(message)s')
         self.log = logging.getLogger(__name__)
         self.log.info('Welcome to MRogue {}!'.format(__version__))

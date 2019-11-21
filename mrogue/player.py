@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import tcod.console
-import modules.unit
+import mrogue.unit
 
 
-class Player(modules.unit.Unit):
+class Player(mrogue.unit.Unit):
     def __init__(self, game):
         super().__init__('Player', game, ('@', 'lighter_red'), 6, 1, '1d2+1', 11, 20)
         self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')

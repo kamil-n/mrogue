@@ -1,6 +1,6 @@
 import sys
 from cx_Freeze import setup, Executable
-from modules import __version__
+from mrogue import __version__
 
 files = ['item_templates.json', 'monster_templates.json', 'terminal10x16_gs_ro.png']
 buildOptions = dict(packages=[], excludes=[], include_files=files)
