@@ -116,21 +116,28 @@ class RogueMap(tcod.map.Map):
                 return x, y
 
     def movement(self, unit, check):
+        if unit.pos == check:
+            return True
         if not adjacent(unit.pos, check):
             self.log.warning('{} tried to move more than 1 cell!'.format(unit.name))
-            return
+            return False
         if not self.walkable[check[0]][check[1]]:
-            self.game.messenger.add('{} runs into the wall.'.format(unit.name))
-            return
+            if unit.name != 'Player':
+                self.game.messenger.add('{} runs into the wall.'.format(unit.name))
+                return
+            else:
+                self.game.messenger.add('You can\'t move there.')
+                return False
         target = self.unit_at(check)
         if target:
             if unit.name == 'Player' and unit != target:
                 self.log.debug('{} engaged {}.'.format(unit.name, target.name))
                 unit.attack(target)
-                return
+                return True
         else:
             unit.last_pos = unit.pos
             unit.pos = check
+            return True
 
     def look_around(self):
         radius = 0  # self.game.player.sight_range

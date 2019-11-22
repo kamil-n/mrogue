@@ -28,7 +28,8 @@ class Menagerie(object):
             if monster.is_in_range(target.pos):
                 # if monster.senses_or_reacts_in_some_way_to(target)
                 if adjacent(monster.pos, target.pos):
-                    self.log.debug('{} is in melee range - attacking {}'.format(monster.name, target.name))
+                    self.log.debug('{} is in melee range - attacking {}'.format(
+                        monster.name, target.name))
                     monster.path = None
                     monster.attack(target)
                 else:
@@ -41,9 +42,14 @@ class Menagerie(object):
 
 class Monster(mrogue.unit.Unit):
     def __init__(self, game, template, groups):
-        super().__init__(template['name'], game, (template['icon'], template['color']),
-                         5, template['to_hit'], template['dmg_die'],
-                         template['ac'], roll(template['hit_die']))
+        super().__init__(template['name'],
+                         game,
+                         (template['icon'], template['color']),
+                         10,
+                         template['to_hit'],
+                         template['dmg_die'],
+                         template['ac'],
+                         roll(template['hit_die']))
         self.path = None
         self.log = logging.getLogger(__name__)
         for group in groups:
@@ -58,13 +64,17 @@ class Monster(mrogue.unit.Unit):
     def approach(self, goal):
         if self.path:  # if already on a path
             if goal != self.path[-1]:  # if target moved, find new path
-                self.path = Pathfinder(self.game.level, self.pos).find(goal).path(self.pos, goal)
+                self.path = Pathfinder(self.game.level,
+                                       self.pos).find(goal).path(self.pos, goal)
         else:  # find a path to target
-            self.path = Pathfinder(self.game.level, self.pos).find(goal).path(self.pos, goal)
+            self.path = Pathfinder(self.game.level,
+                                   self.pos).find(goal).path(self.pos, goal)
         if self.game.level.unit_at(self.path[0]):
             tiles = self.game.level.neighbors(self.pos)
-            tiles = list(filter(lambda p: not self.game.level.unit_at(p), tiles))
-            pairs = [(abs(goal[0] - x), abs(goal[1] - y), (x, y)) for x, y in tiles]
+            tiles = list(filter(lambda p: not self.game.level.unit_at(p),
+                                tiles))
+            pairs = [(abs(goal[0] - x), abs(goal[1] - y), (x, y))
+                     for x, y in tiles]
             if not pairs:
                 return
             nearest = min(pairs, key=lambda v: v[0] * v[0] + v[1] * v[1])[2]

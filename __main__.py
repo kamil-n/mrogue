@@ -55,10 +55,6 @@ class Rogue(object):
             self.monsters.handle_monsters(self.player)
             self.player.check_if_items_on_ground()
             self.level.look_around()
-            self.level.draw_map()
-            self.player.show_stats()
-            self.messenger.show()
-            tcod.console_flush()
             if len(self.monsters.monsterList) == 0:
                 win = tcod.console.Console(20, 4, 'F')
                 win.draw_frame(0, 0, 20, 4, 'Congratulations.', False)
@@ -75,40 +71,50 @@ class Rogue(object):
                 tcod.console_flush()
                 wait(tcod.event.K_q)
                 break
-            key = wait()
-            self.messenger.clear()
-            if key == tcod.event.K_i:
-                self.items.show_inventory()
-            elif key == tcod.event.K_e:
-                self.items.show_equipment()
-            elif key == tcod.event.K_COMMA:
-                self.player.pickup_item(self.items.get_item_on_map(self.player.pos))
-            elif key in range(49, 57 + 1) or key in (tcod.event.K_DOWN, tcod.event.K_UP, tcod.event.K_LEFT, tcod.event.K_RIGHT):
-                self.level.movement(self.player, direction_from(key, *self.player.pos))
-            elif key == tcod.event.K_h:
-                win = tcod.console.Console(65, 16, 'F')
-                win.draw_frame(0, 0, 65, 16, 'Welcome to MRogue {}!'.format(__version__), False)
-                win.print(1, 1, 'Kill all monsters. To attack, \'walk\' into them.')
-                win.print(1, 2, 'Move with keyboard arrows, numpad or number keys.')
-                win.print(1, 3, 'Directions for number keys:')
-                win.print(1, 4, '7\\ 8 /9')
-                win.print(1, 5, '4- @ -6      (press 5 to pass turn)')
-                win.print(1, 6, '1/ 2 \\3')
-                win.print(1, 7, 'Other keys:')
-                win.print(1, 8, 'e - open equipment screen. Press slot hotkeys to unequip items.')
-                win.print(1, 9, 'i - open inventory screen. Press hotkeys to manage items.')
-                win.print(1, 10, ', (comma) - pick up items')
-                win.print(1, 11, 'h - show this help screen.')
-                win.print(1, 12, 'q - close game when on main screen or when game is finished.')
-                win.print(1, 14, 'Esc - close pop-up windows like this one.')
-                win.blit(self.screen, 12, 12, 0, 0, 65, 16, 1.0, 0.95)
+            while True:
+                self.level.draw_map()
+                self.player.show_stats()
+                self.messenger.show()
                 tcod.console_flush()
-                wait(tcod.event.K_ESCAPE)
-            elif key == tcod.event.K_q:
-                self.log.info('Game exit on Q press.')
-            else:
-                self.log.warning('Key \'{}\' not supported.'.format(key))
-                self.messenger.add('Unknown command: \'%s\'.' % (chr(key) if key<256 else '<?>'))
+                key = wait()
+                self.messenger.clear()
+                if key == tcod.event.K_i:
+                    if self.items.show_inventory():
+                        break
+                elif key == tcod.event.K_e:
+                    if self.items.show_equipment():
+                        break
+                elif key == tcod.event.K_COMMA:
+                    if self.player.pickup_item(self.items.get_item_on_map(self.player.pos)):
+                        break
+                elif key in range(49, 57 + 1) or key in (tcod.event.K_DOWN, tcod.event.K_UP, tcod.event.K_LEFT, tcod.event.K_RIGHT):
+                    if self.level.movement(self.player, direction_from(key, *self.player.pos)):
+                        break
+                elif key == tcod.event.K_h:
+                    win = tcod.console.Console(65, 16, 'F')
+                    win.draw_frame(0, 0, 65, 16, 'Welcome to MRogue {}!'.format(__version__), False)
+                    win.print(1, 1, 'Kill all monsters. To attack, \'walk\' into them.')
+                    win.print(1, 2, 'Move with keyboard arrows, numpad or number keys.')
+                    win.print(1, 3, 'Directions for number keys:')
+                    win.print(1, 4, '7\\ 8 /9')
+                    win.print(1, 5, '4- @ -6      (press 5 to pass turn)')
+                    win.print(1, 6, '1/ 2 \\3')
+                    win.print(1, 7, 'Other keys:')
+                    win.print(1, 8, 'e - open equipment screen. Press slot hotkeys to unequip items.')
+                    win.print(1, 9, 'i - open inventory screen. Press hotkeys to manage items.')
+                    win.print(1, 10, ', (comma) - pick up items')
+                    win.print(1, 11, 'h - show this help screen.')
+                    win.print(1, 12, 'q - close game when on main screen or when game is finished.')
+                    win.print(1, 14, 'Esc - close pop-up windows like this one.')
+                    win.blit(self.screen, 12, 12, 0, 0, 65, 16, 1.0, 0.95)
+                    tcod.console_flush()
+                    wait(tcod.event.K_ESCAPE)
+                elif key == tcod.event.K_q:
+                    self.log.info('Game exit on Q press.')
+                    break
+                else:
+                    self.log.warning('Key \'{}\' not supported.'.format(key))
+                    self.messenger.add('Unknown command: \'%s\'.' % (chr(key) if key<256 else '<?>'))
 
 
 if __name__ == '__main__':

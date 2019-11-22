@@ -85,10 +85,12 @@ class Unit(Char):
             msg = '{} picked up {}.'.format(self.name, item.full_name)
             self.game.messenger.add(msg)
             self.log.debug(msg)
+            return True
         else:
             msg = 'There are no items here.'
             self.game.messenger.add(msg)
-            self.log.debug(msg)
+            return False
+
 
     def attack(self, target):
         uname = str.upper(self.name[0]) + self.name[1:]

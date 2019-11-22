@@ -163,7 +163,7 @@ class ItemManager(object):
             tcod.console_flush()
             key = wait()
             if key == 27:
-                break
+                return False
             elif key == tcod.event.K_DOWN:
                 scroll += 1 if item_limit + scroll < total_items else 0
             elif key == tcod.event.K_UP:
@@ -174,16 +174,18 @@ class ItemManager(object):
                 dialog.draw_frame(0, 0, w, h, 'Select an action:')
                 dialog.print(2, 1, 'a) Equip item')
                 dialog.print(2, 2, 'b) Drop item')
-                dialog.blit(self.game.screen, 6, 6, 0, 0, w, h)
+                dialog.blit(self.game.screen, 6, 5, 0, 0, w, h)
                 tcod.console_flush()
-                selection = wait()
-                if key:
-                    if selection == tcod.event.K_a:
-                        self.game.player.equip(self.game.player.inventory[key-97])
+                while True:
+                    selection = wait()
+                    if selection == 27:
                         break
+                    elif selection == tcod.event.K_a:
+                        self.game.player.equip(self.game.player.inventory[key-97])
+                        return True
                     elif selection == tcod.event.K_b:
                         self.game.player.drop_item(self.game.player.inventory[key-97])
-                        break
+                        return True
 
     def get_item_equipped_in_slot(self, unit, slot):
         for item in unit.equipped:
@@ -223,13 +225,13 @@ class ItemManager(object):
         while True:
             key = wait()
             if key == 27:
-                break
+                return False
             elif key in range(97, 97 + len(slots)):
                 item = self.get_item_equipped_in_slot(
                     self.game.player, slots[key - 97])
                 if item:
                     self.game.player.unequip(item)
-                    break
+                    return True
 
 
 class Item(Char):
