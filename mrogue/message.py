@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from mrogue import wait
 from textwrap import wrap
 import tcod.console
 
@@ -12,16 +13,17 @@ class Messenger(object):
 
     def show(self):
         buffer = wrap(' '.join(self.messageList), self.game.screen.width - 7)
-        self.window.clear()
-        if len(buffer) > 1:
-            for line in buffer:
-                self.window.print(0, 0, line)
-        elif buffer:
-            self.window.print(0, 0, buffer[0])
-        self.window.blit(self.game.screen, 0, self.game.screen.height - 1)
-        '''if len(buffer) > 1:
-            self.window.print_at(message_end // 32 + 1, 0, '-more-', (255, 255, 0))
-            self.window.loop(32)'''
+        while buffer:
+            line = buffer.pop(0)
+            self.window.clear()
+            self.window.print(0, 0, line)
+            if buffer:
+                self.window.print(len(line) + 1, 0, '-more-', tcod.yellow)
+                self.window.blit(self.game.screen, 0, self.game.screen.height - 1)
+                tcod.console_flush()
+                wait(32)
+            else:
+                self.window.blit(self.game.screen, 0, self.game.screen.height - 1)
 
     def add(self, message):
         self.messageList.append(message)
