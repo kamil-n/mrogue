@@ -199,32 +199,33 @@ class ItemManager(object):
         return [i for i in self.items_on_ground if i.pos == coordinates]
 
     def show_equipment(self):
-        w, h = 50, 8
+        w, h = 49, 8
         window = tcod.console.Console(w, h, 'F')
-        window.draw_frame(0, 0, w, h, 'Equipment')
-        window.print(2, 1, 'Select a slot to unequip or Esc to close:')
-        i = 3
-        slots = ('hand', 'head', 'chest', 'feet')
-        for slot in slots:
-            window.print(2, i, '{}) {:>5}:'.format(
-                chr(94 + i),
-                slot[0].upper() + slot[1:]))
-            item = self.get_item_equipped_in_slot(self.game.player, slot)
-            if item:
-                summary = '{:22.22}{}('.format(
-                    item.full_name,
-                    '+' if len(item.full_name) > 22 else ' ')
-                if item.type == Weapon:
-                    summary += '{:+d}/{})'.format(item.to_hit_modifier,
-                                                  item.damage_string)
-                elif item.type == Armor:
-                    summary += '{:+d})'.format(item.armor_class_modifier)
-                window.print(12, i, item.icon, item.color)
-                window.print(14, i, summary, enchantment_colors[item.enchantment_level])
-            i += 1
-        window.blit(self.game.screen, 4, 4, 0, 0, w, h)
-        tcod.console_flush()
         while True:
+            window.draw_frame(0, 0, w, h, 'Equipment')
+            window.print(2, 1, 'Select a slot to manage or Esc to close:')
+            i = 3
+            slots = ('hand', 'head', 'chest', 'feet')
+            for slot in slots:
+                window.print(2, i, '{}) {:>5}:'.format(
+                    chr(94 + i),
+                    slot[0].upper() + slot[1:]))
+                item = self.get_item_equipped_in_slot(self.game.player, slot)
+                if item:
+                    summary = '{:22.22}{}('.format(
+                        item.full_name,
+                        '+' if len(item.full_name) > 22 else ' ')
+                    if item.type == Weapon:
+                        summary += '{:+d}/{})'.format(item.to_hit_modifier,
+                                                      item.damage_string)
+                    elif item.type == Armor:
+                        summary += '{:+d})'.format(item.armor_class_modifier)
+                    window.print(12, i, item.icon, item.color)
+                    window.print(14, i, summary,
+                                 enchantment_colors[item.enchantment_level])
+                i += 1
+            window.blit(self.game.screen, 4, 4, 0, 0, w, h)
+            tcod.console_flush()
             key = wait()
             if key == 27:
                 return False
@@ -234,6 +235,49 @@ class ItemManager(object):
                 if item:
                     self.game.player.unequip(item)
                     return True
+                else:
+                    items = list(filter(lambda x: x.slot == slots[key - 97], self.game.player.inventory))
+                    if len(items) < 1:
+                        continue
+                    window.draw_rect(1, 3 + key - 97, w - 2, 1, 0, bg=tcod.blue)
+                    window.blit(self.game.screen, 4, 4, 0, 0, w, h)
+                    slot = slots[key - 97]
+                    total_items = len(items)
+                    height = 2 + total_items
+                    width = 48
+                    last_letter = 96 + total_items
+                    selection = tcod.console.Console(width, height, 'F')
+                    inventory = dict(zip(range(len(items)), items))
+                    selection.draw_frame(0, 0, width, height,
+                                      'Select item to equip:')
+                    for i in range(len(inventory)):
+                        suffix = ''
+                        if inventory[i].type == Weapon:
+                            suffix = ' ({:+d}/{})'.format(
+                                inventory[i].to_hit_modifier,
+                                inventory[i].damage_string)
+                        elif inventory[i].type == Armor:
+                            suffix = ' ({:+d})'.format(
+                                inventory[i].armor_class_modifier)
+                        name = inventory[i].full_name
+                        if len(name) + len(suffix) > 40:
+                            name = name[:40 - len(suffix) - 1] + '+'
+                        summary = '{}'.format(name + suffix)
+                        selection.print(1, 1 + i, inventory[i].icon,
+                                     inventory[i].color)
+                        selection.print(3, 1 + i, '{}) '.format(chr(i + 97)))
+                        selection.print(6, 1 + i, summary, enchantment_colors[
+                            inventory[i].enchantment_level])
+                    selection.blit(self.game.screen, 4 + 2, 4 + 2, 0, 0, width,
+                                height)
+                    tcod.console_flush()
+                    while True:
+                        reaction = wait()
+                        if reaction == 27:
+                            break
+                        elif reaction in range(97, last_letter + 1):
+                            self.game.player.equip(items[reaction - 97])
+                            return True
 
 
 class Item(Char):

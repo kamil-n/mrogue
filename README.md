@@ -1,6 +1,5 @@
 ##### TODO list:
 - [ ] clean up code up to this point
-- [ ] fix map bug
 - [ ] items
   - [ ] equipment
     - [x] items contribute to stats
@@ -14,6 +13,9 @@
     - [ ] refine the interface  (stackable items, etc)
   - [x] random items on the ground
   - [ ] defeated enemies drop equipment
+  - [ ] more item types along with temporary or sustained effects
+    - [ ] potions
+    - [ ] scrolls
 - [ ] add more dungeon levels
   - [ ] introduce way to regen life
   - [ ] add more monsters that scale with dungeon depth
