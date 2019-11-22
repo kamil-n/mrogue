@@ -33,6 +33,8 @@ class Menagerie(object):
                     monster.attack(target)
                 else:
                     monster.approach(target.pos)
+            else:
+                monster.wander()
         for unit in self.game.level.units:
             unit.update()
 
@@ -69,3 +71,9 @@ class Monster(mrogue.unit.Unit):
             self.game.level.movement(self, nearest)
             return
         self.game.level.movement(self, self.path.pop(0))
+
+    def wander(self):
+        self.game.level.movement(
+            self,
+            random.choice(list(filter(lambda p: not self.game.level.unit_at(p),
+                                      self.game.level.neighbors(self.pos)))))
