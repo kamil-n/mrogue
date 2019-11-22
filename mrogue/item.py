@@ -169,12 +169,14 @@ class ItemManager(object):
             elif key == tcod.event.K_UP:
                 scroll -= 1 if scroll > 0 else 0
             elif key in range(97, last_letter + 1):
+                window.draw_rect(1, 3 + key - 97, width - 2, 1, 0, bg=tcod.blue)
+                window.blit(self.game.screen, 4, 4, 0, 0, width, window_height)
                 w, h = 30, 4
                 dialog = tcod.console.Console(w, h, 'F')
                 dialog.draw_frame(0, 0, w, h, 'Select an action:')
                 dialog.print(2, 1, 'a) Equip item')
                 dialog.print(2, 2, 'b) Drop item')
-                dialog.blit(self.game.screen, 6, 5, 0, 0, w, h)
+                dialog.blit(self.game.screen, 4 + 10, 4 + 1, 0, 0, w, h)
                 tcod.console_flush()
                 while True:
                     selection = wait()
