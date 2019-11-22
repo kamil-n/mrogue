@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from numpy import asarray
 from os import path
 import sys
 import tcod
@@ -14,14 +15,31 @@ from mrogue.monster import Menagerie
 from mrogue.player import Player
 
 
+directions4 = [
+    tcod.event.K_LEFT, tcod.event.K_RIGHT, tcod.event.K_UP, tcod.event.K_DOWN
+]
+directions8 = asarray([
+    [
+        [tcod.event.K_KP_1, tcod.event.K_KP_2, tcod.event.K_KP_3],
+        [tcod.event.K_KP_4, tcod.event.K_KP_5, tcod.event.K_KP_6],
+        [tcod.event.K_KP_7, tcod.event.K_KP_8, tcod.event.K_KP_9]
+    ],
+    [
+        [49, 50, 51],
+        [52, 53, 54],
+        [55, 56, 57]
+    ]
+])
+
+
 def direction_from(key, x, y):
-    if key in (49, 52, 55) or key in (257, 260, 263) or key == tcod.event.K_LEFT:
+    if key in directions8[:, :, 0] or key == tcod.event.K_LEFT:
         x -= 1
-    elif key in (51, 54, 57) or key in (259, 262, 265) or key == tcod.event.K_RIGHT:
+    elif key in directions8[:, :, 2] or key == tcod.event.K_RIGHT:
         x += 1
-    if key in (55, 56, 57) or key in (263, 264, 265) or key == tcod.event.K_UP:
+    if key in directions8[:, 2, :] or key == tcod.event.K_UP:
         y -= 1
-    elif key in (49, 50, 51) or key in (257, 258, 259) or key == tcod.event.K_DOWN:
+    elif key in directions8[:, 0, :] or key == tcod.event.K_DOWN:
         y += 1
     return x, y
 
@@ -87,7 +105,7 @@ class Rogue(object):
                 elif key == tcod.event.K_COMMA:
                     if self.player.pickup_item(self.items.get_item_on_map(self.player.pos)):
                         break
-                elif key in range(49, 57 + 1) or key in (tcod.event.K_DOWN, tcod.event.K_UP, tcod.event.K_LEFT, tcod.event.K_RIGHT):
+                elif key in directions4 or key in directions8:
                     if self.level.movement(self.player, direction_from(key, *self.player.pos)):
                         break
                 elif key == tcod.event.K_h:
