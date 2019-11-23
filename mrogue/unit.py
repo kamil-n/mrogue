@@ -70,11 +70,12 @@ class Unit(Char):
             self.game.messenger.add(msg)
         self.log.debug(msg)
 
-    def drop_item(self, item: Item):
+    def drop_item(self, item: Item, quiet=False):
         item.remove(self.inventory, self.equipped)
         item.dropped(self.pos)
         msg = '{} dropped {}.'.format(self.name, item.full_name)
-        self.game.messenger.add(msg)
+        if not quiet:
+            self.game.messenger.add(msg)
         self.log.debug(msg)
 
     def pickup_item(self, itemlist: list):
@@ -136,4 +137,9 @@ class Unit(Char):
             str.upper(self.name[0]) + self.name[1:]))
         if not (self.name == 'Player' and 'debug' in argv):
             self.kill()  # TODO: bugged!
+            if not self.name == 'Player':
+                for item in self.equipped:
+                    self.unequip(item, quiet=True)
+                for item in self.inventory:
+                    self.drop_item(item, quiet=True)
             self.remove(self.game.level.units, self.game.level.objects_on_map, self.game.monsters.monsterList)

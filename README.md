@@ -6,13 +6,16 @@
     - [x] can be un/equipped
     - [x] interface for equipment
       - [ ] refine it (total weight, colors, etc)
-    - [ ] monsters use items
+    - [x] monsters use items
   - [ ] inventory
     - [x] can drop/pick up items
     - [x] interface for inventory
     - [ ] refine the interface  (stackable items, etc)
   - [x] random items on the ground
-  - [ ] defeated enemies drop equipment
+  - [x] defeated enemies drop equipment
+  - [ ] items' details unknown on pickup, revealed on use
+    - [ ] cursed items can't be unequipped
+  - [ ] carry weight limit
   - [ ] more item types along with temporary or sustained effects
     - [ ] potions
     - [ ] scrolls
@@ -22,6 +25,8 @@
 - [ ] experience
   - [ ] defeated enemies grant xp
   - [ ] on gained xp breakpoints increase stats
- - skills...
- - statuses (timers...)
- - character customization...
+- initiative/speed system...
+- skills...
+- statuses (timers...)
+- more objects on map...
+- character customization...

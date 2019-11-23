@@ -3,7 +3,7 @@
 import random
 import tcod.event
 
-__version__ = 'v0.4.1.0'
+__version__ = 'v0.4.1.1'
 
 
 def adjacent(fr, to):

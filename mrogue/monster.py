@@ -47,11 +47,15 @@ class Monster(mrogue.unit.Unit):
                          (template['icon'], template['color']),
                          10,
                          template['to_hit'],
-                         template['dmg_die'],
+                         template['dmg_die_unarmed'],
                          template['ac'],
                          roll(template['hit_die']))
         self.path = None
         self.log = logging.getLogger(__name__)
+        if 'weapon' in template:
+            self.game.items.random_item(template['weapon'], self.inventory)
+        for item in self.inventory:
+            self.equip(item, True)
         for group in groups:
             group.append(self)
         self.log.debug('Created monster {} at {},{}'.format(

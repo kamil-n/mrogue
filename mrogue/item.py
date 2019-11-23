@@ -83,9 +83,9 @@ class ItemManager(object):
         self.game = game
         self.log = logging.getLogger(__name__)
         with open(path.join(game.dir, 'item_templates.json')) as f:
-            templates_file = loads(f.read())
+            self.templates_file = loads(f.read())
         self.log.debug('Creating pre-set items from templates:')
-        for category, category_dict in templates_file.items():
+        for category, category_dict in self.templates_file.items():
             self.item_templates[category] = {}
             for subtype, type_list in category_dict.items():
                 self.item_templates[category][subtype] = []
@@ -96,21 +96,33 @@ class ItemManager(object):
                     elif category == 'armor':
                         new_item = Armor(self, item, self.templates)
                     self.item_templates[category][subtype].append(new_item)
-        ''' create pre-set, default item
+        '''
+        # create pre-set, default item
         preset = self.item_templates['weapons']['maces'][0].copy()
-        create random mace
-        Weapon(self.game, get_random_template(templates_file[
-            'weapons']['maces'])[0], self.loot, True)
-        create random piece of armor
-        Armor(self.game, get_random_template(templates_file[
-            'armor'])[0], self.loot, True)
-        create random item
-        random_template, random_type = get_random_template(templates_file)
-        random_type(self.game, random_template, self.loot, True) '''
+        # create random mace
+        self.random_item('maces')
+        # create random piece of armor
+        self.random_item('armor')
+        # create random item
+        self.random_item()'''
         self.log.debug('Creating random loot ({}):'.format(num_items))
         for i in range(num_items):
-            random_template, random_type = get_random_template(templates_file)
+            random_template, random_type = get_random_template(self.templates_file)
             random_type(self, random_template, self.loot, True).dropped(game.level.find_spot())
+
+    def random_item(self, target=None, groups=None):
+        template = None
+        item_type = None
+        if not target:
+            template, item_type = get_random_template(self.templates_file)
+        elif target in self.templates_file:
+            template, item_type = get_random_template(self.templates_file[target])
+        else:
+            if target in self.templates_file['weapons']:
+                return Weapon(self, get_random_template(self.templates_file['weapons'][target])[0], groups, True)
+            elif target in self.templates_file['armor']:
+                return Armor(self, get_random_template(self.templates_file['armor'][target])[0], groups, True)
+        return item_type(self, template, groups, True)
 
     def show_inventory(self):
         total_items = len(self.game.player.inventory)
@@ -121,7 +133,7 @@ class ItemManager(object):
         width = 68
         last_letter = 96 + total_items
         window = tcod.console.Console(width, window_height, 'F')
-        #tcod.console_set_default_foreground(window, tcod.light_orange)
+        # tcod.console_set_default_foreground(window, tcod.light_orange)
         scroll = 0
         inventory = dict(zip(range(len(self.game.player.inventory)),
                              self.game.player.inventory))

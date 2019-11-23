@@ -11,9 +11,10 @@ class Char(object):
 
     def add(self, *groups):
         for group in groups:
-            group.append(self)
-            if not group in self._groups:
-                self._groups.append(group)
+            if not group == None:
+                group.append(self)
+                if not group in self._groups:
+                    self._groups.append(group)
 
     def remove(self, *groups):
         for group in groups:

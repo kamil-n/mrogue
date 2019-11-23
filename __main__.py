@@ -60,9 +60,9 @@ class Rogue(object):
         self.screen = tcod.console_init_root(100, 40, 'MRogue {}'.format(__version__), renderer=tcod.RENDERER_SDL2, order='F', vsync=True)
         self.level = RogueMap(self)
         self.items = ItemManager(self, 10)
+        self.messenger = Messenger(self)
         self.player = Player(self)
         self.monsters = Menagerie(self, 10)
-        self.messenger = Messenger(self)
         self.messenger.add('Kill all monsters. Move with arrow keys or numpad. Press q to exit.')
 
     def mainloop(self):
