@@ -73,6 +73,13 @@ def get_random_template(data) -> (dict, type):
     return template, guess_type
 
 
+def get_item_equipped_in_slot(unit, slot):
+    for item in unit.equipped:
+        if item.slot == slot:
+            return item
+    return None
+
+
 class ItemManager(object):
     loot = []
     templates = []
@@ -107,22 +114,24 @@ class ItemManager(object):
         self.random_item()'''
         self.log.debug('Creating random loot ({}):'.format(num_items))
         for i in range(num_items):
-            random_template, random_type = get_random_template(self.templates_file)
-            random_type(self, random_template, self.loot, True).dropped(game.level.find_spot())
+            r_tmp, r_tpe = get_random_template(self.templates_file)
+            r_tpe(self, r_tmp, self.loot, True).dropped(game.level.find_spot())
 
     def random_item(self, target=None, groups=None):
-        template = None
-        item_type = None
+        tmp = None
+        itype = None
         if not target:
-            template, item_type = get_random_template(self.templates_file)
+            tmp, itype = get_random_template(self.templates_file)
         elif target in self.templates_file:
-            template, item_type = get_random_template(self.templates_file[target])
+            tmp, itype = get_random_template(self.templates_file[target])
         else:
             if target in self.templates_file['weapons']:
-                return Weapon(self, get_random_template(self.templates_file['weapons'][target])[0], groups, True)
+                return Weapon(self, get_random_template(
+                    self.templates_file['weapons'][target])[0], groups, True)
             elif target in self.templates_file['armor']:
-                return Armor(self, get_random_template(self.templates_file['armor'][target])[0], groups, True)
-        return item_type(self, template, groups, True)
+                return Armor(self, get_random_template(
+                    self.templates_file['armor'][target])[0], groups, True)
+        return itype(self, tmp, groups, True)
 
     def show_inventory(self):
         total_items = len(self.game.player.inventory)
@@ -167,11 +176,12 @@ class ItemManager(object):
                     inventory[j].value)
                 window.print(1, 3 + i, inventory[j].icon, inventory[j].color)
                 window.print(3, 3 + i, '{}) '.format(chr(j + 97)))
-                window.print(6, 3 + i, summary, enchantment_colors[inventory[j].enchantment_level])
+                window.print(6, 3 + i, summary,
+                             enchantment_colors[inventory[j].enchantment_level])
                 window.print(46, 3 + i, details)
             if item_limit + scroll < total_items:
                 window.print(0, window_height - 2, 'v')
-            window.blit(self.game.screen, 4, 4, 0, 0, width, window_height)
+            window.blit(self.game.screen, 4, 4)
             tcod.console_flush()
             key = wait()
             if key == 27:
@@ -182,30 +192,26 @@ class ItemManager(object):
                 scroll -= 1 if scroll > 0 else 0
             elif key in range(97, last_letter + 1):
                 window.draw_rect(1, 3 + key - 97, width - 2, 1, 0, bg=tcod.blue)
-                window.blit(self.game.screen, 4, 4, 0, 0, width, window_height)
+                window.blit(self.game.screen, 4, 4)
                 w, h = 30, 4
                 dialog = tcod.console.Console(w, h, 'F')
                 dialog.draw_frame(0, 0, w, h, 'Select an action:')
                 dialog.print(2, 1, 'a) Equip item')
                 dialog.print(2, 2, 'b) Drop item')
-                dialog.blit(self.game.screen, 4 + 10, 4 + 1, 0, 0, w, h)
+                dialog.blit(self.game.screen, 4 + 10, 4 + 1)
                 tcod.console_flush()
                 while True:
                     selection = wait()
                     if selection == 27:
                         break
                     elif selection == tcod.event.K_a:
-                        self.game.player.equip(self.game.player.inventory[key-97])
+                        self.game.player.equip(
+                            self.game.player.inventory[key-97])
                         return True
                     elif selection == tcod.event.K_b:
-                        self.game.player.drop_item(self.game.player.inventory[key-97])
+                        self.game.player.drop_item(
+                            self.game.player.inventory[key-97])
                         return True
-
-    def get_item_equipped_in_slot(self, unit, slot):
-        for item in unit.equipped:
-            if item.slot == slot:
-                return item
-        return None
 
     def get_item_on_map(self, coordinates):
         return [i for i in self.items_on_ground if i.pos == coordinates]
@@ -222,7 +228,7 @@ class ItemManager(object):
                 window.print(2, i, '{}) {:>5}:'.format(
                     chr(94 + i),
                     slot[0].upper() + slot[1:]))
-                item = self.get_item_equipped_in_slot(self.game.player, slot)
+                item = get_item_equipped_in_slot(self.game.player, slot)
                 if item:
                     summary = '{:22.22}{}('.format(
                         item.full_name,
@@ -236,24 +242,28 @@ class ItemManager(object):
                     window.print(14, i, summary,
                                  enchantment_colors[item.enchantment_level])
                 i += 1
-            window.blit(self.game.screen, 4, 4, 0, 0, w, h)
+            window.blit(self.game.screen, 4, 4)
             tcod.console_flush()
             key = wait()
             if key == 27:
                 return False
             elif key in range(97, 97 + len(slots)):
-                item = self.get_item_equipped_in_slot(
+                item = get_item_equipped_in_slot(
                     self.game.player, slots[key - 97])
                 if item:
+                    if item.enchantment_level < 0:
+                        self.game.messenger.add(
+                            'Cursed items can\'t be unequipped.')
+                        return False
                     self.game.player.unequip(item)
                     return True
                 else:
-                    items = list(filter(lambda x: x.slot == slots[key - 97], self.game.player.inventory))
+                    items = list(filter(lambda x: x.slot == slots[key - 97],
+                                        self.game.player.inventory))
                     if len(items) < 1:
                         continue
                     window.draw_rect(1, 3 + key - 97, w - 2, 1, 0, bg=tcod.blue)
-                    window.blit(self.game.screen, 4, 4, 0, 0, w, h)
-                    slot = slots[key - 97]
+                    window.blit(self.game.screen, 4, 4)
                     total_items = len(items)
                     height = 2 + total_items
                     width = 48
@@ -261,7 +271,7 @@ class ItemManager(object):
                     selection = tcod.console.Console(width, height, 'F')
                     inventory = dict(zip(range(len(items)), items))
                     selection.draw_frame(0, 0, width, height,
-                                      'Select item to equip:')
+                                         'Select item to equip:')
                     for i in range(len(inventory)):
                         suffix = ''
                         if inventory[i].type == Weapon:
@@ -276,12 +286,11 @@ class ItemManager(object):
                             name = name[:40 - len(suffix) - 1] + '+'
                         summary = '{}'.format(name + suffix)
                         selection.print(1, 1 + i, inventory[i].icon,
-                                     inventory[i].color)
+                                        inventory[i].color)
                         selection.print(3, 1 + i, '{}) '.format(chr(i + 97)))
                         selection.print(6, 1 + i, summary, enchantment_colors[
                             inventory[i].enchantment_level])
-                    selection.blit(self.game.screen, 4 + 2, 4 + 2, 0, 0, width,
-                                height)
+                    selection.blit(self.game.screen, 4 + 2, 4 + 2)
                     tcod.console_flush()
                     while True:
                         reaction = wait()
@@ -322,11 +331,12 @@ class Item(Char):
 
     def dropped(self, coords):
         self.add(self.manager.items_on_ground,
-                  self.manager.game.level.objects_on_map)
+                 self.manager.game.level.objects_on_map)
         self.pos = coords
 
-    def picked(self, unit):
-        self.remove(self.manager.items_on_ground, self.manager.game.level.objects_on_map)
+    def picked(self):
+        self.remove(self.manager.items_on_ground,
+                    self.manager.game.level.objects_on_map)
         self.pos = None
 
 

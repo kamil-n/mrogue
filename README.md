@@ -14,7 +14,7 @@
   - [x] random items on the ground
   - [x] defeated enemies drop equipment
   - [ ] items' details unknown on pickup, revealed on use
-    - [ ] cursed items can't be unequipped
+    - [x] cursed items can't be unequipped
   - [ ] carry weight limit
   - [ ] more item types along with temporary or sustained effects
     - [ ] potions

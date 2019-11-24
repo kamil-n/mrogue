@@ -58,6 +58,8 @@ class Unit(Char):
         self.log.debug(msg)
 
     def unequip(self, item: Weapon or Armor, quiet=False):
+        if item.enchantment_level < 0:
+            self.game.messenger.add('Cursed items must be decursed first.')
         item.add(self.inventory)
         if item.type == Weapon:
             self.to_hit -= item.to_hit_modifier  # TODO: should recalculate
