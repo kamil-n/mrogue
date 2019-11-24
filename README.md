@@ -13,7 +13,7 @@
     - [ ] refine the interface  (stackable items, etc)
   - [x] random items on the ground
   - [x] defeated enemies drop equipment
-  - [ ] items' details unknown on pickup, revealed on use
+  - [x] items' details unknown on pickup, revealed on use
     - [x] cursed items can't be unequipped
   - [ ] carry weight limit
   - [ ] more item types along with temporary or sustained effects

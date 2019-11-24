@@ -65,12 +65,12 @@ def get_random_template(data) -> (dict, type):
     while type(data) != list:
         key, data = random.choice(list(data.items()))
     template = random.choice(data)
-    guess_type = Item
+    item_type = Item
     if 'damage_string' in template:
-        guess_type = Weapon
+        item_type = Weapon
     elif 'armor_class_modifier' in template:
-        guess_type = Armor
-    return template, guess_type
+        item_type = Armor
+    return template, item_type
 
 
 def get_item_equipped_in_slot(unit, slot):
@@ -158,26 +158,30 @@ class ItemManager(object):
                 if i > item_limit - 1:
                     break
                 j = i + scroll
+                it = inventory[j]
                 suffix = ''
-                if inventory[j].type == Weapon:
+                if it.type == Weapon:
                     suffix = ' ({:+d}/{})'.format(
-                        inventory[j].to_hit_modifier,
-                        inventory[j].damage_string)
-                elif inventory[j].type == Armor:
+                        it.to_hit_modifier if it.status_identified else
+                        it.base_to_hit,
+                        it.damage if it.status_identified else it.base_damage)
+                elif it.type == Armor:
                     suffix = ' ({:+d})'.format(
-                        inventory[j].armor_class_modifier)
-                name = inventory[j].full_name
+                        it.armor_class_modifier if it.status_identified else
+                        it.base_armor_class)
+                name = it.interface_name
                 if len(name) + len(suffix) > 40:
                     name = name[:40-len(suffix)-1] + '+'
                 summary = '{}'.format(name + suffix)
                 details = '{:>6} {:6.2f} {:>6.2f}'.format(
-                    inventory[j].slot,
-                    inventory[j].weight,
-                    inventory[j].value)
-                window.print(1, 3 + i, inventory[j].icon, inventory[j].color)
+                    it.slot,
+                    it.weight,
+                    it.value)
+                window.print(1, 3 + i, it.icon, it.color)
                 window.print(3, 3 + i, '{}) '.format(chr(j + 97)))
                 window.print(6, 3 + i, summary,
-                             enchantment_colors[inventory[j].enchantment_level])
+                             enchantment_colors[it.enchantment_level] if
+                             it.status_identified else tcod.white)
                 window.print(46, 3 + i, details)
             if item_limit + scroll < total_items:
                 window.print(0, window_height - 2, 'v')
@@ -191,7 +195,8 @@ class ItemManager(object):
             elif key == tcod.event.K_UP:
                 scroll -= 1 if scroll > 0 else 0
             elif key in range(97, last_letter + 1):
-                window.draw_rect(1, 3 + key - 97, width - 2, 1, 0, bg=tcod.blue)
+                k = key - 97
+                window.draw_rect(1, 3 + k, width - 2, 1, 0, bg=tcod.blue)
                 window.blit(self.game.screen, 4, 4)
                 w, h = 30, 4
                 dialog = tcod.console.Console(w, h, 'F')
@@ -205,12 +210,18 @@ class ItemManager(object):
                     if selection == 27:
                         break
                     elif selection == tcod.event.K_a:
+                        for i in self.game.player.equipped:
+                            if self.game.player.inventory[k].slot == i.slot:
+                                if i.enchantment_level < 0:
+                                    self.game.messenger.add(
+                                        'You can\'t replace cursed items.')
+                                    return False
                         self.game.player.equip(
-                            self.game.player.inventory[key-97])
+                            self.game.player.inventory[k])
                         return True
                     elif selection == tcod.event.K_b:
                         self.game.player.drop_item(
-                            self.game.player.inventory[key-97])
+                            self.game.player.inventory[k])
                         return True
 
     def get_item_on_map(self, coordinates):
@@ -231,11 +242,14 @@ class ItemManager(object):
                 item = get_item_equipped_in_slot(self.game.player, slot)
                 if item:
                     summary = '{:22.22}{}('.format(
-                        item.full_name,
-                        '+' if len(item.full_name) > 22 else ' ')
+                        item.interface_name,
+                        '+' if len(item.interface_name) > 22 else ' ')
                     if item.type == Weapon:
-                        summary += '{:+d}/{})'.format(item.to_hit_modifier,
-                                                      item.damage_string)
+                        summary += '{:+d}/{})'.format(
+                            item.to_hit_modifier if item.status_identified else
+                            item.base_to_hit,
+                            item.damage if item.status_identified else
+                            item.base_damage)
                     elif item.type == Armor:
                         summary += '{:+d})'.format(item.armor_class_modifier)
                     window.print(12, i, item.icon, item.color)
@@ -273,23 +287,28 @@ class ItemManager(object):
                     selection.draw_frame(0, 0, width, height,
                                          'Select item to equip:')
                     for i in range(len(inventory)):
+                        it = inventory[i]
                         suffix = ''
-                        if inventory[i].type == Weapon:
+                        if it.type == Weapon:
                             suffix = ' ({:+d}/{})'.format(
-                                inventory[i].to_hit_modifier,
-                                inventory[i].damage_string)
-                        elif inventory[i].type == Armor:
+                                it.to_hit_modifier if it.status_identified else
+                                it.base_to_hit,
+                                it.damage if it.status_identified else
+                                it.base_damage)
+                        elif it.type == Armor:
                             suffix = ' ({:+d})'.format(
-                                inventory[i].armor_class_modifier)
-                        name = inventory[i].full_name
+                                it.armor_class_modifier if it.status_identified
+                                else it.base_armor_class)
+                        name = it.interface_name
                         if len(name) + len(suffix) > 40:
                             name = name[:40 - len(suffix) - 1] + '+'
                         summary = '{}'.format(name + suffix)
-                        selection.print(1, 1 + i, inventory[i].icon,
-                                        inventory[i].color)
+                        selection.print(1, 1 + i, it.icon,
+                                        it.color)
                         selection.print(3, 1 + i, '{}) '.format(chr(i + 97)))
-                        selection.print(6, 1 + i, summary, enchantment_colors[
-                            inventory[i].enchantment_level])
+                        selection.print(6, 1 + i, summary,
+                                        enchantment_colors[it.enchantment_level]
+                                        if it.status_identified else tcod.white)
                     selection.blit(self.game.screen, 4 + 2, 4 + 2)
                     tcod.console_flush()
                     while True:
@@ -308,7 +327,7 @@ class Item(Char):
         self.type_str = parent.__class__.__name__
         self.type = parent.__class__
         self.manager = manager
-        self.unidentified_name = name
+
         self.pos = None
         tmp_material = tuple(v for v in material.split())
         self.material = tmp_material[0]
@@ -322,12 +341,13 @@ class Item(Char):
         self.slot = slot
         self.quality = int(quality)
         self.enchantment_level = int(ench_lvl)
-        self.full_name = ('{} {} {} {}'.format(
+        self.status_identified = False
+        self.name = self.material + ' ' + name
+        self.interface_name = '* ' + self.name
+        self.identified_name = ('{} {} {}'.format(
             quality_levels[self.quality],
-            enchantment_levels[self.enchantment_level],
-            self.material,
-            name)).strip()
-        self.full_name = ' '.join(self.full_name.split())
+            enchantment_levels[self.enchantment_level], self.name)).strip()
+        self.identified_name = ' '.join(self.identified_name.split())
 
     def dropped(self, coords):
         self.add(self.manager.items_on_ground,
@@ -338,6 +358,11 @@ class Item(Char):
         self.remove(self.manager.items_on_ground,
                     self.manager.game.level.objects_on_map)
         self.pos = None
+
+    def identified(self):
+        self.status_identified = True
+        self.name = self.identified_name
+        self.interface_name = self.identified_name
 
 
 class Weapon(Item):
@@ -364,11 +389,13 @@ class Weapon(Item):
              quality,
              ench_lvl)
         self.speed_modifier = template['speed_modifier']
-        self.to_hit_modifier = template['to_hit_modifier'] + quality + ench_lvl
+        self.base_to_hit = template['to_hit_modifier']
+        self.to_hit_modifier = self.base_to_hit + quality + ench_lvl
         num, sides, mod = decompile_dmg_die(template['damage_string'])
-        self.damage_string = compile_dmg_die(num, sides, mod + ench_lvl)
+        self.base_damage = compile_dmg_die(num, sides, mod)
+        self.damage = compile_dmg_die(num, sides, mod + ench_lvl)
         self.add(groups)
-        self.log.debug('Created item {}'.format(self.full_name))
+        self.log.debug('Created item {}'.format(self.identified_name))
 
 
 class Armor(Item):
@@ -395,6 +422,7 @@ class Armor(Item):
              quality,
              ench_lvl)
         ac_mod = template['armor_class_modifier']
+        self.base_armor_class = ac_mod
         self.armor_class_modifier = ac_mod + quality + ench_lvl * 3
         self.add(groups)
-        self.log.debug('Created item {}'.format(self.full_name))
+        self.log.debug('Created item {}'.format(self.identified_name))

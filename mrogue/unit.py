@@ -39,7 +39,8 @@ class Unit(Char):
 
     def add_item(self, item: Item):
         item.add(self.inventory)
-        self.log.debug('{} received {}.'.format(self.name, item.full_name))
+        self.log.debug('{} received {}.'.format(self.name,
+                                                item.identified_name))
 
     def equip(self, item: Weapon or Armor, quiet=False):
         for i in self.equipped:
@@ -48,25 +49,28 @@ class Unit(Char):
         item.add(self.equipped)
         if item.type == Weapon:
             self.to_hit += item.to_hit_modifier
-            self.damage_dice = item.damage_string
+            self.damage_dice = item.damage
         elif item.type == Armor:
             self.armor_class += item.armor_class_modifier
-        msg = '{} equipped {}.'.format(self.name, item.full_name)
+        msg = '{} equipped {}.'.format(self.name, item.name)
         item.remove(self.inventory)
+        if self.name == 'Player':
+            item.identified()
         if not quiet:
             self.game.messenger.add(msg)
         self.log.debug(msg)
 
     def unequip(self, item: Weapon or Armor, quiet=False):
         if item.enchantment_level < 0:
-            self.game.messenger.add('Cursed items must be decursed first.')
+            self.log.warning('{} tried to unequip cursed item! {}'.format(
+                self.name, item.identified_name))
         item.add(self.inventory)
         if item.type == Weapon:
             self.to_hit -= item.to_hit_modifier  # TODO: should recalculate
             self.damage_dice = self.default_damage_dice
         elif item.type == Armor:
             self.armor_class -= item.armor_class_modifier  # TODO: ditto
-        msg = '{} unequipped {}.'.format(self.name, item.full_name)
+        msg = '{} unequipped {}.'.format(self.name, item.name)
         item.remove(self.equipped)
         if not quiet:
             self.game.messenger.add(msg)
@@ -75,7 +79,7 @@ class Unit(Char):
     def drop_item(self, item: Item, quiet=False):
         item.remove(self.inventory, self.equipped)
         item.dropped(self.pos)
-        msg = '{} dropped {}.'.format(self.name, item.full_name)
+        msg = '{} dropped {}.'.format(self.name, item.name)
         if not quiet:
             self.game.messenger.add(msg)
         self.log.debug(msg)
@@ -84,8 +88,8 @@ class Unit(Char):
         if itemlist:
             item = itemlist.pop(0)
             item.add(self.inventory)
-            item.picked(self)
-            msg = '{} picked up {}.'.format(self.name, item.full_name)
+            item.picked()
+            msg = '{} picked up {}.'.format(self.name, item.name)
             self.game.messenger.add(msg)
             self.log.debug(msg)
             return True
@@ -93,7 +97,6 @@ class Unit(Char):
             msg = 'There are no items here.'
             self.game.messenger.add(msg)
             return False
-
 
     def attack(self, target):
         uname = str.upper(self.name[0]) + self.name[1:]
@@ -144,4 +147,5 @@ class Unit(Char):
                     self.unequip(item, quiet=True)
                 for item in self.inventory:
                     self.drop_item(item, quiet=True)
-            self.remove(self.game.level.units, self.game.level.objects_on_map, self.game.monsters.monsterList)
+            self.remove(self.game.level.units, self.game.level.objects_on_map,
+                        self.game.monsters.monsterList)

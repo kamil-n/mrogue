@@ -41,4 +41,4 @@ class Player(mrogue.unit.Unit):
                     len(items)))
             else:
                 self.game.messenger.add('{} is lying here.'.format(
-                    items[0].full_name[0].upper() + items[0].full_name[1:]))
+                    items[0].name[0].upper() + items[0].name[1:]))
