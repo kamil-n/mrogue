@@ -1,9 +1,38 @@
 # -*- coding: utf-8 -*-
 
 import random
+import string
+
+import tcod.console
 import tcod.event
 
-__version__ = 'v0.4.1.3'
+__version__ = 'v0.4.2.0'
+
+
+class Char(object):
+    def __init__(self):
+        self.icon = ''
+        self.color = tcod.white
+        self._groups = []
+
+    def add(self, *groups):
+        for group in groups:
+            if group is not None:
+                group.append(self)
+                if group not in self._groups:
+                    self._groups.append(group)
+
+    def remove(self, *groups):
+        for group in groups:
+            if self in group:
+                group.remove(self)
+            if group in self._groups:
+                self._groups.remove(group)
+
+    def kill(self):
+        for group in self._groups:
+            group.remove(self)
+            self._groups.remove(group)
 
 
 def adjacent(fr, to):
@@ -70,7 +99,7 @@ def compile_dmg_die(num_die, sides, modifier):
     return die_string
 
 
-def wait(character = None):
+def wait(character=None):
     while True:
         for event in tcod.event.wait():
             if event.type == 'QUIT':
@@ -81,3 +110,23 @@ def wait(character = None):
                         return True
                 else:
                     return event.sym
+
+
+def select_option(screen, options):
+    num_options = len(options)
+    w, h = 23, num_options + 2
+    dialog = tcod.console.Console(w, h, 'F')
+    dialog.draw_frame(0, 0, w, h, 'Select an action:')
+    for i in range(num_options):
+        dialog.print(2, i + 1, '{}) {}'.format(options[i][0], options[i][1]))
+    dialog.blit(screen, 4 + 10, 4 + 1)
+    tcod.console_flush()
+
+
+def random_scroll_name():
+    name = ''
+    for i in range(random.randint(1, 3)):
+        for j in range(random.randint(3, 5)):
+            name += random.choice(string.ascii_uppercase)
+        name += ' '
+    return name.rstrip()

@@ -31,7 +31,6 @@ class Player(mrogue.unit.Unit):
             len(self.inventory)))
         self.status_bar.print(66, 0, 'Press q to quit, h for help.')
         self.status_bar.blit(self.game.screen, 0, 0)
-        #? tcod.console_flush()
 
     def check_if_items_on_ground(self):
         items = self.game.items.get_item_on_map(self.pos)
@@ -42,3 +41,8 @@ class Player(mrogue.unit.Unit):
             else:
                 self.game.messenger.add('{} is lying here.'.format(
                     items[0].name[0].upper() + items[0].name[1:]))
+
+    def in_slot(self, slot):
+        for i in self.equipped:
+            if i.slot == slot:
+                return i

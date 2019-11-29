@@ -4,6 +4,7 @@ from mrogue import wait
 from textwrap import wrap
 import tcod.console
 
+
 class Messenger(object):
     messageList = []
 

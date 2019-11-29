@@ -7,7 +7,7 @@ import random
 from sys import argv
 import tcod.bsp
 import tcod.map
-from mrogue import adjacent, wait
+from mrogue import adjacent
 
 tileset = {'wall': '#', 'floor': '.'}
 

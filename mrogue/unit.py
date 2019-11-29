@@ -3,9 +3,8 @@
 import logging
 from sys import argv
 import tcod.constants
-from mrogue.console import Char
-from mrogue.item import Item, Weapon, Armor
-from mrogue import roll
+from mrogue.item import Item, Weapon, Armor, Consumable
+from mrogue import Char, roll
 
 
 class Unit(Char):
@@ -60,10 +59,16 @@ class Unit(Char):
             self.game.messenger.add(msg)
         self.log.debug(msg)
 
+    def use(self, item: Consumable):
+        effect = item.used(self)
+        item.remove(self.inventory)
+        self.game.messenger.add(effect)
+        self.log.debug('{} used {}.'.format(self.name, item.name))
+
     def unequip(self, item: Weapon or Armor, quiet=False):
         if item.enchantment_level < 0:
-            self.log.warning('{} tried to unequip cursed item! {}'.format(
-                self.name, item.identified_name))
+            self.game.messenger.add('Cursed items can\'t be unequipped.')
+            return False
         item.add(self.inventory)
         if item.type == Weapon:
             self.to_hit -= item.to_hit_modifier  # TODO: should recalculate
@@ -75,6 +80,7 @@ class Unit(Char):
         if not quiet:
             self.game.messenger.add(msg)
         self.log.debug(msg)
+        return True
 
     def drop_item(self, item: Item, quiet=False):
         item.remove(self.inventory, self.equipped)

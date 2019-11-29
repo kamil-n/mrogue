@@ -16,9 +16,9 @@
   - [x] items' details unknown on pickup, revealed on use
     - [x] cursed items can't be unequipped
   - [ ] carry weight limit
-  - [ ] more item types along with temporary or sustained effects
-    - [ ] potions
-    - [ ] scrolls
+  - [x] more item types along with temporary or sustained effects
+    - [x] potions
+    - [x] scrolls
 - [ ] add more dungeon levels
   - [ ] introduce way to regen life
   - [ ] add more monsters that scale with dungeon depth

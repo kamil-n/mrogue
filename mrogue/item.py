@@ -12,53 +12,8 @@ import tcod
 import tcod.console
 import tcod.constants
 import tcod.event
-from mrogue import decompile_dmg_die, compile_dmg_die, roll_gaussian, wait
-from mrogue.console import Char
-
-quality_levels = {
-    -2: 'broken',
-    -1: 'flimsy',
-    0: '',
-    1: 'masterwork',
-    2: 'unique'
-}
-
-enchantment_levels = {
-    -1: 'cursed',
-    0: '',
-    1: 'blessed'
-}
-
-enchantment_colors = {
-    -1: tcod.red,
-    0: tcod.white,
-    1: tcod.green
-}
-
-materials = {
-    'weapons': [
-        'wooden 0.7 0.5',
-        'bone 0.8 0.6',
-        'copper 0.8 0.6',
-        'bronze 0.8 0.8',
-        'iron 1.0 1.0',
-        'steel 1.0 1.25',
-        'silver 0.8 2.0',
-        'alloy 0.9 3.0'
-    ],
-    'armor': [
-        'cloth 0.1 0.1',
-        'fur 0.2 0.2',
-        'leather 0.2 0.3',
-        'hide 0.3 0.4',
-        'copper 0.8 0.6',
-        'bronze 0.8 0.8',
-        'iron 1.0 1.0',
-        'steel 1.0 1.25',
-        'silver 0.8 2.0',
-        'alloy 0.9 3.0'
-    ]
-}
+from mrogue import Char, decompile_dmg_die, compile_dmg_die, roll_gaussian, wait, select_option, random_scroll_name
+from mrogue.item_data import *
 
 
 def get_random_template(data) -> (dict, type):
@@ -66,10 +21,13 @@ def get_random_template(data) -> (dict, type):
         key, data = random.choice(list(data.items()))
     template = random.choice(data)
     item_type = Item
-    if 'damage_string' in template:
-        item_type = Weapon
-    elif 'armor_class_modifier' in template:
-        item_type = Armor
+    if template['type'] == 'wearable':
+        if template['subtype'] == 'weapon':
+            item_type = Weapon
+        elif template['subtype'] == 'armor':
+            item_type = Armor
+    elif template['type'] == 'consumable':
+        item_type = Consumable
     return template, item_type
 
 
@@ -78,6 +36,43 @@ def get_item_equipped_in_slot(unit, slot):
         if item.slot == slot:
             return item
     return None
+
+
+def print_list(inventory, window, height, offset, scroll, limit, show_details=False):
+    if scroll > 0:
+        window.print(0, 1 + offset, '^')
+    for i in range(len(inventory)):
+        if i > limit - 1:
+            break
+        j = i + scroll
+        it = inventory[j]
+        suffix = ''
+        if it.type == Weapon:
+            suffix = ' ({:+d}/{})'.format(
+                it.to_hit_modifier if it.status_identified else
+                it.base_to_hit,
+                it.damage if it.status_identified else it.base_damage)
+        elif it.type == Armor:
+            suffix = ' ({:+d})'.format(
+                it.armor_class_modifier if it.status_identified else
+                it.base_armor_class)
+        name = it.interface_name
+        if len(name) + len(suffix) > 40:
+            name = name[:40 - len(suffix) - 1] + '+'
+        summary = '{}'.format(name + suffix)
+        window.print(1, 1 + i + offset, it.icon, it.color)
+        window.print(3, 1 + i + offset, '{}) '.format(chr(j + 97)))
+        window.print(6, 1 + i + offset, summary,
+                     enchantment_colors[it.enchantment_level] if
+                     it.status_identified and hasattr(it, 'enchantment_level') else tcod.white)
+        if show_details:
+            details = '{:>6} {:6.2f} {:>6.2f}'.format(
+                it.slot if hasattr(it, 'slot') else '',
+                it.weight,
+                it.value)
+            window.print(46, 1 + i + offset, details)
+    if limit + scroll < len(inventory):
+        window.print(0, height - 2, 'v')
 
 
 class ItemManager(object):
@@ -91,6 +86,10 @@ class ItemManager(object):
         self.log = logging.getLogger(__name__)
         with open(path.join(game.dir, 'item_templates.json')) as f:
             self.templates_file = loads(f.read())
+        for s in self.templates_file['consumables']['scrolls']:
+            scroll_names[s['name']] = random_scroll_name()
+        for p in self.templates_file['consumables']['potions']:
+            potion_colors[p['name']] = random.choice(list(materials['potions'].items()))
         self.log.debug('Creating pre-set items from templates:')
         for category, category_dict in self.templates_file.items():
             self.item_templates[category] = {}
@@ -102,6 +101,8 @@ class ItemManager(object):
                         new_item = Weapon(self, item, self.templates)
                     elif category == 'armor':
                         new_item = Armor(self, item, self.templates)
+                    elif category == 'consumables':
+                        new_item = Consumable(self, item, self.templates)
                     self.item_templates[category][subtype].append(new_item)
         '''
         # create pre-set, default item
@@ -114,15 +115,14 @@ class ItemManager(object):
         self.random_item()'''
         self.log.debug('Creating random loot ({}):'.format(num_items))
         for i in range(num_items):
-            r_tmp, r_tpe = get_random_template(self.templates_file)
-            r_tpe(self, r_tmp, self.loot, True).dropped(game.level.find_spot())
+            self.random_item(None, self.loot).dropped(game.level.find_spot())
 
     def random_item(self, target=None, groups=None):
         tmp = None
         itype = None
         if not target:
-            tmp, itype = get_random_template(self.templates_file)
-        elif target in self.templates_file:
+            target = random.choices(list(self.templates_file.keys()), [1, 2, 10])[0]
+        if target in self.templates_file:
             tmp, itype = get_random_template(self.templates_file[target])
         else:
             if target in self.templates_file['weapons']:
@@ -131,7 +131,18 @@ class ItemManager(object):
             elif target in self.templates_file['armor']:
                 return Armor(self, get_random_template(
                     self.templates_file['armor'][target])[0], groups, True)
-        return itype(self, tmp, groups, True)
+            elif target in self.templates_file['consumables']:
+                return Consumable(self, get_random_template(
+                    self.templates_file['consumables'][target])[0], groups)
+        return itype(self, tmp, groups) if itype == Consumable else itype(self, tmp, groups, True)
+
+    def try_equip(self, item):
+        existing = self.game.player.in_slot(item.slot)
+        if existing and existing.enchantment_level < 0:
+            self.game.messenger.add('You can\'t replace cursed items.')
+            return False
+        self.game.player.equip(item)
+        return True
 
     def show_inventory(self):
         total_items = len(self.game.player.inventory)
@@ -152,39 +163,7 @@ class ItemManager(object):
             window.print(2, 1, 'Select an item or Esc to close:')
             window.print(5, 2, 'Name')
             window.print(48, 2, 'Slot     Wt    Val')
-            if scroll > 0:
-                window.print(0, 3, '^')
-            for i in range(len(inventory)):
-                if i > item_limit - 1:
-                    break
-                j = i + scroll
-                it = inventory[j]
-                suffix = ''
-                if it.type == Weapon:
-                    suffix = ' ({:+d}/{})'.format(
-                        it.to_hit_modifier if it.status_identified else
-                        it.base_to_hit,
-                        it.damage if it.status_identified else it.base_damage)
-                elif it.type == Armor:
-                    suffix = ' ({:+d})'.format(
-                        it.armor_class_modifier if it.status_identified else
-                        it.base_armor_class)
-                name = it.interface_name
-                if len(name) + len(suffix) > 40:
-                    name = name[:40-len(suffix)-1] + '+'
-                summary = '{}'.format(name + suffix)
-                details = '{:>6} {:6.2f} {:>6.2f}'.format(
-                    it.slot,
-                    it.weight,
-                    it.value)
-                window.print(1, 3 + i, it.icon, it.color)
-                window.print(3, 3 + i, '{}) '.format(chr(j + 97)))
-                window.print(6, 3 + i, summary,
-                             enchantment_colors[it.enchantment_level] if
-                             it.status_identified else tcod.white)
-                window.print(46, 3 + i, details)
-            if item_limit + scroll < total_items:
-                window.print(0, window_height - 2, 'v')
+            print_list(inventory, window, window_height, 2, scroll, item_limit, True)
             window.blit(self.game.screen, 4, 4)
             tcod.console_flush()
             key = wait()
@@ -195,34 +174,23 @@ class ItemManager(object):
             elif key == tcod.event.K_UP:
                 scroll -= 1 if scroll > 0 else 0
             elif key in range(97, last_letter + 1):
-                k = key - 97
-                window.draw_rect(1, 3 + k, width - 2, 1, 0, bg=tcod.blue)
+                i = self.game.player.inventory[key - 97]
+                window.draw_rect(1, 3 + key - 97, width - 2, 1, 0, bg=tcod.blue)
                 window.blit(self.game.screen, 4, 4)
-                w, h = 30, 4
-                dialog = tcod.console.Console(w, h, 'F')
-                dialog.draw_frame(0, 0, w, h, 'Select an action:')
-                dialog.print(2, 1, 'a) Equip item')
-                dialog.print(2, 2, 'b) Drop item')
-                dialog.blit(self.game.screen, 4 + 10, 4 + 1)
-                tcod.console_flush()
+                context_actions = []
+                if i.type == Consumable:
+                    context_actions.append(('a', 'Use item', self.game.player.use))
+                elif i.type == Weapon or i.type == Armor:
+                    context_actions.append(('a', 'Equip item', self.try_equip))
+                context_actions.append(('b', 'Drop item', self.game.player.drop_item))
+                select_option(self.game.screen, context_actions)
                 while True:
                     selection = wait()
                     if selection == 27:
                         break
-                    elif selection == tcod.event.K_a:
-                        for i in self.game.player.equipped:
-                            if self.game.player.inventory[k].slot == i.slot:
-                                if i.enchantment_level < 0:
-                                    self.game.messenger.add(
-                                        'You can\'t replace cursed items.')
-                                    return False
-                        self.game.player.equip(
-                            self.game.player.inventory[k])
-                        return True
-                    elif selection == tcod.event.K_b:
-                        self.game.player.drop_item(
-                            self.game.player.inventory[k])
-                        return True
+                    elif selection in range(97, 97 + len(context_actions)):
+                        result = context_actions[selection - 97][2](i)  # TODO: better lookup of appropriate action
+                        return result if result is not None else True
 
     def get_item_on_map(self, coordinates):
         return [i for i in self.items_on_ground if i.pos == coordinates]
@@ -265,89 +233,56 @@ class ItemManager(object):
                 item = get_item_equipped_in_slot(
                     self.game.player, slots[key - 97])
                 if item:
-                    if item.enchantment_level < 0:
-                        self.game.messenger.add(
-                            'Cursed items can\'t be unequipped.')
-                        return False
-                    self.game.player.unequip(item)
-                    return True
+                    return self.game.player.unequip(item)
                 else:
-                    items = list(filter(lambda x: x.slot == slots[key - 97],
-                                        self.game.player.inventory))
+                    items = list(filter(lambda x: hasattr(x, 'slot'), self.game.player.inventory))
+                    items = list(filter(lambda x: x.slot == slots[key - 97], items))
                     if len(items) < 1:
                         continue
                     window.draw_rect(1, 3 + key - 97, w - 2, 1, 0, bg=tcod.blue)
                     window.blit(self.game.screen, 4, 4)
                     total_items = len(items)
+                    limit = 10
                     height = 2 + total_items
+                    if total_items > limit:
+                        height = 2 + limit
                     width = 48
                     last_letter = 96 + total_items
+                    scroll = 0
                     selection = tcod.console.Console(width, height, 'F')
                     inventory = dict(zip(range(len(items)), items))
-                    selection.draw_frame(0, 0, width, height,
-                                         'Select item to equip:')
-                    for i in range(len(inventory)):
-                        it = inventory[i]
-                        suffix = ''
-                        if it.type == Weapon:
-                            suffix = ' ({:+d}/{})'.format(
-                                it.to_hit_modifier if it.status_identified else
-                                it.base_to_hit,
-                                it.damage if it.status_identified else
-                                it.base_damage)
-                        elif it.type == Armor:
-                            suffix = ' ({:+d})'.format(
-                                it.armor_class_modifier if it.status_identified
-                                else it.base_armor_class)
-                        name = it.interface_name
-                        if len(name) + len(suffix) > 40:
-                            name = name[:40 - len(suffix) - 1] + '+'
-                        summary = '{}'.format(name + suffix)
-                        selection.print(1, 1 + i, it.icon,
-                                        it.color)
-                        selection.print(3, 1 + i, '{}) '.format(chr(i + 97)))
-                        selection.print(6, 1 + i, summary,
-                                        enchantment_colors[it.enchantment_level]
-                                        if it.status_identified else tcod.white)
-                    selection.blit(self.game.screen, 4 + 2, 4 + 2)
-                    tcod.console_flush()
                     while True:
+                        selection.draw_frame(0, 0, width, height,
+                                             'Select item to equip:')
+                        print_list(inventory, selection, height,  0, scroll, limit, False)
+                        selection.blit(self.game.screen, 4 + 2, 4 + 2)
+                        tcod.console_flush()
                         reaction = wait()
                         if reaction == 27:
                             break
+                        elif reaction == tcod.event.K_DOWN:
+                            scroll += 1 if limit + scroll < total_items else 0
+                        elif reaction == tcod.event.K_UP:
+                            scroll -= 1 if scroll > 0 else 0
                         elif reaction in range(97, last_letter + 1):
                             self.game.player.equip(items[reaction - 97])
                             return True
 
 
 class Item(Char):
-    def __init__(self, parent, manager, name, material, base_weight, base_value,
-                 icon, slot, quality, ench_lvl):
+    def __init__(self, sub, manager, name, base_weight, base_value, icon):
         super().__init__()
-        self.type_str = parent.__class__.__name__
-        self.type = parent.__class__
+        self.type = sub.__class__
         self.manager = manager
-
         self.pos = None
-        tmp_material = tuple(v for v in material.split())
-        self.material = tmp_material[0]
         self.base_weight = base_weight
-        self.weight = self.base_weight * float(tmp_material[1])
         self.base_value = base_value
-        self.value = self.base_value * float(tmp_material[2])
-        self.icon = icon[0]
-        self.color = vars(tcod.constants)[icon[1]]
+        self.icon = icon
         self.layer = 2
-        self.slot = slot
-        self.quality = int(quality)
-        self.enchantment_level = int(ench_lvl)
         self.status_identified = False
-        self.name = self.material + ' ' + name
-        self.interface_name = '* ' + self.name
-        self.identified_name = ('{} {} {}'.format(
-            quality_levels[self.quality],
-            enchantment_levels[self.enchantment_level], self.name)).strip()
-        self.identified_name = ' '.join(self.identified_name.split())
+        self.name = name
+        self.interface_name = name  # TEMP
+        self.identified_name = name  # TEMP
 
     def dropped(self, coords):
         self.add(self.manager.items_on_ground,
@@ -368,32 +303,39 @@ class Item(Char):
 class Weapon(Item):
     def __init__(self, manager, template, groups, randomize=False):
         self.log = logging.getLogger(__name__)
-        value = template['base_value']
-        quality = template['quality']
-        ench_lvl = template['ench_lvl']
-        material = template['material']
-        if randomize:
-            quality = roll_gaussian(1, 5, 1.15) - 3
-            ench_lvl = roll_gaussian(1, 3, 0.5) - 2
-            material = random.choice(materials['weapons'])
-            value = value * (1 + 0.4 * quality) * (1 + 0.8 * ench_lvl)
         super().__init__(
-             self,
-             manager,
-             template['name'],
-             material,
-             template['base_weight'],
-             value,
-             (template['icon'], template['color']),
-             template['slot'],
-             quality,
-             ench_lvl)
+            self,
+            manager,
+            template['name'],
+            template['base_weight'],
+            template['base_value'],
+            template['icon'])
+        if randomize:
+            r_key, r_val = random.choice(list(materials['weapons'].items()))
+            self.material = r_val
+            self.quality = roll_gaussian(1, 5, 1.15) - 3
+            self.enchantment_level = roll_gaussian(1, 3, 0.5) - 2
+            self.name = r_key + ' ' + self.name
+        else:
+            self.material = materials['weapons'][template['material']]
+            self.quality = int(template['quality'])
+            self.enchantment_level = int(template['ench_lvl'])
+            self.name = template['material'] + ' ' + self.name
+        self.weight = self.base_weight * float(self.material[0])
+        self.value = self.base_value * (1 + 0.4 * self.quality) * (1 + 0.8 * self.enchantment_level)
+        self.color = vars(tcod.constants)[self.material[2]]
+        self.slot = template['slot']
+        self.interface_name = '* ' + self.name
+        self.identified_name = ('{} {} {}'.format(
+            quality_levels[self.quality],
+            enchantment_levels[self.enchantment_level], self.name)).strip()
+        self.identified_name = ' '.join(self.identified_name.split())
         self.speed_modifier = template['speed_modifier']
         self.base_to_hit = template['to_hit_modifier']
-        self.to_hit_modifier = self.base_to_hit + quality + ench_lvl
+        self.to_hit_modifier = self.base_to_hit + self.quality + self.enchantment_level
         num, sides, mod = decompile_dmg_die(template['damage_string'])
         self.base_damage = compile_dmg_die(num, sides, mod)
-        self.damage = compile_dmg_die(num, sides, mod + ench_lvl)
+        self.damage = compile_dmg_die(num, sides, mod + self.enchantment_level)
         self.add(groups)
         self.log.debug('Created item {}'.format(self.identified_name))
 
@@ -401,28 +343,81 @@ class Weapon(Item):
 class Armor(Item):
     def __init__(self, manager, template, groups, randomize=False):
         self.log = logging.getLogger(__name__)
-        value = template['base_value']
-        quality = template['quality']
-        ench_lvl = template['ench_lvl']
-        material = template['material']
-        if randomize:
-            quality = roll_gaussian(1, 5, 1.15) - 3
-            ench_lvl = roll_gaussian(1, 3, 0.5) - 2
-            material = random.choice(materials['armor'])
-            value = value * (1 + 0.4 * quality) * (1 + 0.8 * ench_lvl)
         super().__init__(
-             self,
-             manager,
-             template['name'],
-             material,
-             template['base_weight'],
-             value,
-             (template['icon'], template['color']),
-             template['slot'],
-             quality,
-             ench_lvl)
+            self,
+            manager,
+            template['name'],
+            template['base_weight'],
+            template['base_value'],
+            template['icon'])
+        if randomize:
+            r_key, r_val = random.choice(list(materials['armor'].items()))
+            self.material = r_val
+            self.quality = roll_gaussian(1, 5, 1.15) - 3
+            self.enchantment_level = roll_gaussian(1, 3, 0.5) - 2
+            self.name = r_key + ' ' + self.name
+        else:
+            self.material = materials['armor'][template['material']]
+            self.quality = int(template['quality'])
+            self.enchantment_level = int(template['ench_lvl'])
+            self.name = template['material'] + ' ' + self.name
+        self.weight = self.base_weight * float(self.material[0])
+        self.value = self.base_value * (1 + 0.4 * self.quality) * (1 + 0.8 * self.enchantment_level)
+        self.color = vars(tcod.constants)[self.material[2]]
+        self.slot = template['slot']
+        self.interface_name = '* ' + self.name
+        self.identified_name = ('{} {} {}'.format(
+            quality_levels[self.quality],
+            enchantment_levels[self.enchantment_level], self.name)).strip()
+        self.identified_name = ' '.join(self.identified_name.split())
         ac_mod = template['armor_class_modifier']
         self.base_armor_class = ac_mod
-        self.armor_class_modifier = ac_mod + quality + ench_lvl * 3
+        self.armor_class_modifier = ac_mod + self.quality + self.enchantment_level * 3
         self.add(groups)
         self.log.debug('Created item {}'.format(self.identified_name))
+
+
+class Consumable(Item):
+    def __init__(self, manager, template, groups):
+        self.log = logging.getLogger(__name__)
+        super().__init__(
+            self,
+            manager,
+            template['name'],
+            template['base_weight'],
+            template['base_value'],
+            template['icon'])
+        self.weight = self.base_weight
+        self.value = self.base_value
+        if template['subtype'] == 'scroll':
+            self.color = vars(tcod.constants)[template['color']]
+            self.name = 'a scroll titled ' + scroll_names[template['name']]
+        elif template['subtype'] == 'potion':
+            self.color = potion_colors[template['name']][1]
+            self.name = potion_colors[template['name']][0] + ' potion'
+        self.identified_name = 'a {} of {}'.format(template['subtype'], template['name'])
+        self.interface_name = self.name
+        self.subtype = template['subtype']
+        self.effect = template['effect']
+        self.uses = template['number_of_uses']
+        self.add(groups)
+        self.log.debug('Created item {}'.format(self.identified_name))
+
+    def used(self, target):
+        self.identified()
+        self.manager.game.messenger.add('This is {}.'.format(self.name))
+        from mrogue.effects import Effect
+        effect = Effect(self.manager.game.messenger, self, target)
+        return effect.apply()
+
+    def identified(self):
+        super().identified()
+        self.identify_all()
+
+    def identify_all(self,):
+        for i in self.manager.loot:
+            if not i.status_identified and i.type == Consumable and i.effect == self.effect:
+                i.identified()
+        for i in self.manager.game.player.inventory:
+            if not i.status_identified and i.type == Consumable and i.effect == self.effect:
+                i.identified()

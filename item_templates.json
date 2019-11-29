@@ -3,12 +3,13 @@
   {
     "daggers": [
       {
+        "type": "wearable",
+        "subtype": "weapon",
         "name": "knife",
-        "material": "bronze 0.8 0.8",
+        "material": "bronze",
         "base_weight": 0.5,
         "base_value": 20.0,
         "icon": "(",
-        "color": "brass",
         "slot": "hand",
         "quality": 0,
         "ench_lvl": 0,
@@ -17,12 +18,13 @@
         "damage_string": "1d4"
       },
       {
+        "type": "wearable",
+        "subtype": "weapon",
         "name": "dagger",
-        "material": "iron 1.0 1.0",
+        "material": "iron",
         "base_weight": 0.7,
         "base_value": 30.0,
         "icon": "(",
-        "color": "light_sky",
         "slot": "hand",
         "quality": 0,
         "ench_lvl": 0,
@@ -33,12 +35,13 @@
     ],
     "swords": [
       {
+        "type": "wearable",
+        "subtype": "weapon",
         "name": "shortsword",
-        "material": "iron 1.0 1.0",
+        "material": "iron",
         "base_weight": 2.0,
         "base_value": 5.0,
         "icon": "(",
-        "color": "darker_sky",
         "slot": "hand",
         "quality": 0,
         "ench_lvl": 0,
@@ -47,12 +50,13 @@
         "damage_string": "1d6"
       },
       {
+        "type": "wearable",
+        "subtype": "weapon",
         "name": "longsword",
-        "material": "steel 1.0 1.25",
+        "material": "steel",
         "base_weight": 3.5,
         "base_value": 80.0,
         "icon": "(",
-        "color": "light_sky",
         "slot": "hand",
         "quality": 0,
         "ench_lvl": 0,
@@ -63,12 +67,13 @@
     ],
     "maces": [
       {
+        "type": "wearable",
+        "subtype": "weapon",
         "name": "stick",
-        "material": "wooden 0.8 0.5",
+        "material": "wooden",
         "base_weight": 1.0,
         "base_value": 10.0,
         "icon": "(",
-        "color": "darker_orange",
         "slot": "hand",
         "quality": 0,
         "ench_lvl": 0,
@@ -77,12 +82,13 @@
         "damage_string": "1d6"
       },
       {
+        "type": "wearable",
+        "subtype": "weapon",
         "name": "mace",
-        "material": "iron 1.0 1.0",
+        "material": "iron",
         "base_weight": 4.0,
         "base_value": 60.0,
         "icon": "(",
-        "color": "darker_sky",
         "slot": "hand",
         "quality": 0,
         "ench_lvl": 0,
@@ -93,12 +99,13 @@
     ],
     "axes": [
       {
+        "type": "wearable",
+        "subtype": "weapon",
         "name": "axe",
-        "material": "iron 1.0 1.0",
+        "material": "iron",
         "base_weight": 3.0,
         "base_value": 40,
         "icon": "(",
-        "color": "darker_sky",
         "slot": "hand",
         "quality": 0,
         "ench_lvl": 0,
@@ -107,12 +114,13 @@
         "damage_string": "1d6"
       },
       {
+        "type": "wearable",
+        "subtype": "weapon",
         "name": "battleaxe",
-        "material": "steel 1.0 1.25",
+        "material": "steel",
         "base_weight": 5.0,
         "base_value": 80.0,
         "icon": "(",
-        "color": "light_sky",
         "slot": "hand",
         "quality": 0,
         "ench_lvl": 0,
@@ -126,24 +134,26 @@
   {
     "head": [
       {
+        "type": "wearable",
+        "subtype": "armor",
         "name": "cap",
-        "material": "leather 0.2 0.3",
+        "material": "leather",
         "base_weight": 1.0,
         "base_value": 25.0,
         "icon": "[",
-        "color": "darker_orange",
         "slot": "head",
         "quality": 0,
         "ench_lvl": 0,
         "armor_class_modifier": 1
       },
       {
+        "type": "wearable",
+        "subtype": "armor",
         "name": "helmet",
-        "material": "bronze 0.8 0.8",
+        "material": "bronze",
         "base_weight": 2.0,
         "base_value": 65.0,
         "icon": "[",
-        "color": "brass",
         "slot": "head",
         "quality": 0,
         "ench_lvl": 0,
@@ -152,24 +162,26 @@
     ],
     "chest": [
       {
+        "type": "wearable",
+        "subtype": "armor",
         "name": "tunic",
-        "material": "fur 0.2 0.2",
+        "material": "fur",
         "base_weight": 5.0,
         "base_value": 35.0,
         "icon": "[",
-        "color": "dark_orange",
         "slot": "chest",
         "quality": 0,
         "ench_lvl": 0,
         "armor_class_modifier": 1
       },
       {
+        "type": "wearable",
+        "subtype": "armor",
         "name": "breastplate",
-        "material": "leather 0.2 0.3",
+        "material": "leather",
         "base_weight": 10.0,
         "base_value": 100.0,
         "icon": "[",
-        "color": "dark_amber",
         "slot": "chest",
         "quality": 0,
         "ench_lvl": 0,
@@ -178,28 +190,78 @@
     ],
     "feet": [
       {
+        "type": "wearable",
+        "subtype": "armor",
         "name": "shoes",
-        "material": "cloth 0.1 0.1",
+        "material": "cloth",
         "base_weight": 0.7,
         "base_value": 8.0,
         "icon": "[",
-        "color": "desaturated_turquoise",
         "slot": "feet",
         "quality": 0,
         "ench_lvl": 0,
         "armor_class_modifier": 0
       },
       {
+        "type": "wearable",
+        "subtype": "armor",
         "name": "boots",
-        "material": "leather 0.2 0.3",
+        "material": "leather",
         "base_weight": 2.0,
         "base_value": 40.0,
         "icon": "[",
-        "color": "darker_orange",
         "slot": "feet",
         "quality": 0,
         "ench_lvl": 0,
         "armor_class_modifier": 1
+      }
+    ]
+  },
+  "consumables": {
+    "scrolls": [
+      {
+        "type": "consumable",
+        "subtype": "scroll",
+        "name": "identify",
+        "base_weight": 0.01,
+        "base_value": 100.0,
+        "icon": "$",
+        "color": "lightest_sepia",
+        "effect": "identify",
+        "number_of_uses": 1
+      },
+      {
+        "type": "consumable",
+        "subtype": "scroll",
+        "name": "remove curse",
+        "base_weight": 0.01,
+        "base_value": 100.0,
+        "icon": "$",
+        "color": "lightest_sepia",
+        "effect": "decurse",
+        "number_of_uses": 1
+      }
+    ],
+     "potions": [
+      {
+        "type": "consumable",
+        "subtype": "potion",
+        "name": "healing",
+        "base_weight": 0.1,
+        "base_value": 50.0,
+        "icon": "&",
+        "effect": "heal 1d8+1",
+        "number_of_uses": 1
+      },
+      {
+        "type": "consumable",
+        "subtype": "potion",
+        "name": "scaleskin",
+        "base_weight": 0.1,
+        "base_value": 50.0,
+        "icon": "&",
+        "effect": "ac_bonus 2 10",
+        "number_of_uses": 1
       }
     ]
   }

@@ -13,6 +13,7 @@ from mrogue.message import Messenger
 from mrogue.item import ItemManager
 from mrogue.monster import Menagerie
 from mrogue.player import Player
+from mrogue.timers import Timer
 
 
 directions4 = [
@@ -69,6 +70,7 @@ class Rogue(object):
         key = 0
         while key != tcod.event.K_q:
             self.turn += 1
+            Timer.update()
             self.log.info('== Turn %d. ==' % self.turn)
             self.monsters.handle_monsters(self.player)
             self.player.check_if_items_on_ground()
@@ -138,7 +140,7 @@ class Rogue(object):
                     break
                 else:
                     self.log.warning('Key \'{}\' not supported.'.format(key))
-                    self.messenger.add('Unknown command: \'%s\'.' % (chr(key) if key<256 else '<?>'))
+                    self.messenger.add('Unknown command: \'%s\'.' % (chr(key) if key < 256 else '<?>'))
 
 
 if __name__ == '__main__':
