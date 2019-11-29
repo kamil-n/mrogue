@@ -10,7 +10,7 @@
   - [ ] inventory
     - [x] can drop/pick up items
     - [x] interface for inventory
-    - [ ] refine the interface  (stackable items, etc)
+    - [x] refine the interface  (stackable items, sort)
   - [x] random items on the ground
   - [x] defeated enemies drop equipment
   - [x] items' details unknown on pickup, revealed on use
@@ -27,6 +27,6 @@
   - [ ] on gained xp breakpoints increase stats
 - initiative/speed system...
 - skills...
-- statuses (timers...)
+- [x] statuses + timers
 - more objects on map...
 - character customization...

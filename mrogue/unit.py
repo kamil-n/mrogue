@@ -65,8 +65,8 @@ class Unit(Char):
         self.game.messenger.add(effect)
         self.log.debug('{} used {}.'.format(self.name, item.name))
 
-    def unequip(self, item: Weapon or Armor, quiet=False):
-        if item.enchantment_level < 0:
+    def unequip(self, item: Weapon or Armor, quiet=False, force=False):
+        if item.enchantment_level < 0 and not force:
             self.game.messenger.add('Cursed items can\'t be unequipped.')
             return False
         item.add(self.inventory)
@@ -150,7 +150,7 @@ class Unit(Char):
             self.kill()  # TODO: bugged!
             if not self.name == 'Player':
                 for item in self.equipped:
-                    self.unequip(item, quiet=True)
+                    self.unequip(item, quiet=True, force=True)
                 for item in self.inventory:
                     self.drop_item(item, quiet=True)
             self.remove(self.game.level.units, self.game.level.objects_on_map,

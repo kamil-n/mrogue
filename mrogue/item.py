@@ -45,7 +45,9 @@ def print_list(inventory, window, height, offset, scroll, limit, show_details=Fa
         if i > limit - 1:
             break
         j = i + scroll
-        it = inventory[j]
+        it = inventory[j][0]
+        amount = len(inventory[j])
+        prefix = '' if amount == 1 else '({}) '.format(amount)
         suffix = ''
         if it.type == Weapon:
             suffix = ' ({:+d}/{})'.format(
@@ -57,9 +59,9 @@ def print_list(inventory, window, height, offset, scroll, limit, show_details=Fa
                 it.armor_class_modifier if it.status_identified else
                 it.base_armor_class)
         name = it.interface_name
-        if len(name) + len(suffix) > 40:
-            name = name[:40 - len(suffix) - 1] + '+'
-        summary = '{}'.format(name + suffix)
+        if len(prefix) + len(name) + len(suffix) > 40:
+            name = name[:40 - len(prefix) - len(suffix) - 1] + '+'
+        summary = '{}'.format(prefix + name + suffix)
         window.print(1, 1 + i + offset, it.icon, it.color)
         window.print(3, 1 + i + offset, '{}) '.format(chr(j + 97)))
         window.print(6, 1 + i + offset, summary,
@@ -68,8 +70,8 @@ def print_list(inventory, window, height, offset, scroll, limit, show_details=Fa
         if show_details:
             details = '{:>6} {:6.2f} {:>6.2f}'.format(
                 it.slot if hasattr(it, 'slot') else '',
-                it.weight,
-                it.value)
+                it.weight * amount,
+                it.value * amount)
             window.print(46, 1 + i + offset, details)
     if limit + scroll < len(inventory):
         window.print(0, height - 2, 'v')
@@ -121,7 +123,7 @@ class ItemManager(object):
         tmp = None
         itype = None
         if not target:
-            target = random.choices(list(self.templates_file.keys()), [1, 2, 10])[0]
+            target = random.choices(list(self.templates_file.keys()), [1, 2, 1])[0]
         if target in self.templates_file:
             tmp, itype = get_random_template(self.templates_file[target])
         else:
@@ -144,8 +146,22 @@ class ItemManager(object):
         self.game.player.equip(item)
         return True
 
+    def prepare_inventory(self, item_list):
+        item_list.sort(key=lambda x: (str(x.type), x.name))
+        items = []
+        i = 0
+        while i < len(item_list):
+            sublist = [item_list[i]]
+            while i < len(item_list) - 1 and item_list[i+1].name == item_list[i].name:
+                i += 1
+                sublist.append(item_list[i])
+            items.append(sublist)
+            i += 1
+        return items
+
     def show_inventory(self):
-        total_items = len(self.game.player.inventory)
+        inventory = self.prepare_inventory(self.game.player.inventory)
+        total_items = len(inventory)
         item_limit = 14
         window_height = 4 + total_items
         if total_items > item_limit:
@@ -155,8 +171,6 @@ class ItemManager(object):
         window = tcod.console.Console(width, window_height, 'F')
         # tcod.console_set_default_foreground(window, tcod.light_orange)
         scroll = 0
-        inventory = dict(zip(range(len(self.game.player.inventory)),
-                             self.game.player.inventory))
         while True:
             window.clear()
             window.draw_frame(0, 0, width, window_height, 'Inventory')
@@ -174,7 +188,7 @@ class ItemManager(object):
             elif key == tcod.event.K_UP:
                 scroll -= 1 if scroll > 0 else 0
             elif key in range(97, last_letter + 1):
-                i = self.game.player.inventory[key - 97]
+                i = inventory[key - 97][0]
                 window.draw_rect(1, 3 + key - 97, width - 2, 1, 0, bg=tcod.blue)
                 window.blit(self.game.screen, 4, 4)
                 context_actions = []
