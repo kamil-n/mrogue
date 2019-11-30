@@ -1,11 +1,11 @@
 ##### TODO list:
 - [ ] clean up code up to this point
 - [ ] items
-  - [ ] equipment
+  - [x] equipment
     - [x] items contribute to stats
     - [x] can be un/equipped
     - [x] interface for equipment
-      - [ ] refine it (total weight, colors, etc)
+      - [x] refine it (total weight, colors, etc)
     - [x] monsters use items
   - [x] inventory
     - [x] can drop/pick up items

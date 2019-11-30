@@ -161,13 +161,13 @@ class ItemManager(object):
             window.print(3, 1 + i + offset, '{}) '.format(chr(j + 97)))
             window.print(6, 1 + i + offset, summary, color)
             if show_details:
-                details = '{:>6} {:6.2f} {:>6.2f}'.format(
+                details = '{:>6} {:6.2f}  {:>6.2f}'.format(
                     it.slot,
                     it.weight * amount,
                     it.value * amount)
                 window.print(46, 1 + i + offset, details)
         if limit + scroll < len(inventory):
-            window.print(0, height - 2, 'v')
+            window.print(0, height - 3, 'v')
 
     def show_inventory(self):
         sorts = circular([('slot', 47), ('weight', 56), ('value', 62), ('name', 5)])
@@ -176,10 +176,10 @@ class ItemManager(object):
         inventory = self.prepare_inventory(raw_inventory, sort[0])
         total_items = len(inventory)
         item_limit = 14
-        window_height = 4 + total_items
+        window_height = 5 + total_items
         if total_items > item_limit:
-            window_height = 4 + item_limit
-        width = 68
+            window_height = 5 + item_limit
+        width = 69
         last_letter = 96 + total_items
         window = tcod.console.Console(width, window_height, 'F')
         # tcod.console_set_default_foreground(window, tcod.light_orange)
@@ -190,8 +190,12 @@ class ItemManager(object):
             window.print(2, 1, 'Select an item or Esc to close:')
             window.print(50, 1, '[/] Sort', tcod.yellow)
             window.print(6, 2, 'Name')
-            window.print(48, 2, 'Slot     Wt    Val')
+            window.print(48, 2, 'Slot     Wt     Val')
             window.print(sort[1], 2, chr(25), tcod.yellow)
+            window.print(46, window_height - 2, 'Total:')
+            window.print(53, window_height - 2, '{:6.2f} {:7.2f}'.format(
+                sum([i.weight for i in raw_inventory]),
+                sum([i.value for i in raw_inventory])))
             inventory = self.prepare_inventory(raw_inventory, sort[0])
             self.print_list(inventory, window, window_height, 2, scroll, item_limit, True)
             window.blit(self.game.screen, 4, 4)
