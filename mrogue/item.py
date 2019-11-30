@@ -38,43 +38,10 @@ def get_item_equipped_in_slot(unit, slot):
     return None
 
 
-def print_list(inventory, window, height, offset, scroll, limit, show_details=False):
-    if scroll > 0:
-        window.print(0, 1 + offset, '^')
-    for i in range(len(inventory)):
-        if i > limit - 1:
-            break
-        j = i + scroll
-        it = inventory[j][0]
-        amount = len(inventory[j])
-        prefix = '' if amount == 1 else '({}) '.format(amount)
-        suffix = ''
-        if it.type == Weapon:
-            suffix = ' ({:+d}/{})'.format(
-                it.to_hit_modifier if it.status_identified else
-                it.base_to_hit,
-                it.damage if it.status_identified else it.base_damage)
-        elif it.type == Armor:
-            suffix = ' ({:+d})'.format(
-                it.armor_class_modifier if it.status_identified else
-                it.base_armor_class)
-        name = it.interface_name
-        if len(prefix) + len(name) + len(suffix) > 40:
-            name = name[:40 - len(prefix) - len(suffix) - 1] + '+'
-        summary = '{}'.format(prefix + name + suffix)
-        window.print(1, 1 + i + offset, it.icon, it.color)
-        window.print(3, 1 + i + offset, '{}) '.format(chr(j + 97)))
-        window.print(6, 1 + i + offset, summary,
-                     enchantment_colors[it.enchantment_level] if
-                     it.status_identified and hasattr(it, 'enchantment_level') else tcod.white)
-        if show_details:
-            details = '{:>6} {:6.2f} {:>6.2f}'.format(
-                it.slot if hasattr(it, 'slot') else '',
-                it.weight * amount,
-                it.value * amount)
-            window.print(46, 1 + i + offset, details)
-    if limit + scroll < len(inventory):
-        window.print(0, height - 2, 'v')
+def circular(sequence):
+    while sequence:
+        for element in sequence:
+            yield element
 
 
 class ItemManager(object):
@@ -146,8 +113,8 @@ class ItemManager(object):
         self.game.player.equip(item)
         return True
 
-    def prepare_inventory(self, item_list):
-        item_list.sort(key=lambda x: (str(x.type), x.name))
+    def prepare_inventory(self, item_list, sort):
+        item_list.sort(key=lambda x: (getattr(x, sort), x.name))
         items = []
         i = 0
         while i < len(item_list):
@@ -159,8 +126,54 @@ class ItemManager(object):
             i += 1
         return items
 
+    def print_list(self, inventory, window, height, offset, scroll, limit, show_details=False):
+        if scroll > 0:
+            window.print(0, 1 + offset, '^')
+        for i in range(len(inventory)):
+            if i > limit - 1:
+                break
+            j = i + scroll
+            it = inventory[j][0]
+            amount = len(inventory[j])
+            prefix = '' if amount == 1 else '({}) '.format(amount)
+            if it in self.game.player.equipped:
+                prefix = '(E) '
+            suffix = ''
+            if it.type == Weapon:
+                suffix = ' ({:+d}/{})'.format(
+                    it.to_hit_modifier if it.status_identified else
+                    it.base_to_hit,
+                    it.damage if it.status_identified else it.base_damage)
+            elif it.type == Armor:
+                suffix = ' ({:+d})'.format(
+                    it.armor_class_modifier if it.status_identified else
+                    it.base_armor_class)
+            name = it.interface_name
+            if len(prefix) + len(name) + len(suffix) > 40:
+                name = name[:40 - len(prefix) - len(suffix) - 1] + '+'
+            summary = '{}'.format(prefix + name + suffix)
+            color = tcod.white
+            if it in self.game.player.equipped:
+                color = tcod.gray
+            elif it.status_identified and hasattr(it, 'enchantment_level'):
+                color = enchantment_colors[it.enchantment_level]
+            window.print(1, 1 + i + offset, it.icon, it.color)
+            window.print(3, 1 + i + offset, '{}) '.format(chr(j + 97)))
+            window.print(6, 1 + i + offset, summary, color)
+            if show_details:
+                details = '{:>6} {:6.2f} {:>6.2f}'.format(
+                    it.slot,
+                    it.weight * amount,
+                    it.value * amount)
+                window.print(46, 1 + i + offset, details)
+        if limit + scroll < len(inventory):
+            window.print(0, height - 2, 'v')
+
     def show_inventory(self):
-        inventory = self.prepare_inventory(self.game.player.inventory)
+        sorts = circular([('slot', 47), ('weight', 56), ('value', 62), ('name', 5)])
+        sort = next(sorts)
+        raw_inventory = self.game.player.inventory + self.game.player.equipped
+        inventory = self.prepare_inventory(raw_inventory, sort[0])
         total_items = len(inventory)
         item_limit = 14
         window_height = 4 + total_items
@@ -175,9 +188,12 @@ class ItemManager(object):
             window.clear()
             window.draw_frame(0, 0, width, window_height, 'Inventory')
             window.print(2, 1, 'Select an item or Esc to close:')
-            window.print(5, 2, 'Name')
+            window.print(50, 1, '[/] Sort', tcod.yellow)
+            window.print(6, 2, 'Name')
             window.print(48, 2, 'Slot     Wt    Val')
-            print_list(inventory, window, window_height, 2, scroll, item_limit, True)
+            window.print(sort[1], 2, chr(25), tcod.yellow)
+            inventory = self.prepare_inventory(raw_inventory, sort[0])
+            self.print_list(inventory, window, window_height, 2, scroll, item_limit, True)
             window.blit(self.game.screen, 4, 4)
             tcod.console_flush()
             key = wait()
@@ -187,6 +203,8 @@ class ItemManager(object):
                 scroll += 1 if item_limit + scroll < total_items else 0
             elif key == tcod.event.K_UP:
                 scroll -= 1 if scroll > 0 else 0
+            elif key == tcod.event.K_SLASH:
+                sort = next(sorts)
             elif key in range(97, last_letter + 1):
                 i = inventory[key - 97][0]
                 highlight_line = 3 + key - 97 - scroll
@@ -196,9 +214,12 @@ class ItemManager(object):
                 context_actions = []
                 if i.type == Consumable:
                     context_actions.append(('a', 'Use item', self.game.player.use))
+                elif i in self.game.player.equipped:
+                    context_actions.append(('a', 'Unequip item', self.game.player.unequip))
                 elif i.type == Weapon or i.type == Armor:
                     context_actions.append(('a', 'Equip item', self.try_equip))
-                context_actions.append(('b', 'Drop item', self.game.player.drop_item))
+                if not i in self.game.player.equipped:
+                    context_actions.append(('b', 'Drop item', self.game.player.drop_item))
                 select_option(self.game.screen, context_actions)
                 while True:
                     selection = wait()
@@ -251,9 +272,8 @@ class ItemManager(object):
                 if item:
                     return self.game.player.unequip(item)
                 else:
-                    items = list(filter(lambda x: hasattr(x, 'slot'), self.game.player.inventory))
-                    items = list(filter(lambda x: x.slot == slots[key - 97], items))
-                    items = self.prepare_inventory(items)
+                    items = list(filter(lambda x: x.slot == slots[key - 97], self.game.player.inventory))
+                    items = self.prepare_inventory(items, sort='enchantment_level')
                     if len(items) < 1:
                         continue
                     window.draw_rect(1, 3 + key - 97, w - 2, 1, 0, bg=tcod.blue)
@@ -270,7 +290,7 @@ class ItemManager(object):
                     while True:
                         selection.draw_frame(0, 0, width, height,
                                              'Select item to equip:')
-                        print_list(items, selection, height,  0, scroll, limit, False)
+                        self.print_list(items, selection, height,  0, scroll, limit, False)
                         selection.blit(self.game.screen, 4 + 10, 4 + 2)
                         tcod.console_flush()
                         reaction = wait()
@@ -414,6 +434,7 @@ class Consumable(Item):
         self.identified_name = 'a {} of {}'.format(template['subtype'], template['name'])
         self.interface_name = self.name
         self.subtype = template['subtype']
+        self.slot = ''
         self.effect = template['effect']
         self.uses = template['number_of_uses']
         self.add(groups)
