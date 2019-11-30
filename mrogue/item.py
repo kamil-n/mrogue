@@ -189,8 +189,10 @@ class ItemManager(object):
                 scroll -= 1 if scroll > 0 else 0
             elif key in range(97, last_letter + 1):
                 i = inventory[key - 97][0]
-                window.draw_rect(1, 3 + key - 97, width - 2, 1, 0, bg=tcod.blue)
-                window.blit(self.game.screen, 4, 4)
+                highlight_line = 3 + key - 97 - scroll
+                if 3 <= highlight_line <= window_height - 2:
+                    window.draw_rect(1, highlight_line, width - 2, 1, 0, bg=tcod.blue)
+                    window.blit(self.game.screen, 4, 4)
                 context_actions = []
                 if i.type == Consumable:
                     context_actions.append(('a', 'Use item', self.game.player.use))
@@ -251,6 +253,7 @@ class ItemManager(object):
                 else:
                     items = list(filter(lambda x: hasattr(x, 'slot'), self.game.player.inventory))
                     items = list(filter(lambda x: x.slot == slots[key - 97], items))
+                    items = self.prepare_inventory(items)
                     if len(items) < 1:
                         continue
                     window.draw_rect(1, 3 + key - 97, w - 2, 1, 0, bg=tcod.blue)
@@ -264,12 +267,11 @@ class ItemManager(object):
                     last_letter = 96 + total_items
                     scroll = 0
                     selection = tcod.console.Console(width, height, 'F')
-                    inventory = dict(zip(range(len(items)), items))
                     while True:
                         selection.draw_frame(0, 0, width, height,
                                              'Select item to equip:')
-                        print_list(inventory, selection, height,  0, scroll, limit, False)
-                        selection.blit(self.game.screen, 4 + 2, 4 + 2)
+                        print_list(items, selection, height,  0, scroll, limit, False)
+                        selection.blit(self.game.screen, 4 + 10, 4 + 2)
                         tcod.console_flush()
                         reaction = wait()
                         if reaction == 27:
@@ -279,7 +281,7 @@ class ItemManager(object):
                         elif reaction == tcod.event.K_UP:
                             scroll -= 1 if scroll > 0 else 0
                         elif reaction in range(97, last_letter + 1):
-                            self.game.player.equip(items[reaction - 97])
+                            self.game.player.equip(items[reaction - 97][0])
                             return True
 
 

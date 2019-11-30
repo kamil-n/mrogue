@@ -42,6 +42,9 @@ class Unit(Char):
                                                 item.identified_name))
 
     def equip(self, item: Weapon or Armor, quiet=False):
+        if not getattr(item, 'slot'):
+            self.log.warning('{} tried to equip {}.'.format(self.name, item.name))
+            return
         for i in self.equipped:
             if item.slot == i.slot:
                 self.unequip(i)

@@ -7,7 +7,7 @@
     - [x] interface for equipment
       - [ ] refine it (total weight, colors, etc)
     - [x] monsters use items
-  - [ ] inventory
+  - [x] inventory
     - [x] can drop/pick up items
     - [x] interface for inventory
     - [x] refine the interface  (stackable items, sort)

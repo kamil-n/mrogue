@@ -22,9 +22,9 @@ class Effect(object):
             feedback = 'Unknown items have been identified.'
 
         elif keyword == 'decurse':
-            for i in self.target.equipped:
-                if i.enchantment_level < 0:
-                    self.target.unequip(i)
+            for i in range(len(self.target.equipped) - 1, -1, -1):
+                if self.target.equipped[i].enchantment_level < 0:
+                    self.target.unequip(self.target.equipped[i], force=True)
             feedback = 'Cursed items have been unequipped.'
 
         elif keyword == 'heal':
