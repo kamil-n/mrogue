@@ -21,6 +21,8 @@ class Unit(Char):
         self.color = vars(tcod.constants)[icon[1]]
         self.layer = 1
         self.sight_range = sight_range
+        self.load_thresholds = (5.0, 30.0, 50.0)
+        self.speed = 1.0
         self.base_to_hit = to_hit  # i.e. from Strength or size
         self.to_hit = self.base_to_hit
         self.default_damage_dice = damage_dice  # unarmed attacks

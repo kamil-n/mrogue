@@ -121,6 +121,9 @@ class RogueMap(tcod.map.Map):
         if not adjacent(unit.pos, check):
             self.log.warning('{} tried to move more than 1 cell!'.format(unit.name))
             return False
+        if unit.speed == 0.0:
+            self.game.messenger.add('You can\'t move!')
+            return False
         if not self.walkable[check[0]][check[1]]:
             if unit.name != 'Player':
                 self.game.messenger.add('{} runs into the wall.'.format(unit.name))

@@ -3,10 +3,17 @@
 import tcod.console
 import mrogue.unit
 
+load_statuses = {
+    'light': (1.2, tcod.green),
+    'normal': (1.0, tcod.white),
+    'heavy': (0.8, tcod.orange),
+    'immobile': (0.0, tcod.red)
+}
 
 class Player(mrogue.unit.Unit):
     def __init__(self, game):
         super().__init__('Player', game, ('@', 'lighter_red'), 6, 1, '1d2+1', 11, 20)
+        self.load_status = 'light'
         self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')
         self.add_item(game.items.item_templates['weapons']['maces'][0])
         self.add_item(game.items.item_templates['armor']['chest'][0])
@@ -25,14 +32,12 @@ class Player(mrogue.unit.Unit):
         self.status_bar.print(11, 0, 'AC:%2d' % self.armor_class)
         self.status_bar.print(19, 0, 'Atk:{:+d}/{}'.format(
             self.to_hit, self.damage_dice))
-        self.status_bar.print(34, 0, 'Equipment: {}/4'.format(
-            len(self.equipped)))
-        self.status_bar.print(51, 0, 'Inventory: {}'.format(
-            len(self.inventory)))
+        self.status_bar.print(32, 0, 'Load: {}'.format(self.load_status),
+                              load_statuses[self.load_status][1])
         self.status_bar.print(66, 0, 'Press q to quit, h for help.')
         self.status_bar.blit(self.game.screen, 0, 0)
 
-    def check_if_items_on_ground(self):
+    def heartbeat(self):
         items = self.game.items.get_item_on_map(self.pos)
         if items and self.moved:
             if len(items) > 1:
@@ -41,6 +46,16 @@ class Player(mrogue.unit.Unit):
             else:
                 self.game.messenger.add('{} is lying here.'.format(
                     items[0].name[0].upper() + items[0].name[1:]))
+        total_load = sum([i.weight for i in self.inventory + self.equipped])
+        if total_load < self.load_thresholds[0]:
+            self.load_status = 'light'
+        elif total_load < self.load_thresholds[1]:
+            self.load_status = 'normal'
+        elif total_load < self.load_thresholds[2]:
+            self.load_status = 'heavy'
+        else:
+            self.load_status = 'immobile'
+        self.speed = 1.0 * load_statuses[self.load_status][0]
 
     def in_slot(self, slot):
         for i in self.equipped:

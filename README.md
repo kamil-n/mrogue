@@ -15,7 +15,7 @@
   - [x] defeated enemies drop equipment
   - [x] items' details unknown on pickup, revealed on use
     - [x] cursed items can't be unequipped
-  - [ ] carry weight limit
+  - [x] carry weight limit
   - [x] more item types along with temporary or sustained effects
     - [x] potions
     - [x] scrolls

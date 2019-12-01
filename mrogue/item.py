@@ -212,7 +212,7 @@ class ItemManager(object):
             elif key in range(97, last_letter + 1):
                 i = inventory[key - 97][0]
                 highlight_line = 3 + key - 97 - scroll
-                if 3 <= highlight_line <= window_height - 2:
+                if 3 <= highlight_line <= window_height - 3:
                     window.draw_rect(1, highlight_line, width - 2, 1, 0, bg=tcod.blue)
                     window.blit(self.game.screen, 4, 4)
                 context_actions = []

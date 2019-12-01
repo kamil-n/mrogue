@@ -73,7 +73,7 @@ class Rogue(object):
             Timer.update()
             self.log.info('== Turn %d. ==' % self.turn)
             self.monsters.handle_monsters(self.player)
-            self.player.check_if_items_on_ground()
+            self.player.heartbeat()
             self.level.look_around()
             if len(self.monsters.monsterList) == 0:
                 win = tcod.console.Console(20, 4, 'F')
