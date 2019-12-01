@@ -6,7 +6,7 @@ import string
 import tcod.console
 import tcod.event
 
-__version__ = 'v0.4.2.4'
+__version__ = 'v0.4.2.5'
 
 
 class Char(object):
@@ -99,17 +99,32 @@ def compile_dmg_die(num_die, sides, modifier):
     return die_string
 
 
-def wait(character=None):
+ignore_keys = (
+    tcod.event.K_LALT, tcod.event.K_RALT,
+    tcod.event.K_LSHIFT, tcod.event.K_RSHIFT,
+    tcod.event.K_LCTRL, tcod.event.K_RCTRL)
+
+
+def key_is(key, target, mod=tcod.event.KMOD_NONE):
+    if key[0] == target:
+        if not mod and not key[1]:
+            return True
+        elif mod and key[1] and key[1] | mod == mod:
+            return True
+    return False
+
+
+def wait(character=None, mod=tcod.event.KMOD_NONE):
     while True:
         for event in tcod.event.wait():
             if event.type == 'QUIT':
                 raise SystemExit
-            elif event.type == 'KEYDOWN':
+            elif event.type == 'KEYDOWN' and event.sym not in ignore_keys:
                 if character:
-                    if event.sym == character:
+                    if key_is((event.sym, event.mod), character, mod):
                         return True
                 else:
-                    return event.sym
+                    return event.sym, event.mod
 
 
 def select_option(screen, options):

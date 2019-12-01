@@ -8,11 +8,12 @@ import logging
 from json import loads
 from os import path
 import random
+import string
 import tcod
 import tcod.console
 import tcod.constants
 import tcod.event
-from mrogue import Char, decompile_dmg_die, compile_dmg_die, roll_gaussian, wait, select_option, random_scroll_name
+from mrogue import Char, decompile_dmg_die, compile_dmg_die, roll_gaussian, wait, select_option, random_scroll_name, key_is
 from mrogue.item_data import *
 
 
@@ -128,7 +129,7 @@ class ItemManager(object):
 
     def print_list(self, inventory, window, height, offset, scroll, limit, show_details=False):
         if scroll > 0:
-            window.print(0, 1 + offset, '^')
+            window.print(0, 1 + offset, chr(24), tcod.black, tcod.white)
         for i in range(len(inventory)):
             if i > limit - 1:
                 break
@@ -157,8 +158,8 @@ class ItemManager(object):
                 color = tcod.gray
             elif it.status_identified and hasattr(it, 'enchantment_level'):
                 color = enchantment_colors[it.enchantment_level]
-            window.print(1, 1 + i + offset, it.icon, it.color)
-            window.print(3, 1 + i + offset, '{}) '.format(chr(j + 97)))
+            window.print(1, 1 + i + offset, '{}) '.format(string.ascii_letters[j]))
+            window.print(4, 1 + i + offset, it.icon, it.color)
             window.print(6, 1 + i + offset, summary, color)
             if show_details:
                 details = '{:>6} {:6.2f}  {:>6.2f}'.format(
@@ -167,7 +168,7 @@ class ItemManager(object):
                     it.value * amount)
                 window.print(46, 1 + i + offset, details)
         if limit + scroll < len(inventory):
-            window.print(0, height - 3, 'v')
+            window.print(0, height - 3, chr(25), tcod.black, tcod.white)
 
     def show_inventory(self):
         sorts = circular([('slot', 47), ('weight', 56), ('value', 62), ('name', 5)])
@@ -179,8 +180,7 @@ class ItemManager(object):
         window_height = 5 + total_items
         if total_items > item_limit:
             window_height = 5 + item_limit
-        width = 69
-        last_letter = 96 + total_items
+        width = 68
         window = tcod.console.Console(width, window_height, 'F')
         # tcod.console_set_default_foreground(window, tcod.light_orange)
         scroll = 0
@@ -201,17 +201,17 @@ class ItemManager(object):
             window.blit(self.game.screen, 4, 4)
             tcod.console_flush()
             key = wait()
-            if key == 27:
+            if key_is(key, 27):
                 return False
-            elif key == tcod.event.K_DOWN:
+            elif key_is(key, tcod.event.K_DOWN):
                 scroll += 1 if item_limit + scroll < total_items else 0
-            elif key == tcod.event.K_UP:
+            elif key_is(key, tcod.event.K_UP):
                 scroll -= 1 if scroll > 0 else 0
-            elif key == tcod.event.K_SLASH:
+            elif key_is(key, tcod.event.K_SLASH):
                 sort = next(sorts)
-            elif key in range(97, last_letter + 1):
-                i = inventory[key - 97][0]
-                highlight_line = 3 + key - 97 - scroll
+            elif key in letters and letters[key] in range(total_items):
+                i = inventory[letters[key]][0]
+                highlight_line = 3 + letters[key] - scroll
                 if 3 <= highlight_line <= window_height - 3:
                     window.draw_rect(1, highlight_line, width - 2, 1, 0, bg=tcod.blue)
                     window.blit(self.game.screen, 4, 4)
@@ -227,10 +227,10 @@ class ItemManager(object):
                 select_option(self.game.screen, context_actions)
                 while True:
                     selection = wait()
-                    if selection == 27:
+                    if key_is(selection, 27):
                         break
-                    elif selection in range(97, 97 + len(context_actions)):
-                        result = context_actions[selection - 97][2](i)  # TODO: better lookup of appropriate action
+                    elif selection[0] in range(97, 97 + len(context_actions)):
+                        result = context_actions[selection[0] - 97][2](i)  # TODO: better lookup of appropriate action
                         return result if result is not None else True
 
     def get_item_on_map(self, coordinates):
@@ -268,19 +268,19 @@ class ItemManager(object):
             window.blit(self.game.screen, 4, 4)
             tcod.console_flush()
             key = wait()
-            if key == 27:
+            if key_is(key, 27):
                 return False
-            elif key in range(97, 97 + len(slots)):
+            elif key[0] in range(97, 97 + len(slots)):
                 item = get_item_equipped_in_slot(
-                    self.game.player, slots[key - 97])
+                    self.game.player, slots[key[0] - 97])
                 if item:
                     return self.game.player.unequip(item)
                 else:
-                    items = list(filter(lambda x: x.slot == slots[key - 97], self.game.player.inventory))
+                    items = list(filter(lambda x: x.slot == slots[key[0] - 97], self.game.player.inventory))
                     items = self.prepare_inventory(items, sort='enchantment_level')
                     if len(items) < 1:
                         continue
-                    window.draw_rect(1, 3 + key - 97, w - 2, 1, 0, bg=tcod.blue)
+                    window.draw_rect(1, 3 + key[0] - 97, w - 2, 1, 0, bg=tcod.blue)
                     window.blit(self.game.screen, 4, 4)
                     total_items = len(items)
                     limit = 10
@@ -298,14 +298,14 @@ class ItemManager(object):
                         selection.blit(self.game.screen, 4 + 10, 4 + 2)
                         tcod.console_flush()
                         reaction = wait()
-                        if reaction == 27:
+                        if key_is(reaction, 27):
                             break
-                        elif reaction == tcod.event.K_DOWN:
+                        elif key_is(reaction, tcod.event.K_DOWN):
                             scroll += 1 if limit + scroll < total_items else 0
-                        elif reaction == tcod.event.K_UP:
+                        elif key_is(reaction, tcod.event.K_UP):
                             scroll -= 1 if scroll > 0 else 0
-                        elif reaction in range(97, last_letter + 1):
-                            self.game.player.equip(items[reaction - 97][0])
+                        elif reaction[0] in range(97, last_letter + 1):
+                            self.game.player.equip(items[reaction[0] - 97][0])
                             return True
 
 
@@ -317,6 +317,8 @@ class Item(Char):
         self.pos = None
         self.base_weight = base_weight
         self.base_value = base_value
+        self.identified_value = base_value
+        self.value = base_value
         self.icon = icon
         self.layer = 2
         self.status_identified = False
@@ -338,6 +340,7 @@ class Item(Char):
         self.status_identified = True
         self.name = self.identified_name
         self.interface_name = self.identified_name
+        self.value = self.identified_value
 
 
 class Weapon(Item):
@@ -362,7 +365,7 @@ class Weapon(Item):
             self.enchantment_level = int(template['ench_lvl'])
             self.name = template['material'] + ' ' + self.name
         self.weight = self.base_weight * float(self.material[0])
-        self.value = self.base_value * (1 + 0.4 * self.quality) * (1 + 0.8 * self.enchantment_level)
+        self.identified_value = self.base_value * (1 + 0.4 * self.quality) * (1 + 0.8 * self.enchantment_level)
         self.color = vars(tcod.constants)[self.material[2]]
         self.slot = template['slot']
         self.interface_name = '* ' + self.name
@@ -402,7 +405,7 @@ class Armor(Item):
             self.enchantment_level = int(template['ench_lvl'])
             self.name = template['material'] + ' ' + self.name
         self.weight = self.base_weight * float(self.material[0])
-        self.value = self.base_value * (1 + 0.4 * self.quality) * (1 + 0.8 * self.enchantment_level)
+        self.identified_value = self.base_value * (1 + 0.4 * self.quality) * (1 + 0.8 * self.enchantment_level)
         self.color = vars(tcod.constants)[self.material[2]]
         self.slot = template['slot']
         self.interface_name = '* ' + self.name

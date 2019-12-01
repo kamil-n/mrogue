@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import tcod.constants
+import tcod.event
 
 quality_levels = {
     -2: 'broken',
@@ -66,7 +66,8 @@ materials = {
 }
 
 
+letters = dict(zip([(l, tcod.event.KMOD_NONE) for l in range(97, 97 + 26 + 1)], range(26)))
+letters.update(dict(zip([(l, tcod.event.KMOD_LSHIFT) for l in range(97, 97 + 26 + 1)], range(26, 26 + 26))))
+letters.update(dict(zip([(l, tcod.event.KMOD_RSHIFT) for l in range(97, 97 + 26 + 1)], range(26, 26 + 26))))
 scroll_names = {}
-
-
 potion_colors = {}

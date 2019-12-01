@@ -7,7 +7,7 @@ import sys
 import tcod
 import tcod.console
 import tcod.event
-from mrogue import __version__, wait
+from mrogue import __version__, wait, key_is
 from mrogue.map import RogueMap
 from mrogue.message import Messenger
 from mrogue.item import ItemManager
@@ -67,8 +67,8 @@ class Rogue(object):
         self.messenger.add('Kill all monsters. Move with arrow keys or numpad. Press q to exit.')
 
     def mainloop(self):
-        key = 0
-        while key != tcod.event.K_q:
+        key = (0, 0)
+        while not key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
             self.turn += 1
             Timer.update()
             self.log.info('== Turn %d. ==' % self.turn)
@@ -84,7 +84,7 @@ class Rogue(object):
                 self.messenger.show()
                 win.blit(self.screen, 10, 10)
                 tcod.console_flush()
-                wait(tcod.event.K_q)
+                wait(tcod.event.K_ESCAPE)
                 break
             if self.player.current_HP < 1 and 'debug' not in sys.argv:
                 win = tcod.console.Console(20, 4, 'F')
@@ -95,7 +95,7 @@ class Rogue(object):
                 self.messenger.show()
                 win.blit(self.screen, 10, 10)
                 tcod.console_flush()
-                wait(tcod.event.K_q)
+                wait(tcod.event.K_ESCAPE)
                 break
             while True:
                 self.level.draw_map()
@@ -104,19 +104,19 @@ class Rogue(object):
                 tcod.console_flush()
                 key = wait()
                 self.messenger.clear()
-                if key == tcod.event.K_i:
+                if key_is(key, tcod.event.K_i):
                     if self.items.show_inventory():
                         break
-                elif key == tcod.event.K_e:
+                elif key_is(key, tcod.event.K_e):
                     if self.items.show_equipment():
                         break
-                elif key == tcod.event.K_COMMA:
+                elif key_is(key, tcod.event.K_COMMA):
                     if self.player.pickup_item(self.items.get_item_on_map(self.player.pos)):
                         break
-                elif key in directions4 or key in directions8:
-                    if self.level.movement(self.player, direction_from(key, *self.player.pos)):
+                elif key[0] in directions4 or key[0] in directions8:
+                    if self.level.movement(self.player, direction_from(key[0], *self.player.pos)):
                         break
-                elif key == tcod.event.K_h:
+                elif key_is(key, tcod.event.K_h, tcod.event.KMOD_SHIFT):
                     win = tcod.console.Console(65, 16, 'F')
                     win.draw_frame(0, 0, 65, 16, 'Welcome to MRogue {}!'.format(__version__), False)
                     win.print(1, 1, 'Kill all monsters. To attack, \'walk\' into them.')
@@ -129,18 +129,18 @@ class Rogue(object):
                     win.print(1, 8, 'e - open equipment screen. Press slot hotkeys to unequip items.')
                     win.print(1, 9, 'i - open inventory screen. Press hotkeys to manage items.')
                     win.print(1, 10, ', (comma) - pick up items')
-                    win.print(1, 11, 'h - show this help screen.')
-                    win.print(1, 12, 'q - close game when on main screen or when game is finished.')
+                    win.print(1, 11, 'H - show this help screen.')
+                    win.print(1, 12, 'Q - close game when on main screen or when game is finished.')
                     win.print(1, 14, 'Esc - close pop-up windows like this one.')
-                    win.blit(self.screen, 12, 12, 0, 0, 65, 16, 1.0, 0.95)
+                    win.blit(self.screen, 12, 12, bg_alpha=0.95)
                     tcod.console_flush()
                     wait(tcod.event.K_ESCAPE)
-                elif key == tcod.event.K_q:
+                elif key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
                     self.log.info('Game exit on Q press.')
                     break
                 else:
-                    self.log.warning('Key \'{}\' not supported.'.format(key))
-                    self.messenger.add('Unknown command: \'%s\'.' % (chr(key) if key < 256 else '<?>'))
+                    self.log.warning('Key {} + {} not supported.'.format(key[1], key[0]))
+                    self.messenger.add('Unknown command: {}{}'.format('mod+' if key[1] else '', chr(key[0]) if key[0] < 256 else '<?>'))
 
 
 if __name__ == '__main__':

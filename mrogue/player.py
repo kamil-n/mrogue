@@ -34,7 +34,7 @@ class Player(mrogue.unit.Unit):
             self.to_hit, self.damage_dice))
         self.status_bar.print(32, 0, 'Load: {}'.format(self.load_status),
                               load_statuses[self.load_status][1])
-        self.status_bar.print(66, 0, 'Press q to quit, h for help.')
+        self.status_bar.print(66, 0, 'Press Q to quit, H for help.')
         self.status_bar.blit(self.game.screen, 0, 0)
 
     def heartbeat(self):
