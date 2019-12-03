@@ -2,13 +2,14 @@
 - [ ] clean up code up to this point
 - [x] items
 - [x] statuses + timers
+- [x] initiative/speed system
 - [ ] add more dungeon levels
+  - [ ] level transition
   - [ ] introduce way to regen life
   - [ ] add more monsters that scale with dungeon depth
 - [ ] experience
   - [ ] defeated enemies grant xp
   - [ ] on gained xp breakpoints increase stats
-- initiative/speed system...
-- skills...
 - more objects on map...
+- skills...
 - character customization...

@@ -8,8 +8,8 @@ from mrogue import Char, roll
 
 
 class Unit(Char):
-    def __init__(self, name, game, icon, sight_range, to_hit, damage_dice,
-                 armor_class, current_hp):
+    def __init__(self, name, game, icon, sight_range, speed, to_hit,
+                 damage_dice, armor_class, current_hp):
         super().__init__()
         self.game = game
         self.log = logging.getLogger(__name__)
@@ -22,7 +22,8 @@ class Unit(Char):
         self.layer = 1
         self.sight_range = sight_range
         self.load_thresholds = (5.0, 30.0, 50.0)
-        self.speed = 1.0
+        self.speed = speed
+        self.ticks_left = int(speed * 100)
         self.base_to_hit = to_hit  # i.e. from Strength or size
         self.to_hit = self.base_to_hit
         self.default_damage_dice = damage_dice  # unarmed attacks
@@ -155,5 +156,4 @@ class Unit(Char):
                     self.unequip(item, quiet=True, force=True)
                 for item in self.inventory:
                     self.drop_item(item, quiet=True)
-            self.remove(self.game.level.units, self.game.level.objects_on_map,
-                        self.game.monsters.monsterList)
+            self.remove(self.game.level.units, self.game.level.objects_on_map)

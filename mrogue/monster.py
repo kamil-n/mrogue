@@ -11,7 +11,8 @@ from mrogue.map import Pathfinder
 
 class Menagerie(object):
     game = None
-    monsterList = []
+    act_order = None
+    ticks_passed = 0
 
     def __init__(self, game, num):
         self.game = game
@@ -20,24 +21,26 @@ class Menagerie(object):
             monster_templates = loads(f.read())
         for i in range(num):
             Monster(self.game, random.choice(monster_templates),
-                    (self.monsterList, game.level.objects_on_map,
-                     game.level.units))
+                    (game.level.objects_on_map, game.level.units))
 
     def handle_monsters(self, target):
-        for monster in self.monsterList:
-            if monster.is_in_range(target.pos):
-                # if monster.senses_or_reacts_in_some_way_to(target)
-                if adjacent(monster.pos, target.pos):
-                    self.log.debug('{} is in melee range - attacking {}'.format(
-                        monster.name, target.name))
-                    monster.path = None
-                    monster.attack(target)
-                else:
-                    monster.approach(target.pos)
+        if self.act_order:
+            for unit in self.act_order:
+                unit.ticks_left = unit.ticks_left - self.ticks_passed
+            self.act_order = None
+        if not self.act_order:
+            self.ticks_passed = min(m.ticks_left for m in self.game.level.units)
+            self.act_order = sorted(self.game.level.units, key=lambda m: m.ticks_left)
+        while self.act_order and self.act_order[0].ticks_left == self.ticks_passed:
+            unit = self.act_order.pop(0)
+            if unit.name != 'Player':
+                unit.act(target)
             else:
-                monster.wander()
-        for unit in self.game.level.units:
-            unit.update()
+                for unit in self.game.level.units:
+                    unit.update()
+                self.game.player.ticks_left = int(self.game.player.speed * 100)
+                return True
+        return False
 
 
 class Monster(mrogue.unit.Unit):
@@ -46,6 +49,7 @@ class Monster(mrogue.unit.Unit):
                          game,
                          (template['icon'], template['color']),
                          10,
+                         template['speed'],
                          template['to_hit'],
                          template['dmg_die_unarmed'],
                          template['ac'],
@@ -60,6 +64,20 @@ class Monster(mrogue.unit.Unit):
             group.append(self)
         self.log.debug('Created monster {} at {},{}'.format(
             self.name, self.pos[0], self.pos[1]))
+
+    def act(self, target):
+        if self.is_in_range(target.pos):
+            # if self.senses_or_reacts_in_some_way_to(target)
+            if adjacent(self.pos, target.pos):
+                self.log.debug('{} is in melee range - attacking {}'.format(
+                    self.name, target.name))
+                self.path = None
+                self.attack(target)
+            else:
+                self.approach(target.pos)
+        else:
+            self.wander()
+        self.ticks_left = int(self.speed * 100)
 
     def is_in_range(self, target_position):
         return abs(self.pos[0] - target_position[0]) <= self.sight_range and \

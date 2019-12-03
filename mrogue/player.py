@@ -4,15 +4,15 @@ import tcod.console
 import mrogue.unit
 
 load_statuses = {
-    'light': (1.2, tcod.green),
+    'light': (0.8, tcod.green),
     'normal': (1.0, tcod.white),
-    'heavy': (0.8, tcod.orange),
+    'heavy': (1.2, tcod.orange),
     'immobile': (0.0, tcod.red)
 }
 
 class Player(mrogue.unit.Unit):
     def __init__(self, game):
-        super().__init__('Player', game, ('@', 'lighter_red'), 6, 1, '1d2+1', 11, 20)
+        super().__init__('Player', game, ('@', 'lighter_red'), 6, 1.0, 1, '1d2+1', 11, 20)
         self.load_status = 'light'
         self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')
         self.add_item(game.items.item_templates['weapons']['maces'][0])
@@ -37,7 +37,8 @@ class Player(mrogue.unit.Unit):
         self.status_bar.print(66, 0, 'Press Q to quit, H for help.')
         self.status_bar.blit(self.game.screen, 0, 0)
 
-    def heartbeat(self):
+    def update(self):
+        super().update()
         items = self.game.items.get_item_on_map(self.pos)
         if items and self.moved:
             if len(items) > 1:

@@ -72,10 +72,11 @@ class Rogue(object):
             self.turn += 1
             Timer.update()
             self.log.info('== Turn %d. ==' % self.turn)
-            self.monsters.handle_monsters(self.player)
-            self.player.heartbeat()
+            while True:
+                if self.monsters.handle_monsters(self.player):
+                    break
             self.level.look_around()
-            if len(self.monsters.monsterList) == 0:
+            if len(self.level.units) == 1:
                 win = tcod.console.Console(20, 4, 'F')
                 win.draw_frame(0, 0, 20, 4, 'Congratulations.', False)
                 win.print(6, 2, 'YOU WIN!', tcod.green)

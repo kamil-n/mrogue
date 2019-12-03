@@ -6,7 +6,7 @@ import string
 import tcod.console
 import tcod.event
 
-__version__ = 'v0.4.2.5'
+__version__ = 'v0.4.3.0'
 
 
 class Char(object):

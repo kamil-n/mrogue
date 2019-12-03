@@ -170,7 +170,7 @@ class RogueMap(tcod.map.Map):
         for item in self.game.items.items_on_ground:
             if self.fov[item.pos[0]][item.pos[1]] or 'debug' in argv:
                 self.game.screen.print(*item.pos, item.icon, item.color)
-        for monster in self.game.monsters.monsterList:
+        for monster in [u for u in self.game.level.units if u != 'Player']:
             if self.fov[monster.pos[0]][monster.pos[1]] or 'debug' in argv:
                 self.game.screen.print(*monster.pos, monster.icon, monster.color)
         self.game.screen.print(*self.game.player.pos, self.game.player.icon, self.game.player.color)
