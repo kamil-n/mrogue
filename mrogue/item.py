@@ -4,7 +4,6 @@ Module to support items (equipment) implementation.
 
 """
 
-import logging
 from json import loads
 from os import path
 import random
@@ -53,14 +52,12 @@ class ItemManager(object):
 
     def __init__(self, game, num_items):
         self.game = game
-        self.log = logging.getLogger(__name__)
         with open(path.join(game.dir, 'item_templates.json')) as f:
             self.templates_file = loads(f.read())
         for s in self.templates_file['consumables']['scrolls']:
             scroll_names[s['name']] = random_scroll_name()
         for p in self.templates_file['consumables']['potions']:
             potion_colors[p['name']] = random.choice(list(materials['potions'].items()))
-        self.log.debug('Creating pre-set items from templates:')
         for category, category_dict in self.templates_file.items():
             self.item_templates[category] = {}
             for subtype, type_list in category_dict.items():
@@ -83,7 +80,6 @@ class ItemManager(object):
         self.random_item('armor')
         # create random item
         self.random_item()'''
-        self.log.debug('Creating random loot ({}):'.format(num_items))
         for i in range(num_items):
             self.random_item(None, self.loot).dropped(game.level.find_spot())
 
@@ -345,7 +341,6 @@ class Item(Char):
 
 class Weapon(Item):
     def __init__(self, manager, template, groups, randomize=False):
-        self.log = logging.getLogger(__name__)
         super().__init__(
             self,
             manager,
@@ -380,12 +375,10 @@ class Weapon(Item):
         self.base_damage = compile_dmg_die(num, sides, mod)
         self.damage = compile_dmg_die(num, sides, mod + self.enchantment_level)
         self.add(groups)
-        self.log.debug('Created item {}'.format(self.identified_name))
 
 
 class Armor(Item):
     def __init__(self, manager, template, groups, randomize=False):
-        self.log = logging.getLogger(__name__)
         super().__init__(
             self,
             manager,
@@ -417,12 +410,10 @@ class Armor(Item):
         self.base_armor_class = ac_mod
         self.armor_class_modifier = ac_mod + self.quality + self.enchantment_level * 3
         self.add(groups)
-        self.log.debug('Created item {}'.format(self.identified_name))
 
 
 class Consumable(Item):
     def __init__(self, manager, template, groups):
-        self.log = logging.getLogger(__name__)
         super().__init__(
             self,
             manager,
@@ -445,7 +436,6 @@ class Consumable(Item):
         self.effect = template['effect']
         self.uses = template['number_of_uses']
         self.add(groups)
-        self.log.debug('Created item {}'.format(self.identified_name))
 
     def used(self, target):
         self.identified()

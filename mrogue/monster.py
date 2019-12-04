@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from json import loads
-import logging
 from os import path
 import random
 from mrogue import roll, adjacent
@@ -9,14 +8,13 @@ import mrogue.unit
 from mrogue.map import Pathfinder
 
 
-class Menagerie(object):
+class MonsterManager(object):
     game = None
-    act_order = None
+    order = None
     ticks_passed = 0
 
     def __init__(self, game, num):
         self.game = game
-        self.log = logging.getLogger(__name__)
         with open(path.join(game.dir, 'monster_templates.json')) as f:
             monster_templates = loads(f.read())
         for i in range(num):
@@ -24,15 +22,16 @@ class Menagerie(object):
                     (game.level.objects_on_map, game.level.units))
 
     def handle_monsters(self, target):
-        if self.act_order:
-            for unit in self.act_order:
+        if self.order:
+            for unit in self.order:
                 unit.ticks_left = unit.ticks_left - self.ticks_passed
-            self.act_order = None
-        if not self.act_order:
+            self.order = None
+        if not self.order:
             self.ticks_passed = min(m.ticks_left for m in self.game.level.units)
-            self.act_order = sorted(self.game.level.units, key=lambda m: m.ticks_left)
-        while self.act_order and self.act_order[0].ticks_left == self.ticks_passed:
-            unit = self.act_order.pop(0)
+            self.order = sorted(self.game.level.units,
+                                key=lambda m: m.ticks_left)
+        while self.order and self.order[0].ticks_left == self.ticks_passed:
+            unit = self.order.pop(0)
             if unit.name != 'Player':
                 unit.act(target)
             else:
@@ -55,22 +54,17 @@ class Monster(mrogue.unit.Unit):
                          template['ac'],
                          roll(template['hit_die']))
         self.path = None
-        self.log = logging.getLogger(__name__)
         if 'weapon' in template:
             self.game.items.random_item(template['weapon'], self.inventory)
         for item in self.inventory:
             self.equip(item, True)
         for group in groups:
             group.append(self)
-        self.log.debug('Created monster {} at {},{}'.format(
-            self.name, self.pos[0], self.pos[1]))
 
     def act(self, target):
         if self.is_in_range(target.pos):
             # if self.senses_or_reacts_in_some_way_to(target)
             if adjacent(self.pos, target.pos):
-                self.log.debug('{} is in melee range - attacking {}'.format(
-                    self.name, target.name))
                 self.path = None
                 self.attack(target)
             else:

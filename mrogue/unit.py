@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import logging
 from sys import argv
 import tcod.constants
 from mrogue.item import Item, Weapon, Armor, Consumable
@@ -12,7 +11,6 @@ class Unit(Char):
                  damage_dice, armor_class, current_hp):
         super().__init__()
         self.game = game
-        self.log = logging.getLogger(__name__)
         self.inventory = []
         self.equipped = []
         self.name = name
@@ -41,8 +39,6 @@ class Unit(Char):
 
     def add_item(self, item: Item):
         item.add(self.inventory)
-        self.log.debug('{} received {}.'.format(self.name,
-                                                item.identified_name))
 
     def equip(self, item: Weapon or Armor, quiet=False):
         for i in self.equipped:
@@ -60,13 +56,11 @@ class Unit(Char):
             item.identified()
         if not quiet:
             self.game.messenger.add(msg)
-        self.log.debug(msg)
 
     def use(self, item: Consumable):
         effect = item.used(self)
         item.remove(self.inventory)
         self.game.messenger.add(effect)
-        self.log.debug('{} used {}.'.format(self.name, item.name))
 
     def unequip(self, item: Weapon or Armor, quiet=False, force=False):
         if item.enchantment_level < 0 and not force:
@@ -82,7 +76,6 @@ class Unit(Char):
         item.remove(self.equipped)
         if not quiet:
             self.game.messenger.add(msg)
-        self.log.debug(msg)
         return True
 
     def drop_item(self, item: Item, quiet=False):
@@ -91,7 +84,6 @@ class Unit(Char):
         msg = '{} dropped {}.'.format(self.name, item.name)
         if not quiet:
             self.game.messenger.add(msg)
-        self.log.debug(msg)
 
     def pickup_item(self, itemlist: list):
         if itemlist:
@@ -100,7 +92,6 @@ class Unit(Char):
             item.picked()
             msg = '{} picked up {}.'.format(self.name, item.name)
             self.game.messenger.add(msg)
-            self.log.debug(msg)
             return True
         else:
             msg = 'There are no items here.'
@@ -109,44 +100,32 @@ class Unit(Char):
 
     def attack(self, target):
         uname = str.upper(self.name[0]) + self.name[1:]
-        self.log.info('{} attacks {}.'.format(uname, target.name))
         attack_roll = roll('1d20')
-        self.log.debug('attack roll = %d + %d' % (attack_roll, self.to_hit))
         critical_hit = attack_roll == 20
         critical_miss = attack_roll == 1
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
             if critical_hit:
-                self.log.debug('Critical hit.')
                 self.game.messenger.add('{} critically hits {}.'.format(
                     uname, target.name))
             else:
-                self.log.debug('Attack hit.')
                 self.game.messenger.add('{} hits {}.'.format(
                     uname, target.name))
             damage_roll = roll(self.damage_dice, critical_hit)
-            self.log.debug('damage roll = %d' % damage_roll)
             target.take_damage(damage_roll)
         else:
             if critical_miss:
-                self.log.debug('Critical miss')
                 self.game.messenger.add('{} critically misses {}.'.format(
                     uname, target.name))
             else:
-                self.log.debug('Attack missed')
                 self.game.messenger.add('{} misses {}.'.format(
                     uname, target.name))
 
     def take_damage(self, damage):
-        self.log.debug('{} is taking {} damage.'.format(
-            str.upper(self.name[0]) + self.name[1:], damage))
         self.current_HP -= damage
         if self.current_HP < 1:
             self.die()
-        else:
-            self.log.debug('current hit points: %d.' % self.current_HP)
 
     def die(self):
-        self.log.info('{} dies. ({} hp)'.format(self.name, self.current_HP))
         self.game.messenger.add('{} dies.'.format(
             str.upper(self.name[0]) + self.name[1:]))
         if not (self.name == 'Player' and 'debug' in argv):

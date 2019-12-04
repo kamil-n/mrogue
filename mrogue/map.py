@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import logging
 import numpy
 from queue import PriorityQueue
 import random
@@ -8,6 +7,15 @@ from sys import argv
 import tcod.bsp
 import tcod.map
 from mrogue import adjacent
+
+
+class MapManager(object):
+    def __init__(self, game):
+        self.dungeon_map = RogueMap(game)
+
+    def get_level(self):
+        return self.dungeon_map
+
 
 tileset = {'wall': '#', 'floor': '.'}
 
@@ -19,7 +27,8 @@ class RogueMap(tcod.map.Map):
     def __init__(self, game):
         self.mapDim = (game.screen.width, game.screen.height - 1)
         super().__init__(self.mapDim[0], self.mapDim[1], 'F')
-        self.tiles = numpy.full((self.mapDim[0], self.mapDim[1]), tileset['wall'], order='F')
+        self.tiles = numpy.full((self.mapDim[0], self.mapDim[1]),
+                                tileset['wall'], order='F')
         temp = []
         for i in range(self.mapDim[0]):
             row = []
@@ -27,13 +36,14 @@ class RogueMap(tcod.map.Map):
                 r = random.randint(64, 128)
                 row.append(tcod.Color(r, r, r))
             temp.append(row)
-        self.colors = numpy.empty((self.mapDim[0], self.mapDim[1]), object, order='F')
+        self.colors = numpy.empty((self.mapDim[0], self.mapDim[1]),
+                                  object, order='F')
         self.colors[...] = temp
-        self.explored = numpy.zeros((self.mapDim[0], self.mapDim[1]), bool, order='F')
+        self.explored = numpy.zeros((self.mapDim[0], self.mapDim[1]),
+                                    bool, order='F')
         self.game = game
         self.objects_on_map = []
         self.units = []
-        self.log = logging.getLogger(__name__)
         bsp = tcod.bsp.BSP(0, 0, self.mapDim[0], self.mapDim[1])
         bsp.split_recursive(4, 11, 8, 1.0, 1.0)
         vector = []
@@ -119,7 +129,6 @@ class RogueMap(tcod.map.Map):
         if unit.pos == check:
             return True
         if not adjacent(unit.pos, check):
-            self.log.warning('{} tried to move more than 1 cell!'.format(unit.name))
             return False
         if unit.speed == 0.0:
             self.game.messenger.add('You can\'t move!')
@@ -134,7 +143,6 @@ class RogueMap(tcod.map.Map):
         target = self.unit_at(check)
         if target:
             if unit.name == 'Player' and unit != target:
-                self.log.debug('{} engaged {}.'.format(unit.name, target.name))
                 unit.attack(target)
                 return True
         else:
@@ -186,7 +194,6 @@ class RogueMap(tcod.map.Map):
 
 class Pathfinder(object):
     def __init__(self, level, start):
-        self.log = logging.getLogger(__name__)
         self.frontier = PriorityQueue()
         self.came_from = {}
         self.cost_so_far = {}
@@ -226,5 +233,4 @@ class Pathfinder(object):
             path.append(current)
             current = self.came_from[current]
         path.reverse()
-        self.log.debug('Pathfinder {} -> {}: {}'.format(start, goal, path))
         return path
