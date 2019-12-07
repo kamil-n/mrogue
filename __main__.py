@@ -58,9 +58,9 @@ def help_screen():
         ', (comma) - pick up items',
         '> - descend to next level while standing on this icon.',
         '< - ascend back to previous level while standing on this icon.',
-        # 'M - show message history.',
+        'M - show message history.',
         'H - show this help screen.',
-        'Q - close game when on main screen or when game is finished.',
+        'Q - close game when on main screen',
         '',
         'Esc - close pop-up windows like this one.'
     ]
@@ -70,6 +70,32 @@ def help_screen():
     for i in range(len(help)):
         win.print(1, i + 1, help[i])
     return win
+
+
+def message_screen(screen, messages):
+    window = tcod.console.Console(65, 12, 'F')
+    scroll = len(messages) - 10 if len(messages) > 10 else 0
+    while True:
+        window.clear()
+        window.draw_frame(0, 0, 65, 12, 'Messages')
+        if scroll > 0:
+            window.print(0, 1, chr(24), tcod.black, tcod.white)
+        for i in range(len(messages)):
+            if i > 10 - 1:
+                break
+            j = i + scroll
+            window.print(1, 1 + i, messages[i+scroll])
+        if 10 + scroll < len(messages):
+            window.print(0, 10, chr(25), tcod.black, tcod.white)
+        window.blit(screen, 12, 12, bg_alpha=0.95)
+        tcod.console_flush()
+        key = wait()
+        if key_is(key, 27):
+            return False
+        elif key_is(key, tcod.event.K_DOWN):
+            scroll += 1 if 10 + scroll < len(messages) else 0
+        elif key_is(key, tcod.event.K_UP):
+            scroll -= 1 if scroll > 0 else 0
 
 
 class Rogue(object):
@@ -146,6 +172,8 @@ class Rogue(object):
                             self.player, direction_from(
                                 key[0], *self.player.pos)):
                         break
+                elif key_is(key, tcod.event.K_m, tcod.event.KMOD_SHIFT):
+                    message_screen(self.screen, self.messenger.message_history)
                 elif key_is(key, tcod.event.K_h, tcod.event.KMOD_SHIFT):
                     win = help_screen()
                     win.blit(self.screen, 12, 12, bg_alpha=0.95)
