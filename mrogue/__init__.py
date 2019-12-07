@@ -6,7 +6,7 @@ import string
 import tcod.console
 import tcod.event
 
-__version__ = 'v0.4.4.1'
+__version__ = 'v0.4.4.2'
 
 
 class Char(object):
@@ -105,11 +105,16 @@ ignore_keys = (
     tcod.event.K_LCTRL, tcod.event.K_RCTRL)
 
 
-def key_is(key, target, mod=tcod.event.KMOD_NONE):
-    if key[0] == target:
-        if not mod and not key[1]:
+ignore_mods = tcod.event.KMOD_NUM
+
+
+def key_is(key, target_key, target_mod=tcod.event.KMOD_NONE):
+    if key[0] == target_key:
+        if key[1] & ignore_mods == ignore_mods:
+            key = (key[0], key[1] - ignore_mods)
+        if not target_mod and not key[1]:
             return True
-        elif mod and key[1] and key[1] | mod == mod:
+        elif target_mod and key[1] and key[1] | target_mod == target_mod:
             return True
     return False
 
