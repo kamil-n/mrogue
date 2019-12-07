@@ -13,13 +13,15 @@ class MonsterManager(object):
     order = None
     ticks_passed = 0
 
-    def __init__(self, game, num):
+    def __init__(self, game):
         self.game = game
         with open(path.join(game.dir, 'monster_templates.json')) as f:
-            monster_templates = loads(f.read())
+            self.monster_templates = loads(f.read())
+
+    def create_monsters(self, num):
         for i in range(num):
-            Monster(self.game, random.choice(monster_templates),
-                    (game.level.objects_on_map, game.level.units))
+            Monster(self.game, random.choice(self.monster_templates),
+                    (self.game.level.objects_on_map, self.game.level.units))
 
     def handle_monsters(self, target):
         if self.order:
@@ -32,7 +34,7 @@ class MonsterManager(object):
                                 key=lambda m: m.ticks_left)
         while self.order and self.order[0].ticks_left == self.ticks_passed:
             unit = self.order.pop(0)
-            if unit.name != 'Player':
+            if unit.name != 'Player' and self.game.player.current_HP > 0:
                 unit.act(target)
             else:
                 for unit in self.game.level.units:
@@ -80,26 +82,26 @@ class Monster(mrogue.unit.Unit):
     def approach(self, goal):
         if self.path:  # if already on a path
             if goal != self.path[-1]:  # if target moved, find new path
-                self.path = Pathfinder(self.game.level,
+                self.path = Pathfinder(self.game.dungeon,
                                        self.pos).find(goal).path(self.pos, goal)
         else:  # find a path to target
-            self.path = Pathfinder(self.game.level,
+            self.path = Pathfinder(self.game.dungeon,
                                    self.pos).find(goal).path(self.pos, goal)
-        if self.game.level.unit_at(self.path[0]):
-            tiles = self.game.level.neighbors(self.pos)
-            tiles = list(filter(lambda p: not self.game.level.unit_at(p),
+        if self.game.dungeon.unit_at(self.path[0]):
+            tiles = self.game.dungeon.neighbors(self.pos)
+            tiles = list(filter(lambda p: not self.game.dungeon.unit_at(p),
                                 tiles))
             pairs = [(abs(goal[0] - x), abs(goal[1] - y), (x, y))
                      for x, y in tiles]
             if not pairs:
                 return
             nearest = min(pairs, key=lambda v: v[0] * v[0] + v[1] * v[1])[2]
-            self.game.level.movement(self, nearest)
+            self.game.dungeon.movement(self, nearest)
             return
-        self.game.level.movement(self, self.path.pop(0))
+        self.game.dungeon.movement(self, self.path.pop(0))
 
     def wander(self):
-        self.game.level.movement(
+        self.game.dungeon.movement(
             self,
-            random.choice(list(filter(lambda p: not self.game.level.unit_at(p),
-                                      self.game.level.neighbors(self.pos)))))
+            random.choice(list(filter(lambda p: not self.game.dungeon.unit_at(p),
+                                      self.game.dungeon.neighbors(self.pos)))))

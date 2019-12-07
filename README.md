@@ -4,7 +4,7 @@
 - [x] statuses + timers
 - [x] initiative/speed system
 - [ ] add more dungeon levels
-  - [ ] level transition
+  - [x] level transition
   - [ ] introduce way to regen life
   - [ ] add more monsters that scale with dungeon depth
 - [ ] experience

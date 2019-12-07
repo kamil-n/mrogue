@@ -45,12 +45,7 @@ def circular(sequence):
 
 
 class ItemManager(object):
-    loot = []
-    templates = []
-    items_on_ground = []
-    item_templates = {}
-
-    def __init__(self, game, num_items):
+    def __init__(self, game):
         self.game = game
         with open(path.join(game.dir, 'item_templates.json')) as f:
             self.templates_file = loads(f.read())
@@ -58,30 +53,10 @@ class ItemManager(object):
             scroll_names[s['name']] = random_scroll_name()
         for p in self.templates_file['consumables']['potions']:
             potion_colors[p['name']] = random.choice(list(materials['potions'].items()))
-        for category, category_dict in self.templates_file.items():
-            self.item_templates[category] = {}
-            for subtype, type_list in category_dict.items():
-                self.item_templates[category][subtype] = []
-                for item in type_list:
-                    new_item = None
-                    if category == 'weapons':
-                        new_item = Weapon(self, item, self.templates)
-                    elif category == 'armor':
-                        new_item = Armor(self, item, self.templates)
-                    elif category == 'consumables':
-                        new_item = Consumable(self, item, self.templates)
-                    self.item_templates[category][subtype].append(new_item)
-        '''
-        # create pre-set, default item
-        preset = self.item_templates['weapons']['maces'][0].copy()
-        # create random mace
-        self.random_item('maces')
-        # create random piece of armor
-        self.random_item('armor')
-        # create random item
-        self.random_item()'''
+
+    def create_loot(self, num_items):
         for i in range(num_items):
-            self.random_item(None, self.loot).dropped(game.level.find_spot())
+            self.random_item(None).dropped(self.game.dungeon.find_spot())
 
     def random_item(self, target=None, groups=None):
         tmp = None
@@ -230,7 +205,7 @@ class ItemManager(object):
                         return result if result is not None else True
 
     def get_item_on_map(self, coordinates):
-        return [i for i in self.items_on_ground if i.pos == coordinates]
+        return [i for i in self.game.level.objects_on_map if isinstance(i, Item) and i.pos == coordinates]
 
     def show_equipment(self):
         w, h = 49, 8
@@ -323,13 +298,11 @@ class Item(Char):
         self.identified_name = name  # TEMP
 
     def dropped(self, coords):
-        self.add(self.manager.items_on_ground,
-                 self.manager.game.level.objects_on_map)
+        self.add(self.manager.game.level.objects_on_map)
         self.pos = coords
 
     def picked(self):
-        self.remove(self.manager.items_on_ground,
-                    self.manager.game.level.objects_on_map)
+        self.remove(self.manager.game.level.objects_on_map)
         self.pos = None
 
     def identified(self):
@@ -436,6 +409,8 @@ class Consumable(Item):
         self.effect = template['effect']
         self.uses = template['number_of_uses']
         self.add(groups)
+        if self.name in self.manager.game.player.identified_consumables:
+            self.identified()
 
     def used(self, target):
         self.identified()
@@ -445,13 +420,14 @@ class Consumable(Item):
         return effect.apply()
 
     def identified(self):
+        self.manager.game.player.identified_consumables.append(self.name)
         super().identified()
         self.identify_all()
 
     def identify_all(self,):
-        for i in self.manager.loot:
-            if not i.status_identified and i.type == Consumable and i.effect == self.effect:
+        for i in self.manager.game.level.objects_on_map:
+            if isinstance(i, Consumable) and not i.status_identified and i.effect == self.effect:
                 i.identified()
         for i in self.manager.game.player.inventory:
-            if not i.status_identified and i.type == Consumable and i.effect == self.effect:
+            if i.type == Consumable and not i.status_identified and i.effect == self.effect:
                 i.identified()

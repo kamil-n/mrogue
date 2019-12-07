@@ -25,10 +25,11 @@ class Effect(object):
             for i in range(len(self.target.equipped) - 1, -1, -1):
                 if self.target.equipped[i].enchantment_level < 0:
                     self.target.unequip(self.target.equipped[i], force=True)
-            feedback = 'Cursed items have been unequipped.'
 
         elif keyword == 'heal':
             self.target.current_HP += roll(self.source.effect.split()[1])
+            if self.target.current_HP > self.target.max_HP:
+                self.target.current_HP = self.target.max_HP
             feedback = 'Some of your wounds are healed.'
 
         elif keyword == 'ac_bonus':

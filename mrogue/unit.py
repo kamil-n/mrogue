@@ -14,7 +14,7 @@ class Unit(Char):
         self.inventory = []
         self.equipped = []
         self.name = name
-        self.pos = game.level.find_spot()
+        self.pos = game.dungeon.find_spot()
         self.icon = icon[0]
         self.color = vars(tcod.constants)[icon[1]]
         self.layer = 1

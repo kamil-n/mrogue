@@ -2,6 +2,7 @@
 
 import tcod.console
 import mrogue.unit
+from mrogue.item import Weapon, Armor
 
 load_statuses = {
     'light': (0.8, tcod.green),
@@ -10,14 +11,24 @@ load_statuses = {
     'immobile': (0.0, tcod.red)
 }
 
+
 class Player(mrogue.unit.Unit):
     def __init__(self, game):
-        super().__init__('Player', game, ('@', 'lighter_red'), 6, 1.0, 1, '1d2+1', 11, 20)
+        self.depth = 0
+        super().__init__('Player', game, ('@', 'lighter_red'),
+                         6, 1.0, 1, '1d2+1', 11, 20)
         self.load_status = 'light'
+        self.identified_consumables = []
         self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')
-        self.add_item(game.items.item_templates['weapons']['maces'][0])
-        self.add_item(game.items.item_templates['armor']['chest'][0])
-        self.add_item(game.items.item_templates['armor']['feet'][0])
+        self.add_item(Weapon(game.items,
+                             game.items.templates_file['weapons']['maces'][0],
+                             None))
+        self.add_item(Armor(game.items,
+                            game.items.templates_file['armor']['feet'][0],
+                            None))
+        self.add_item(Armor(game.items,
+                            game.items.templates_file['armor']['chest'][0],
+                            None))
         for item in list(self.inventory):
             self.equip(item, quiet=True)
         self.add(game.level.objects_on_map, game.level.units)
@@ -34,8 +45,9 @@ class Player(mrogue.unit.Unit):
             self.to_hit, self.damage_dice))
         self.status_bar.print(32, 0, 'Load: {}'.format(self.load_status),
                               load_statuses[self.load_status][1])
+        self.status_bar.print(47, 0, 'Depth: {}'.format(self.depth))
         self.status_bar.print(66, 0, 'Press Q to quit, H for help.')
-        self.status_bar.blit(self.game.screen, 0, 0)
+        self.status_bar.blit(self.game.screen)
 
     def update(self):
         super().update()
@@ -47,6 +59,10 @@ class Player(mrogue.unit.Unit):
             else:
                 self.game.messenger.add('{} is lying here.'.format(
                     items[0].name[0].upper() + items[0].name[1:]))
+        if self.game.level.tiles[self.pos[0]][self.pos[1]] == '>':
+            self.game.messenger.add('There are stairs leading down here.')
+        elif self.game.level.tiles[self.pos[0]][self.pos[1]] == '<':
+            self.game.messenger.add('There are stairs leading up here.')
         total_load = sum([i.weight for i in self.inventory + self.equipped])
         if total_load < self.load_thresholds[0]:
             self.load_status = 'light'
