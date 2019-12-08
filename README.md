@@ -1,5 +1,6 @@
 ##### TODO list:
 - [ ] clean up code up to this point
+- [ ] add more monsters and items
 - [x] items
 - [x] statuses + timers
 - [x] initiative/speed system

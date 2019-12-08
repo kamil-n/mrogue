@@ -9,7 +9,7 @@ import tcod.map
 from mrogue import adjacent
 
 
-tileset = {'wall': '#', 'floor': '.', 'stairs_down': '>', 'stairs_up': '<'}
+tileset = {'wall': chr(219), 'floor': chr(250), 'stairs_down': chr(242), 'stairs_up': chr(243)}
 
 
 class Level(tcod.map.Map):
@@ -194,7 +194,7 @@ class Dungeon(object):
             return False
         if unit.speed == 0.0:
             self.game.messenger.add('You can\'t move!')
-            return False
+            return True
         if not self.level.walkable[check[0]][check[1]]:
             if unit.name != 'Player':
                 self.game.messenger.add(

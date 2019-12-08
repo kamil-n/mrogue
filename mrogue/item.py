@@ -290,7 +290,10 @@ class Item(Char):
         self.base_value = base_value
         self.identified_value = base_value
         self.value = base_value
-        self.icon = icon
+        if isinstance(icon, int):
+            self.icon = chr(icon)
+        else:
+            self.icon = icon
         self.layer = 2
         self.status_identified = False
         self.name = name

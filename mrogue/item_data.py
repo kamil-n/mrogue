@@ -34,7 +34,7 @@ materials = {
         'alloy': ('0.9', '3.0', 'lighter_cyan')
     },
     'armor': {
-        'cloth': ('0.1', '0.1', 'desaturated_turquoise'),
+        'cloth': ('0.1', '0.1', 'desaturated_fuchsia'),
         'fur': ('0.2', '0.2', 'dark_orange'),
         'leather': ('0.2', '0.3', 'dark_amber'),
         'hide': ('0.3', '0.4', 'dark_sepia'),
