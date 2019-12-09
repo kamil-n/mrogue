@@ -3,6 +3,7 @@
 import tcod.console
 import mrogue.unit
 from mrogue.item import Weapon, Armor
+from mrogue.map import tileset
 
 load_statuses = {
     'light': (0.8, tcod.green),
@@ -59,9 +60,9 @@ class Player(mrogue.unit.Unit):
             else:
                 self.game.messenger.add('{} is lying here.'.format(
                     items[0].name[0].upper() + items[0].name[1:]))
-        if self.game.level.tiles[self.pos[0]][self.pos[1]] == '>':
+        if self.game.level.tiles[self.pos[0]][self.pos[1]] == tileset['stairs_down'] and self.moved:
             self.game.messenger.add('There are stairs leading down here.')
-        elif self.game.level.tiles[self.pos[0]][self.pos[1]] == '<':
+        elif self.game.level.tiles[self.pos[0]][self.pos[1]] == tileset['stairs_up'] and self.moved:
             self.game.messenger.add('There are stairs leading up here.')
         total_load = sum([i.weight for i in self.inventory + self.equipped])
         if total_load < self.load_thresholds[0]:
