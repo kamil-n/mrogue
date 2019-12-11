@@ -30,15 +30,17 @@ class Unit(Char):
         self.armor_class = self.base_armor_class
         self.current_HP = current_hp
         self.max_HP = current_hp
-        self.last_pos = self.pos
         self.moved = False
 
     def update(self):
-        self.moved = self.pos != self.last_pos
-        self.last_pos = self.pos
+        pass
+
+    def load_update(self):
+        pass
 
     def add_item(self, item: Item):
         item.add(self.inventory)
+        self.load_update()
 
     def equip(self, item: Weapon or Armor, quiet=False):
         for i in self.equipped:
@@ -60,6 +62,7 @@ class Unit(Char):
     def use(self, item: Consumable):
         effect = item.used(self)
         item.remove(self.inventory)
+        self.load_update()
         self.game.messenger.add(effect)
 
     def unequip(self, item: Weapon or Armor, quiet=False, force=False):
@@ -81,6 +84,7 @@ class Unit(Char):
     def drop_item(self, item: Item, quiet=False):
         item.remove(self.inventory, self.equipped)
         item.dropped(self.pos)
+        self.load_update()
         msg = '{} dropped {}.'.format(self.name, item.name)
         if not quiet:
             self.game.messenger.add(msg)
@@ -89,6 +93,7 @@ class Unit(Char):
         if itemlist:
             item = itemlist.pop(0)
             item.add(self.inventory)
+            self.load_update()
             item.picked()
             msg = '{} picked up {}.'.format(self.name, item.name)
             self.game.messenger.add(msg)
@@ -97,6 +102,9 @@ class Unit(Char):
             msg = 'There are no items here.'
             self.game.messenger.add(msg)
             return False
+
+    def move(self, success=True):
+        self.moved = success
 
     def attack(self, target):
         uname = str.upper(self.name[0]) + self.name[1:]

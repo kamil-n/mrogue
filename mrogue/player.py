@@ -78,18 +78,23 @@ class Player(mrogue.unit.Unit):
 
     def update(self):
         super().update()
-        items = self.game.items.get_item_on_map(self.pos)
-        if items and self.moved:
-            if len(items) > 1:
-                self.game.messenger.add('{} items are lying here.'.format(
-                    len(items)))
-            else:
-                self.game.messenger.add('{} is lying here.'.format(
-                    items[0].name[0].upper() + items[0].name[1:]))
-        if self.game.level.tiles[self.pos[0]][self.pos[1]] == tileset['stairs_down'] and self.moved:
-            self.game.messenger.add('There are stairs leading down here.')
-        elif self.game.level.tiles[self.pos[0]][self.pos[1]] == tileset['stairs_up'] and self.moved:
-            self.game.messenger.add('There are stairs leading up here.')
+        if self.moved:
+            items = self.game.items.get_item_on_map(self.pos)
+            if items:
+                if len(items) > 1:
+                    self.game.messenger.add('{} items are lying here.'.format(
+                        len(items)))
+                else:
+                    self.game.messenger.add('{} is lying here.'.format(
+                        items[0].name[0].upper() + items[0].name[1:]))
+            tile = self.game.dungeon.level.tiles[self.pos[0]][self.pos[1]]
+            if tile == tileset['stairs_down']:
+                self.game.messenger.add('There are stairs leading down here.')
+            elif tile == tileset['stairs_up']:
+                self.game.messenger.add('There are stairs leading up here.')
+
+    def load_update(self):
+        super().load_update()
         total_load = sum([i.weight for i in self.inventory + self.equipped])
         if total_load < self.load_thresholds[0]:
             self.load_status = 'light'

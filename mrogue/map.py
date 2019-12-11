@@ -187,13 +187,11 @@ class Dungeon(object):
                 return x, y
 
     def movement(self, unit, check):
-        if unit.pos == check:
+        if unit.pos == check or unit.speed == 0.0:
+            unit.move(False)
             return True
         if not adjacent(unit.pos, check):
             return False
-        if unit.speed == 0.0:
-            self.game.messenger.add('You can\'t move!')
-            return True
         if not self.level.walkable[check[0]][check[1]]:
             if unit.name != 'Player':
                 self.game.messenger.add(
@@ -206,10 +204,11 @@ class Dungeon(object):
         if target:
             if unit.name == 'Player' and unit != target:
                 unit.attack(target)
+                unit.moved = False
                 return True
         else:
-            unit.last_pos = unit.pos
             unit.pos = check
+            unit.move()
             return True
 
     def look_around(self):
