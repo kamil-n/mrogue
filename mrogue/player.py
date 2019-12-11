@@ -22,6 +22,7 @@ class Player(mrogue.unit.Unit):
         self.dijsktra_map.set_goal(*self.pos)
         self.load_status = 'light'
         self.identified_consumables = []
+        self.health_regen_cooldown = 0
         self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')
         self.add_item(Weapon(game.items,
                              game.items.templates_file['weapons']['maces'][0],
@@ -78,6 +79,7 @@ class Player(mrogue.unit.Unit):
 
     def update(self):
         super().update()
+        self.regenerate_health()
         if self.moved:
             items = self.game.items.get_item_on_map(self.pos)
             if items:

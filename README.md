@@ -6,7 +6,7 @@
 - [x] initiative/speed system
 - [ ] add more dungeon levels
   - [x] level transition
-  - [ ] introduce way to regen life
+  - [x] introduce way to regen life
   - [ ] add more monsters that scale with dungeon depth
 - [ ] experience
   - [ ] defeated enemies grant xp

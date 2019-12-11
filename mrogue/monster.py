@@ -17,10 +17,14 @@ class MonsterManager(object):
         with open(path.join(game.dir, 'monster_templates.json')) as f:
             self.monster_templates = loads(f.read())
 
-    def create_monsters(self, num):
+    def create_monsters(self, num, **kwargs):
         for i in range(num):
-            Monster(self.game, random.choice(self.monster_templates),
-                    (self.game.level.objects_on_map, self.game.level.units))
+            m = Monster(self.game, random.choice(self.monster_templates),
+                        (self.game.dungeon.level.objects_on_map,
+                         self.game.dungeon.level.units))
+            if kwargs:
+                for key, val in kwargs.items():
+                    setattr(m, key, val)
 
     def handle_monsters(self, target):
         if self.order:
