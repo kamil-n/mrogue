@@ -151,10 +151,9 @@ class Dungeon(object):
     def new_level(self):
         self.level.pos = self.game.player.pos
         self.level = Level(self.mapDim)
-        self.levels.append(self.level),
-        self.game.player.pos = self.level.pos
-        self.game.player.add(self.level.objects_on_map, self.level.units)
-        return self.level
+        self.game.items.create_loot(self.game.num_objects)
+        self.game.monsters.create_monsters(self.game.num_objects + self.depth)
+        self.levels.append(self.level)
 
     def descend(self, pos):
         if self.level.tiles[pos[0]][pos[1]] == tileset['stairs_down']:
@@ -163,8 +162,6 @@ class Dungeon(object):
             if self.depth < len(self.levels):
                 self.level = self.levels[self.depth]
             else:
-                self.game.items.create_loot(10)
-                self.game.monsters.create_monsters(10 + self.depth)
                 self.new_level()
             self.game.player.change_level(self.level)
             return True
