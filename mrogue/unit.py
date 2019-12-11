@@ -125,6 +125,11 @@ class Unit(Char):
         if self.current_HP < 1:
             self.die()
 
+    def heal(self, amount):
+        self.current_HP += amount
+        if self.current_HP > self.max_HP:
+            self.current_HP = self.max_HP
+
     def die(self):
         self.game.messenger.add('{} dies.'.format(
             str.upper(self.name[0]) + self.name[1:]))
@@ -135,4 +140,5 @@ class Unit(Char):
                     self.unequip(item, quiet=True, force=True)
                 for item in self.inventory:
                     self.drop_item(item, quiet=True)
-            self.remove(self.game.level.units, self.game.level.objects_on_map)
+            self.remove(self.game.dungeon.level.units,
+                        self.game.dungeon.level.objects_on_map)

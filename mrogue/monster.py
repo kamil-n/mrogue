@@ -29,17 +29,22 @@ class MonsterManager(object):
                 unit.ticks_left = unit.ticks_left - self.ticks_passed
             self.order = None
         if not self.order:
-            self.ticks_passed = min(m.ticks_left for m in self.game.level.units)
-            self.order = sorted(self.game.level.units,
+            self.ticks_passed = min(
+                m.ticks_left for m in self.game.dungeon.level.units)
+            self.order = sorted(self.game.dungeon.level.units,
                                 key=lambda m: m.ticks_left)
         while self.order and self.order[0].ticks_left == self.ticks_passed:
             unit = self.order.pop(0)
             if unit.name != 'Player' and self.game.player.current_HP > 0:
                 unit.act(target)
             else:
-                for unit in self.game.level.units:
+                for unit in self.game.dungeon.level.units:
                     unit.update()
-                self.game.player.ticks_left = int(self.game.player.speed * 100)
+                if self.game.player.speed != 0.0:
+                    self.game.player.ticks_left = int(
+                        self.game.player.speed * 100)
+                else:
+                    self.game.player.ticks_left = 100.0
                 return True
         return False
 
@@ -103,5 +108,6 @@ class Monster(mrogue.unit.Unit):
     def wander(self):
         self.game.dungeon.movement(
             self,
-            random.choice(list(filter(lambda p: not self.game.dungeon.unit_at(p),
-                                      self.game.dungeon.neighbors(self.pos)))))
+            random.choice(list(filter(
+                lambda p: not self.game.dungeon.unit_at(p),
+                self.game.dungeon.neighbors(self.pos)))))

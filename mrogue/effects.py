@@ -27,9 +27,7 @@ class Effect(object):
                     self.target.unequip(self.target.equipped[i], force=True)
 
         elif keyword == 'heal':
-            self.target.current_HP += roll(self.source.effect.split()[1])
-            if self.target.current_HP > self.target.max_HP:
-                self.target.current_HP = self.target.max_HP
+            self.target.heal(roll(self.source.effect.split()[1]))
             feedback = 'Some of your wounds are healed.'
 
         elif keyword == 'ac_bonus':

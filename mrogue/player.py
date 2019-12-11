@@ -15,7 +15,6 @@ load_statuses = {
 
 class Player(mrogue.unit.Unit):
     def __init__(self, game):
-        self.depth = 0
         super().__init__('Player', game, ('@', 'lighter_red'),
                          6, 1.0, 1, '1d2+1', 11, 20)
         self.load_status = 'light'
@@ -25,14 +24,11 @@ class Player(mrogue.unit.Unit):
                              game.items.templates_file['weapons']['maces'][0],
                              None))
         self.add_item(Armor(game.items,
-                            game.items.templates_file['armor']['feet'][0],
-                            None))
-        self.add_item(Armor(game.items,
                             game.items.templates_file['armor']['chest'][0],
                             None))
         for item in list(self.inventory):
             self.equip(item, quiet=True)
-        self.add(game.level.objects_on_map, game.level.units)
+        self.add(game.dungeon.level.objects_on_map, game.dungeon.level.units)
 
     def show_stats(self):
         self.status_bar.clear()
@@ -44,11 +40,21 @@ class Player(mrogue.unit.Unit):
         self.status_bar.print(11, 0, 'AC:%2d' % self.armor_class)
         self.status_bar.print(19, 0, 'Atk:{:+d}/{}'.format(
             self.to_hit, self.damage_dice))
-        self.status_bar.print(32, 0, 'Load: {}'.format(self.load_status),
-                              load_statuses[self.load_status][1])
-        self.status_bar.print(47, 0, 'Depth: {}'.format(self.depth))
+        self.status_bar.print(32, 0, 'Load: {}'.format(
+            self.load_status), load_statuses[self.load_status][1])
+        self.status_bar.print(47, 0, 'Depth: {}'.format(
+            self.game.dungeon.depth))
         self.status_bar.print(66, 0, 'Press Q to quit, H for help.')
         self.status_bar.blit(self.game.screen)
+
+    def regenerate_health(self):
+        self.health_regen_cooldown -= 1
+        if self.health_regen_cooldown > 0:
+            return
+        if self.current_HP < self.max_HP:
+            self.health_regen_cooldown = 35
+            self.heal(1)
+            self.game.monsters.create_monsters(1, sight_range=100)
 
     def update(self):
         super().update()

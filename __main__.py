@@ -45,7 +45,7 @@ def direction_from(key, x, y):
 
 
 def help_screen():
-    help = [
+    help_contents = [
         'Kill all monsters. To attack, \'walk\' into them.',
         'Move with keyboard arrows, numpad or number keys.',
         'Directions for number keys:',
@@ -64,11 +64,11 @@ def help_screen():
         '',
         'Esc - close pop-up windows like this one.'
     ]
-    win = tcod.console.Console(65, len(help) + 2, 'F')
-    win.draw_frame(0, 0, 65, len(help) + 2, 'Welcome to MRogue {}!'.format(
-        __version__), False)
-    for i in range(len(help)):
-        win.print(1, i + 1, help[i])
+    win = tcod.console.Console(65, len(help_contents) + 2, 'F')
+    win.draw_frame(0, 0, 65, len(help_contents) + 2,
+                   'Welcome to MRogue {}!'.format(__version__), False)
+    for i in range(len(help_contents)):
+        win.print(1, i + 1, help_contents[i])
     return win
 
 
@@ -83,7 +83,6 @@ def message_screen(screen, messages):
         for i in range(len(messages)):
             if i > 10 - 1:
                 break
-            j = i + scroll
             window.print(1, 1 + i, messages[i+scroll])
         if 10 + scroll < len(messages):
             window.print(0, 10, chr(25), tcod.black, tcod.white)
@@ -100,6 +99,7 @@ def message_screen(screen, messages):
 
 class Rogue(object):
     turn = 0
+    num_objects = 10
 
     def __init__(self):
         if getattr(sys, 'frozen', False):
@@ -116,13 +116,12 @@ class Rogue(object):
             order='F',
             vsync=True)
         self.dungeon = Dungeon(self)
-        self.level = self.dungeon.level
         self.items = ItemManager(self)
         self.monsters = MonsterManager(self,)
-        self.monsters.create_monsters(10)
+        self.monsters.create_monsters(self.num_objects)
         self.messenger = Messenger(self)
         self.player = Player(self)
-        self.items.create_loot(10)
+        self.items.create_loot(self.num_objects)
 
     def mainloop(self):
         key = (0, 0)

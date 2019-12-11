@@ -62,7 +62,8 @@ class ItemManager(object):
         tmp = None
         itype = None
         if not target:
-            target = random.choices(list(self.templates_file.keys()), [1, 2, 1])[0]
+            target = random.choices(
+                list(self.templates_file.keys()), [1, 2, 2])[0]
         if target in self.templates_file:
             tmp, itype = get_random_template(self.templates_file[target])
         else:
@@ -205,7 +206,8 @@ class ItemManager(object):
                         return result if result is not None else True
 
     def get_item_on_map(self, coordinates):
-        return [i for i in self.game.level.objects_on_map if isinstance(i, Item) and i.pos == coordinates]
+        return [i for i in self.game.dungeon.level.objects_on_map if
+                isinstance(i, Item) and i.pos == coordinates]
 
     def show_equipment(self):
         w, h = 49, 8
@@ -301,11 +303,11 @@ class Item(Char):
         self.identified_name = name  # TEMP
 
     def dropped(self, coords):
-        self.add(self.manager.game.level.objects_on_map)
+        self.add(self.manager.game.dungeon.level.objects_on_map)
         self.pos = coords
 
     def picked(self):
-        self.remove(self.manager.game.level.objects_on_map)
+        self.remove(self.manager.game.dungeon.level.objects_on_map)
         self.pos = None
 
     def identified(self):
@@ -428,7 +430,7 @@ class Consumable(Item):
         self.identify_all()
 
     def identify_all(self,):
-        for i in self.manager.game.level.objects_on_map:
+        for i in self.manager.game.dungeon.level.objects_on_map:
             if isinstance(i, Consumable) and not i.status_identified and i.effect == self.effect:
                 i.identified()
         for i in self.manager.game.player.inventory:

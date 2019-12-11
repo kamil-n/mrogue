@@ -9,7 +9,10 @@ import tcod.map
 from mrogue import adjacent
 
 
-tileset = {'wall': chr(219), 'floor': chr(250), 'stairs_down': chr(242), 'stairs_up': chr(243)}
+tileset = {'wall': chr(219),
+           'floor': chr(250),
+           'stairs_down': chr(242),
+           'stairs_up': chr(243)}
 
 
 class Level(tcod.map.Map):
@@ -48,7 +51,7 @@ class Level(tcod.map.Map):
                 h = random.randint(2, 3)
                 for x in range(nx - w, nx + w + 1):
                     for y in range(ny - h, ny + h + 1):
-                       if 1 < x < self.mapDim[0] - 1 and \
+                        if 1 < x < self.mapDim[0] - 1 and \
                                 1 < y < self.mapDim[1] - 1:
                             self._dig(x, y)
         stairs_up = None
@@ -157,10 +160,8 @@ class Dungeon(object):
     def descend(self, pos):
         if self.level.tiles[pos[0]][pos[1]] == tileset['stairs_down']:
             self.depth += 1
-            self.game.player.depth = self.depth
             if self.depth < len(self.levels):
-                self.game.level = self.level = self.levels[self.depth]
-                self.game.player.pos = self.level.pos
+                self.level = self.levels[self.depth]
             else:
                 self.game.level = self.new_level()
                 self.game.items.create_loot(10)
@@ -172,9 +173,7 @@ class Dungeon(object):
     def ascend(self, pos):
         if self.level.tiles[pos[0]][pos[1]] == tileset['stairs_up']:
             self.depth -= 1
-            self.game.player.depth = self.depth
-            self.game.level = self.level = self.levels[self.depth]
-            self.game.player.pos = self.level.pos
+            self.level = self.levels[self.depth]
             return True
         self.game.messenger.add('There are no upward stairs here.')
         return False
