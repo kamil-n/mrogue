@@ -5,7 +5,6 @@ from os import path
 import random
 from mrogue import roll, adjacent
 import mrogue.unit
-from mrogue.map import Pathfinder
 
 
 class MonsterManager(object):
@@ -48,6 +47,12 @@ class MonsterManager(object):
                 return True
         return False
 
+    def stop_monsters(self):
+        for unit in self.game.dungeon.level.units:
+            if hasattr(unit, 'path'):
+                unit.path = None
+        self.order.clear()
+
 
 class Monster(mrogue.unit.Unit):
     def __init__(self, game, template, groups):
@@ -87,23 +92,22 @@ class Monster(mrogue.unit.Unit):
     def approach(self, goal):
         if self.path:  # if already on a path
             if goal != self.path[-1]:  # if target moved, find new path
-                self.path = Pathfinder(self.game.dungeon,
-                                       self.pos).find(goal).path(self.pos, goal)
+                self.path = self.game.player.dijsktra_map.get_path(*self.pos)
+                self.path.pop()
         else:  # find a path to target
-            self.path = Pathfinder(self.game.dungeon,
-                                   self.pos).find(goal).path(self.pos, goal)
-        if self.game.dungeon.unit_at(self.path[0]):
+            self.path = self.game.player.dijsktra_map.get_path(*self.pos)
+            self.path.pop()
+        if self.game.dungeon.unit_at(self.path[-1]):
             tiles = self.game.dungeon.neighbors(self.pos)
             tiles = list(filter(lambda p: not self.game.dungeon.unit_at(p),
                                 tiles))
             pairs = [(abs(goal[0] - x), abs(goal[1] - y), (x, y))
                      for x, y in tiles]
-            if not pairs:
-                return
-            nearest = min(pairs, key=lambda v: v[0] * v[0] + v[1] * v[1])[2]
-            self.game.dungeon.movement(self, nearest)
+            if pairs:
+                nearest = min(pairs, key=lambda v: v[0] * v[0] + v[1] * v[1])[2]
+                self.game.dungeon.movement(self, nearest)
             return
-        self.game.dungeon.movement(self, self.path.pop(0))
+        self.game.dungeon.movement(self, self.path.pop())
 
     def wander(self):
         self.game.dungeon.movement(

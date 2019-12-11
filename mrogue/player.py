@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import tcod.console
+from tcod.path import Dijkstra
 import mrogue.unit
 from mrogue.item import Weapon, Armor
 from mrogue.map import tileset
@@ -17,6 +18,8 @@ class Player(mrogue.unit.Unit):
     def __init__(self, game):
         super().__init__('Player', game, ('@', 'lighter_red'),
                          6, 1.0, 1, '1d2+1', 11, 20)
+        self.dijsktra_map = Dijkstra(game.dungeon.level.walkable)
+        self.dijsktra_map.set_goal(*self.pos)
         self.load_status = 'light'
         self.identified_consumables = []
         self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')
@@ -55,6 +58,23 @@ class Player(mrogue.unit.Unit):
             self.health_regen_cooldown = 35
             self.heal(1)
             self.game.monsters.create_monsters(1, sight_range=100)
+
+    def move(self, success=True):
+        super().move(success)
+        if not success:
+            if self.speed == 0.0:
+                self.game.messenger.add('You are overburdened!')
+            else:
+                self.game.messenger.add('You shuffle in place.')
+        else:
+            self.dijsktra_map.set_goal(*self.pos)
+
+    def change_level(self, level):
+        self.pos = level.pos
+        self.dijsktra_map = Dijkstra(level.walkable)
+        self.dijsktra_map.set_goal(*self.pos)
+        if self not in level.units:
+            self.add(level.objects_on_map, level.units)
 
     def update(self):
         super().update()

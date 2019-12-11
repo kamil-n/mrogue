@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import numpy
-from queue import PriorityQueue
 import random
 from sys import argv
 import tcod.bsp
@@ -160,12 +159,14 @@ class Dungeon(object):
     def descend(self, pos):
         if self.level.tiles[pos[0]][pos[1]] == tileset['stairs_down']:
             self.depth += 1
+            self.game.monsters.stop_monsters()
             if self.depth < len(self.levels):
                 self.level = self.levels[self.depth]
             else:
-                self.game.level = self.new_level()
                 self.game.items.create_loot(10)
                 self.game.monsters.create_monsters(10 + self.depth)
+                self.new_level()
+            self.game.player.change_level(self.level)
             return True
         self.game.messenger.add('There are no downward stairs here.')
         return False
@@ -173,7 +174,9 @@ class Dungeon(object):
     def ascend(self, pos):
         if self.level.tiles[pos[0]][pos[1]] == tileset['stairs_up']:
             self.depth -= 1
+            self.game.monsters.stop_monsters()
             self.level = self.levels[self.depth]
+            self.game.player.change_level(self.level)
             return True
         self.game.messenger.add('There are no upward stairs here.')
         return False
@@ -261,48 +264,3 @@ class Dungeon(object):
         results = list(filter(lambda p: self.level.walkable[p[0]][p[1]],
                               results))
         return results
-
-
-class Pathfinder(object):
-    def __init__(self, dungeon, start):
-        self.frontier = PriorityQueue()
-        self.came_from = {}
-        self.cost_so_far = {}
-        self.dungeon = dungeon
-        self.frontier.put((0, start))
-        self.came_from[start] = None
-        self.cost_so_far[start] = 0
-
-    def heuristic(self, goal, current):
-        dx = abs(current[0] - goal[0])
-        dy = abs(current[1] - goal[1])
-        return dx + dy - min(dx, dy) / 2
-
-    def cost(self, fr, to):
-        if abs(fr[0] - to[0]) == 0 or abs(fr[1] - to[1]) == 0:
-            return 1
-        return 1.5
-
-    def find(self, goal):
-        while not self.frontier.empty():
-            current = self.frontier.get()[1]
-            if current == goal:
-                break
-            for nxt in self.dungeon.neighbors(current):
-                new_cost = self.cost_so_far[current] + self.cost(current, nxt)
-                if nxt not in self.cost_so_far or\
-                   new_cost < self.cost_so_far[nxt]:
-                    self.cost_so_far[nxt] = new_cost
-                    priority = new_cost + self.heuristic(goal, nxt)
-                    self.frontier.put((priority, nxt))
-                    self.came_from[nxt] = current
-        return self
-
-    def path(self, start, goal):
-        current = goal
-        path = []
-        while current != start:
-            path.append(current)
-            current = self.came_from[current]
-        path.reverse()
-        return path
