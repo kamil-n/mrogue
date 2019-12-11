@@ -66,10 +66,8 @@ class Monster(mrogue.unit.Unit):
                          template['ac'],
                          roll(template['hit_die']))
         self.path = None
-        if 'weapon' in template:
+        if 'weapon' in template and random.randint(0, 1):
             self.game.items.random_item(template['weapon'], self.inventory)
-        for item in self.inventory:
-            self.equip(item, True)
         for group in groups:
             group.append(self)
 
