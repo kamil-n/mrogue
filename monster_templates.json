@@ -1,48 +1,304 @@
-[{
-    "name": "rat",
-    "icon": "r",
-    "color": "dark_grey",
-    "hit_die": "1d4-1",
-    "dmg_die_unarmed": "1d2",
-    "speed": 0.75,
-    "to_hit": 2,
-    "ac": 14 },
-{
-    "name": "kobold",
-    "icon": "k",
-    "color": "darker_flame",
-    "hit_die": "1d4",
-    "dmg_die_unarmed": "1d3",
-    "weapon": "daggers",
-    "speed": 0.95,
-    "to_hit": 1,
-    "ac": 13 },
-{
-    "name": "goblin",
-    "icon": "g",
-    "color": "darker_sea",
-    "hit_die": "1d6-1",
-    "dmg_die_unarmed": "1d3",
-    "weapon": "swords",
-    "speed": 0.95,
-    "to_hit": 2,
-    "ac": 12 },
-{
-    "name": "orc",
-    "icon": "g",
-    "color": "darker_amber",
-    "hit_die": "1d8",
-    "dmg_die_unarmed": "1d4",
-    "weapon": "axes",
-    "speed": 1.2,
-    "to_hit": 3,
-    "ac": 12 },
-{
-    "name": "skeleton",
-    "icon": "s",
-    "color": "white",
-    "hit_die": "1d8",
-    "dmg_die_unarmed": "1d4",
-    "speed": 1.15,
-    "to_hit": 3,
-    "ac": 11 }]
+ {
+    "rodents":
+    {
+        "level_range": "0-3",
+        "occurrences": {
+            "0": "1 1 0 0",
+            "1": "1 3 1 0",
+            "2": "0 4 4 1",
+            "3": "0 0 1 1"
+        },
+        "subtypes": [
+            {
+                "name": "young rat",
+                "color": "desaturated_flame",
+                "icon": "r",
+                "hit_die": "1d2",
+                "dmg_die_unarmed": "1d1",
+                "speed": 0.75,
+                "to_hit": 2,
+                "ac": 14
+            },
+            {
+                "name": "rat",
+                "color": "dark_grey",
+                "icon": "r",
+                "hit_die": "1d3",
+                "dmg_die_unarmed": "1d2",
+                "speed": 0.75,
+                "to_hit": 2,
+                "ac": 14
+            },
+            {
+                "name": "dire rat",
+                "color": "grey",
+                "icon": "r",
+                "hit_die": "1d3+1",
+                "dmg_die_unarmed": "1d3",
+                "speed": 0.75,
+                "to_hit": 2,
+                "ac": 13
+            },
+            {
+                "name": "rat matriarch",
+                "color": "lighter_grey",
+                "icon": "R",
+                "hit_die": "1d4+2",
+                "dmg_die_unarmed": "1d3+1",
+                "speed": 0.75,
+                "to_hit": 3,
+                "ac": 12
+            }
+        ]
+    },
+    "kobolds":
+    {
+        "level_range": "0-3",
+        "occurrences": {
+            "0": "2 1 0",
+            "1": "1 1 1",
+            "2": "1 2 2",
+            "3": "0 1 2"
+        },
+        "subtypes": [
+            {
+                "name": "kobold outcast",
+                "color": "dark_flame",
+                "icon": "k",
+                "hit_die": "1d4",
+                "dmg_die_unarmed": "1d2",
+                "speed": 0.95,
+                "to_hit": 1,
+                "ac": 12
+            },
+            {
+                "name": "kobold guard",
+                "color": "darker_flame",
+                "icon": "k",
+                "hit_die": "1d4+1",
+                "dmg_die_unarmed": "1d3",
+                "weapon": "daggers",
+                "speed": 0.95,
+                "to_hit": 2,
+                "ac": 13
+            },
+            {
+                "name": "kobold warrior",
+                "color": "darkest_flame",
+                "icon": "k",
+                "hit_die": "1d5+1",
+                "dmg_die_unarmed": "1d3+1",
+                "weapon": "daggers",
+                "speed": 0.95,
+                "to_hit": 2,
+                "ac": 14
+            }
+        ]
+    },
+    "goblins":
+    {
+        "level_range": "0-7",
+        "occurrences": {
+            "0": "4 1 0 0",
+            "1": "1 1 0 0",
+            "2": "1 3 0 0",
+            "3": "1 3 3 0",
+            "4": "0 2 2 1",
+            "5": "0 1 3 3",
+            "6": "0 0 1 2",
+            "7": "0 0 1 4"
+        },
+        "subtypes": [
+            {
+                "name": "goblin wanderer",
+                "color": "darker_sea",
+                "icon": "g",
+                "hit_die": "1d6-1",
+                "dmg_die_unarmed": "1d3",
+                "speed": 0.95,
+                "to_hit": 1,
+                "ac": 12
+            },
+            {
+                "name": "goblin guard",
+                "color": "darker_sea",
+                "icon": "g",
+                "hit_die": "1d5+1",
+                "dmg_die_unarmed": "1d2+1",
+                "weapon": "daggers",
+                "speed": 0.95,
+                "to_hit": 2,
+                "ac": 13
+            },
+            {
+                "name": "goblin warrior",
+                "color": "darker_sea",
+                "icon": "g",
+                "hit_die": "1d5+2",
+                "dmg_die_unarmed": "1d4",
+                "weapon": "swords",
+                "speed": 0.95,
+                "to_hit": 3,
+                "ac": 13
+            },
+            {
+                "name": "goblin champion",
+                "color": "darker_sea",
+                "icon": "g",
+                "hit_die": "1d6+2",
+                "dmg_die_unarmed": "1d4+1",
+                "weapon": "swords",
+                "speed": 0.95,
+                "to_hit": 4,
+                "ac": 14
+            }
+        ]
+    },
+    "orcs":
+    {
+        "level_range": "2-8",
+        "occurrences": {
+            "2": "3 2 1 0 0",
+            "3": "1 1 1 0 0",
+            "4": "1 2 3 1 0",
+            "5": "0 1 1 1 0",
+            "6": "0 1 2 2 0",
+            "7": "0 0 1 2 1",
+            "8": "0 0 0 2 1"
+        },
+        "subtypes": [
+            {
+                "name": "hobgoblin warrior",
+                "color": "darker_crimson",
+                "icon": "g",
+                "hit_die": "1d8",
+                "dmg_die_unarmed": "1d6",
+                "weapon": "swords",
+                "speed": 1.0,
+                "to_hit": 2,
+                "ac": 13
+            },
+            {
+                "name": "hobgoblin officer",
+                "color": "darker_crimson",
+                "icon": "g",
+                "hit_die": "1d7+1",
+                "dmg_die_unarmed": "1d5+1",
+                "weapon": "swords",
+                "speed": 1.0,
+                "to_hit": 3,
+                "ac": 14
+            },
+            {
+                "name": "orc warrior",
+                "color": "darker_amber",
+                "icon": "g",
+                "hit_die": "1d7+2",
+                "dmg_die_unarmed": "1d6+1",
+                "weapon": "axes",
+                "speed": 1.0,
+                "to_hit": 3,
+                "ac": 14
+            },
+            {
+                "name": "orc officer",
+                "color": "darker_amber",
+                "icon": "g",
+                "hit_die": "1d6+3",
+                "dmg_die_unarmed": "1d5+2",
+                "weapon": "axes",
+                "speed": 1.1,
+                "to_hit": 4,
+                "ac": 15
+            },
+            {
+                "name": "orc chieftain",
+                "color": "darker_amber",
+                "icon": "G",
+                "hit_die": "1d6+4",
+                "dmg_die_unarmed": "1d6+2",
+                "weapon": "axes",
+                "speed": 1.2,
+                "to_hit": 4,
+                "ac": 16
+            }
+        ]
+    },
+    "skeletons":
+    {
+        "level_range": "0-8",
+        "occurrences": {
+            "0": "2 1 0 0 0 0",
+            "1": "1 2 1 0 0 0",
+            "2": "1 2 3 1 0 0",
+            "3": "0 1 2 2 0 0",
+            "4": "0 1 3 3 0 0",
+            "5": "0 0 1 2 1 0",
+            "6": "0 0 0 3 2 1",
+            "7": "0 0 0 1 2 1",
+            "8": "0 0 0 0 2 1"
+        },
+        "subtypes": [
+            {
+                "name": "canine skeleton",
+                "color": "lightest_orange",
+                "icon": "s",
+                "hit_die": "1d5",
+                "dmg_die_unarmed": "1d3",
+                "speed": 0.90,
+                "to_hit": 3,
+                "ac": 11
+            },
+            {
+                "name": "goblinoid skeleton",
+                "color": "lightest_lime",
+                "icon": "s",
+                "hit_die": "1d6",
+                "dmg_die_unarmed": "1d4",
+                "speed": 1.0,
+                "to_hit": 2,
+                "ac": 12
+            },
+            {
+                "name": "humanoid skeleton",
+                "color": "lightest_grey",
+                "icon": "s",
+                "hit_die": "1d7",
+                "dmg_die_unarmed": "1d4+1",
+                "speed": 1.05,
+                "to_hit": 2,
+                "ac": 11
+            },
+            {
+                "name": "orc skeleton",
+                "color": "lightest_red",
+                "icon": "s",
+                "hit_die": "1d8",
+                "dmg_die_unarmed": "1d4+2",
+                "speed": 1.10,
+                "to_hit": 3,
+                "ac": 12
+            },
+            {
+                "name": "monstrous skeleton",
+                "color": "light_yellow",
+                "icon": "s",
+                "hit_die": "1d8+1",
+                "dmg_die_unarmed": "1d6+1",
+                "speed": 1.15,
+                "to_hit": 3,
+                "ac": 13
+            },
+            {
+                "name": "skeletal golem",
+                "color": "white",
+                "icon": "S",
+                "hit_die": "1d5+5",
+                "dmg_die_unarmed": "1d6+2",
+                "speed": 1.25,
+                "to_hit": 4,
+                "ac": 14
+            }
+        ]
+    }
+}

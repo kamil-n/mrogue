@@ -7,7 +7,7 @@
 - [ ] add more dungeon levels
   - [x] level transition
   - [x] introduce way to regen life
-  - [ ] add more monsters that scale with dungeon depth
+  - [x] add more monsters that scale with dungeon depth
 - [ ] experience
   - [ ] defeated enemies grant xp
   - [ ] on gained xp breakpoints increase stats

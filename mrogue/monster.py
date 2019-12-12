@@ -14,12 +14,32 @@ class MonsterManager(object):
 
     def __init__(self, game):
         self.game = game
+        self.monster_templates = {}
+        self.selection_for_level = []
         with open(path.join(game.dir, 'monster_templates.json')) as f:
-            self.monster_templates = loads(f.read())
+            for group, fields in loads(f.read()).items():
+                self.monster_templates[group] = {'monsters': [],
+                                                 'chances': {}}
+                for lvl in range(int(fields['level_range'][0]),
+                                 int(fields['level_range'][2])+1):
+                    self.monster_templates[group]['monsters'] = fields['subtypes']
+                    self.monster_templates[group]['chances'][lvl] =\
+                        [int(i) for i in fields['occurrences'][str(lvl)].split()]
+        for i in range(8+1):
+            this_level = []
+            for group, data in self.monster_templates.items():
+                if i in data['chances']:
+                    this_level.append(group)
+            self.selection_for_level.append(this_level)
 
     def create_monsters(self, num, **kwargs):
         for i in range(num):
-            m = Monster(self.game, random.choice(self.monster_templates),
+            group = random.choice(
+                self.selection_for_level[self.game.dungeon.depth])
+            template = random.choices(
+                self.monster_templates[group]['monsters'],
+                self.monster_templates[group]['chances'][self.game.dungeon.depth])[0]
+            m = Monster(self.game, template,
                         (self.game.dungeon.level.objects_on_map,
                          self.game.dungeon.level.units))
             if kwargs:
