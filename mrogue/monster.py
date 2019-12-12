@@ -100,20 +100,21 @@ class Monster(mrogue.unit.Unit):
             self.path = self.game.player.dijsktra_map.get_path(*self.pos)
             self.path.pop()
         if self.game.dungeon.unit_at(self.path[-1]):
-            tiles = self.game.dungeon.neighbors(self.pos)
-            tiles = list(filter(lambda p: not self.game.dungeon.unit_at(p),
-                                tiles))
-            pairs = [(abs(goal[0] - x), abs(goal[1] - y), (x, y))
-                     for x, y in tiles]
-            if pairs:
-                nearest = min(pairs, key=lambda v: v[0] * v[0] + v[1] * v[1])[2]
-                self.game.dungeon.movement(self, nearest)
+            self.wander(goal)
             return
         self.game.dungeon.movement(self, self.path.pop())
 
-    def wander(self):
-        self.game.dungeon.movement(
-            self,
-            random.choice(list(filter(
+    def wander(self, towards=None):
+        free_spots = list(filter(
                 lambda p: not self.game.dungeon.unit_at(p),
-                self.game.dungeon.neighbors(self.pos)))))
+                self.game.dungeon.neighbors(self.pos)))
+        if len(free_spots) > 0:
+            to = None
+            if towards:
+                pairs = [(abs(towards[0] - x), abs(towards[1] - y),
+                          (x, y)) for x, y in free_spots]
+                if pairs:
+                    to = min(pairs, key=lambda v: v[0] * v[0] + v[1] * v[1])[2]
+            else:
+                to = random.choice(free_spots)
+            self.game.dungeon.movement(self, to)
