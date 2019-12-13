@@ -12,7 +12,7 @@ import tcod
 import tcod.console
 import tcod.constants
 import tcod.event
-from mrogue import Char, decompile_dmg_die, compile_dmg_die, roll_gaussian, wait, select_option, random_scroll_name, key_is
+from mrogue import Char, decompile_dmg_die, compile_dmg_die, roll_gaussian, wait, select_option, random_scroll_name, key_is, cap
 from mrogue.item_data import *
 
 
@@ -218,9 +218,7 @@ class ItemManager(object):
             i = 3
             slots = ('hand', 'head', 'chest', 'feet')
             for slot in slots:
-                window.print(2, i, '{}) {:>5}:'.format(
-                    chr(94 + i),
-                    slot[0].upper() + slot[1:]))
+                window.print(2, i, '{}) {:>5}:'.format(chr(94+i), cap(slot[0])))
                 item = get_item_equipped_in_slot(self.game.player, slot)
                 if item:
                     summary = '{:22.22}{}('.format(

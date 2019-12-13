@@ -6,7 +6,7 @@ import string
 import tcod.console
 import tcod.event
 
-__version__ = 'v0.4.6.1'
+__version__ = 'v0.4.6.2'
 
 
 class Char(object):
@@ -97,6 +97,15 @@ def compile_dmg_die(num_die, sides, modifier):
     if modifier != 0:
         die_string += '{:+d}'.format(modifier)
     return die_string
+
+
+def die_range(die_string):
+    num, sides, mod = decompile_dmg_die(die_string)
+    return num + mod if num + mod > 0 else 1, num * sides + mod
+
+
+def cap(word):
+    return word[0].upper() + word[1:]
 
 
 ignore_keys = (

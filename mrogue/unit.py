@@ -3,7 +3,7 @@
 from sys import argv
 import tcod.constants
 from mrogue.item import Item, Weapon, Armor, Consumable
-from mrogue import Char, roll
+from mrogue import Char, roll, cap, die_range
 
 
 class Unit(Char):
@@ -107,26 +107,34 @@ class Unit(Char):
         self.moved = success
 
     def attack(self, target):
-        uname = str.upper(self.name[0]) + self.name[1:]
+        player = self.name == 'Player'
+        attacker = 'You' if player else cap(self.name)
+        attacked = 'you' if target.name == 'Player' else target.name
+        msg = attacker + ' '
         attack_roll = roll('1d20')
+        min_dmg, max_dmg = die_range(self.damage_dice)
+        full_damage = max_dmg - min_dmg + 1
         critical_hit = attack_roll == 20
-        critical_miss = attack_roll == 1
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
-            if critical_hit:
-                self.game.messenger.add('{} critically hits {}.'.format(
-                    uname, target.name))
-            else:
-                self.game.messenger.add('{} hits {}.'.format(
-                    uname, target.name))
             damage_roll = roll(self.damage_dice, critical_hit)
+            force = damage_roll / full_damage
+            verb = 'hit{}'.format('' if player else 's')
+            if critical_hit:
+                msg += 'critically ' + verb
+            elif force < 0.34:
+                msg += 'barely ' + verb
+            elif force < 0.67:
+                msg += verb
+            else:
+                msg += 'accurately ' + verb
+            self.game.messenger.add('{} {}.'.format(msg, attacked))
             target.take_damage(damage_roll)
         else:
-            if critical_miss:
-                self.game.messenger.add('{} critically misses {}.'.format(
-                    uname, target.name))
+            if attack_roll == 1:
+                msg += 'critically miss{}'.format('' if player else 'es')
             else:
-                self.game.messenger.add('{} misses {}.'.format(
-                    uname, target.name))
+                msg += 'miss{}'.format('' if player else 'es')
+            self.game.messenger.add('{} {}.'.format(msg, attacked))
 
     def take_damage(self, damage):
         self.current_HP -= damage
@@ -139,8 +147,7 @@ class Unit(Char):
             self.current_HP = self.max_HP
 
     def die(self):
-        self.game.messenger.add('{} dies.'.format(
-            str.upper(self.name[0]) + self.name[1:]))
+        self.game.messenger.add('{} dies.'.format(cap(self.name)))
         if not (self.name == 'Player' and 'debug' in argv):
             self.kill()  # TODO: bugged!
             if not self.name == 'Player':

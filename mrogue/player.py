@@ -3,6 +3,7 @@
 import tcod.console
 from tcod.path import Dijkstra
 import mrogue.unit
+from mrogue import cap
 from mrogue.item import Weapon, Armor
 from mrogue.map import tileset
 
@@ -88,7 +89,7 @@ class Player(mrogue.unit.Unit):
                         len(items)))
                 else:
                     self.game.messenger.add('{} is lying here.'.format(
-                        items[0].name[0].upper() + items[0].name[1:]))
+                        cap(items[0].name)))
             tile = self.game.dungeon.level.tiles[self.pos[0]][self.pos[1]]
             if tile == tileset['stairs_down']:
                 self.game.messenger.add('There are stairs leading down here.')
