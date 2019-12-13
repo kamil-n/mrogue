@@ -150,6 +150,7 @@ class Rogue(object):
                 tcod.console_flush()
                 key = wait()
                 self.messenger.clear()
+                self.player.moved = False
                 if key_is(key, tcod.event.K_i):
                     if self.items.show_inventory():
                         break
