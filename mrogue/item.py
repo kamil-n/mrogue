@@ -218,7 +218,7 @@ class ItemManager(object):
             i = 3
             slots = ('hand', 'head', 'chest', 'feet')
             for slot in slots:
-                window.print(2, i, '{}) {:>5}:'.format(chr(94+i), cap(slot[0])))
+                window.print(2, i, '{}) {:>5}:'.format(chr(94+i), cap(slot)))
                 item = get_item_equipped_in_slot(self.game.player, slot)
                 if item:
                     summary = '{:22.22}{}('.format(

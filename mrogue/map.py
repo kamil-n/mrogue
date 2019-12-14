@@ -5,7 +5,8 @@ import random
 from sys import argv
 import tcod.bsp
 import tcod.map
-from mrogue import adjacent
+from mrogue import adjacent, directions
+from mrogue.item import Item
 
 
 tileset = {'wall': chr(219),
@@ -50,9 +51,8 @@ class Level(tcod.map.Map):
                 h = random.randint(2, 3)
                 for x in range(nx - w, nx + w + 1):
                     for y in range(ny - h, ny + h + 1):
-                        if 1 < x < self.mapDim[0] - 1 and \
-                                1 < y < self.mapDim[1] - 1:
-                            self._dig(x, y)
+                        #if 1 < x < self.mapDim[0] - 1 and 1 < y < self.mapDim[1] - 1:
+                        self._dig(x, y)
         stairs_up = None
         stairs_down = None
         # place stairs up
@@ -211,8 +211,43 @@ class Dungeon(object):
             unit.move()
             return True
 
+    def automove(self, pos, direction):
+        if self.scan(*pos, None):
+            return False
+        placement = numpy.nonzero(directions == direction)
+        dx = placement[2][0] - 1
+        dy = placement[1][0] - 1
+        x = pos[0]
+        y = pos[1]
+        geometry = self.level.walkable[x-1:x+2, y-1:y+2].sum()
+        while True:
+            if self.scan(x, y, geometry):
+                break
+            if self.game.update_dungeon():
+                break
+            self.game.draw_dungeon()
+            self.game.messenger.clear()
+            x += dx
+            y += dy
+            if not self.level.walkable[x][y]:
+                break
+            self.movement(self.game.player, (x, y))
+        return True
+
+    def scan(self, x, y, original_geometry):
+        if original_geometry:
+            geometry = self.level.walkable[x-1:x+2, y-1:y+2].sum()
+            if geometry != original_geometry:
+                return True
+        for unit in self.level.units:
+            if unit.name != 'Player' and self.level.fov[unit.pos[0]][unit.pos[1]]:
+                return True
+        for obj in self.level.objects_on_map:
+            if obj.name != 'Player' and adjacent((x, y), obj.pos):
+                return True
+
     def look_around(self):
-        radius = 0  # self.game.player.sight_range
+        radius = self.game.player.sight_range
         pos = self.game.player.pos
         self.level.compute_fov(*pos, radius, algorithm=tcod.FOV_BASIC)
 

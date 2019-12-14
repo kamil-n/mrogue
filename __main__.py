@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from numpy import asarray
 from os import path
 import sys
+from numpy import nonzero
 import tcod
 import tcod.console
 import tcod.event
-from mrogue import __version__, wait, key_is
+from mrogue import __version__, wait, key_is, mod_is, directions
 from mrogue.map import Dungeon
 from mrogue.message import Messenger
 from mrogue.item import ItemManager
@@ -15,33 +15,9 @@ from mrogue.player import Player
 from mrogue.timers import Timer
 
 
-directions4 = [
-    tcod.event.K_LEFT, tcod.event.K_RIGHT, tcod.event.K_UP, tcod.event.K_DOWN
-]
-directions8 = asarray([
-    [
-        [tcod.event.K_KP_1, tcod.event.K_KP_2, tcod.event.K_KP_3],
-        [tcod.event.K_KP_4, tcod.event.K_KP_5, tcod.event.K_KP_6],
-        [tcod.event.K_KP_7, tcod.event.K_KP_8, tcod.event.K_KP_9]
-    ],
-    [
-        [49, 50, 51],
-        [52, 53, 54],
-        [55, 56, 57]
-    ]
-])
-
-
 def direction_from(key, x, y):
-    if key in directions8[:, :, 0] or key == tcod.event.K_LEFT:
-        x -= 1
-    elif key in directions8[:, :, 2] or key == tcod.event.K_RIGHT:
-        x += 1
-    if key in directions8[:, 2, :] or key == tcod.event.K_UP:
-        y -= 1
-    elif key in directions8[:, 0, :] or key == tcod.event.K_DOWN:
-        y += 1
-    return x, y
+    placement = nonzero(directions == key)
+    return x + placement[2][0]-1, y + placement[1][0]-1
 
 
 def help_screen():
@@ -52,6 +28,7 @@ def help_screen():
         '7\\ 8 /9',
         '4- @ -6      (press 5 to pass turn)',
         '1/ 2 \\3',
+        'Shift + direction = autorun.',
         'Other keys:',
         'e - open equipment screen. Press slot hotkeys to unequip items.',
         'i - open inventory screen. Press hotkeys to manage items.',
@@ -123,68 +100,84 @@ class Rogue(object):
         self.player = Player(self)
         self.items.create_loot(self.num_objects)
 
+    def update_dungeon(self):
+        self.turn += 1
+        Timer.update()
+        while True:
+            if self.monsters.handle_monsters(self.player):
+                break
+        self.dungeon.look_around()
+        if self.player.current_HP < 1 and 'debug' not in sys.argv:
+            win = tcod.console.Console(20, 4, 'F')
+            win.draw_frame(0, 0, 20, 4, 'Game over.', False)
+            win.print(6, 2, 'YOU DIED', tcod.red)
+            self.dungeon.draw_map()
+            self.player.show_stats()
+            self.messenger.show()
+            win.blit(self.screen, 10, 10)
+            tcod.console_flush()
+            wait(tcod.event.K_ESCAPE)
+            return True
+        return False
+
+    def draw_dungeon(self):
+        self.dungeon.draw_map()
+        self.player.show_stats()
+        self.messenger.show()
+        tcod.console_flush()
+
+    def handle_input(self, key):
+        if key_is(key, tcod.event.K_i):
+            if self.items.show_inventory():
+                return True
+        elif key_is(key, tcod.event.K_e):
+            if self.items.show_equipment():
+                return True
+        elif key_is(key, tcod.event.K_COMMA):
+            if self.player.pickup_item(
+                    self.items.get_item_on_map(self.player.pos)):
+                return True
+        elif key_is(key, tcod.event.K_PERIOD, tcod.event.KMOD_SHIFT):
+            if self.dungeon.descend(self.player.pos):
+                return True
+        elif key_is(key, tcod.event.K_COMMA, tcod.event.KMOD_SHIFT):
+            if self.dungeon.ascend(self.player.pos):
+                return True
+        elif key[0] in directions and mod_is(key[1], tcod.event.KMOD_SHIFT):
+            if self.dungeon.automove(self.player.pos, key[0]):
+                return True
+        elif key[0] in directions:
+            if self.dungeon.movement(
+                    self.player, direction_from(
+                        key[0], *self.player.pos)):
+                return True
+        elif key_is(key, tcod.event.K_m, tcod.event.KMOD_SHIFT):
+            message_screen(self.screen, self.messenger.message_history)
+        elif key_is(key, tcod.event.K_h, tcod.event.KMOD_SHIFT):
+            win = help_screen()
+            win.blit(self.screen, 12, 12, bg_alpha=0.95)
+            tcod.console_flush()
+            wait(tcod.event.K_ESCAPE)
+        elif key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
+            return True
+        else:
+            self.messenger.add('Unknown command: {}{}'.format(
+                'mod+' if key[1] else '',
+                chr(key[0]) if key[0] < 256 else '<?>'))
+        return False
+
     def mainloop(self):
         key = (0, 0)
         while not key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
-            self.turn += 1
-            Timer.update()
-            while True:
-                if self.monsters.handle_monsters(self.player):
-                    break
-            self.dungeon.look_around()
-            if self.player.current_HP < 1 and 'debug' not in sys.argv:
-                win = tcod.console.Console(20, 4, 'F')
-                win.draw_frame(0, 0, 20, 4, 'Game over.', False)
-                win.print(6, 2, 'YOU DIED', tcod.red)
-                self.dungeon.draw_map()
-                self.player.show_stats()
-                self.messenger.show()
-                win.blit(self.screen, 10, 10)
-                tcod.console_flush()
-                wait(tcod.event.K_ESCAPE)
+            if self.update_dungeon():
                 break
             while True:
-                self.dungeon.draw_map()
-                self.player.show_stats()
-                self.messenger.show()
-                tcod.console_flush()
+                self.draw_dungeon()
                 key = wait()
                 self.messenger.clear()
                 self.player.moved = False
-                if key_is(key, tcod.event.K_i):
-                    if self.items.show_inventory():
-                        break
-                elif key_is(key, tcod.event.K_e):
-                    if self.items.show_equipment():
-                        break
-                elif key_is(key, tcod.event.K_COMMA):
-                    if self.player.pickup_item(
-                            self.items.get_item_on_map(self.player.pos)):
-                        break
-                elif key_is(key, tcod.event.K_PERIOD, tcod.event.KMOD_SHIFT):
-                    if self.dungeon.descend(self.player.pos):
-                        break
-                elif key_is(key, tcod.event.K_COMMA, tcod.event.KMOD_SHIFT):
-                    if self.dungeon.ascend(self.player.pos):
-                        break
-                elif key[0] in directions4 or key[0] in directions8:
-                    if self.dungeon.movement(
-                            self.player, direction_from(
-                                key[0], *self.player.pos)):
-                        break
-                elif key_is(key, tcod.event.K_m, tcod.event.KMOD_SHIFT):
-                    message_screen(self.screen, self.messenger.message_history)
-                elif key_is(key, tcod.event.K_h, tcod.event.KMOD_SHIFT):
-                    win = help_screen()
-                    win.blit(self.screen, 12, 12, bg_alpha=0.95)
-                    tcod.console_flush()
-                    wait(tcod.event.K_ESCAPE)
-                elif key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
+                if self.handle_input(key):
                     break
-                else:
-                    self.messenger.add('Unknown command: {}{}'.format(
-                        'mod+' if key[1] else '',
-                        chr(key[0]) if key[0] < 256 else '<?>'))
 
 
 if __name__ == '__main__':

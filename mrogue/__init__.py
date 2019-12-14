@@ -2,11 +2,30 @@
 
 import random
 import string
-
+from numpy import asarray
 import tcod.console
 import tcod.event
 
-__version__ = 'v0.4.6.2'
+__version__ = 'v0.4.6.3'
+
+
+directions = asarray([
+    [
+        [0, tcod.event.K_UP, 0],
+        [tcod.event.K_LEFT, 0, tcod.event.K_RIGHT],
+        [0, tcod.event.K_DOWN, 0]
+    ],
+    [
+        [tcod.event.K_KP_7, tcod.event.K_KP_8, tcod.event.K_KP_9],
+        [tcod.event.K_KP_4, tcod.event.K_KP_5, tcod.event.K_KP_6],
+        [tcod.event.K_KP_1, tcod.event.K_KP_2, tcod.event.K_KP_3]
+    ],
+    [
+        [55, 56, 57],
+        [52, 53, 54],
+        [49, 50, 51]
+    ]
+])
 
 
 class Char(object):
@@ -35,8 +54,8 @@ class Char(object):
             self._groups.remove(group)
 
 
-def adjacent(fr, to):
-    return abs(fr[0] - to[0]) <= 1 and abs(fr[1] - to[1]) <= 1
+def adjacent(fr, to, range=1):
+    return abs(fr[0] - to[0]) <= range and abs(fr[1] - to[1]) <= range
 
 
 def roll(die_string, crit=False):
@@ -125,6 +144,16 @@ def key_is(key, target_key, target_mod=tcod.event.KMOD_NONE):
             return True
         elif target_mod and key[1] and key[1] | target_mod == target_mod:
             return True
+    return False
+
+
+def mod_is(mod, target_mod=tcod.event.KMOD_NONE):
+    if mod & ignore_mods == ignore_mods:
+        mod = mod - ignore_mods
+    if not target_mod and not mod:
+        return True
+    elif target_mod and mod and mod | target_mod == target_mod:
+        return True
     return False
 
 
