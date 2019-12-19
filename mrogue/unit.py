@@ -10,6 +10,7 @@ class Unit(Char):
     def __init__(self, name, game, icon, sight_range, speed, to_hit,
                  damage_dice, armor_class, current_hp):
         super().__init__()
+        self.player = False
         self.game = game
         self.inventory = []
         self.equipped = []
@@ -54,7 +55,7 @@ class Unit(Char):
             self.armor_class += item.armor_class_modifier
         msg = '{} equipped {}.'.format(self.name, item.name)
         item.remove(self.inventory)
-        if self.name == 'Player':
+        if self.player:
             item.identified()
         if not quiet:
             self.game.messenger.add(msg)
@@ -107,9 +108,8 @@ class Unit(Char):
         self.moved = success
 
     def attack(self, target):
-        player = self.name == 'Player'
-        attacker = 'You' if player else cap(self.name)
-        attacked = 'you' if target.name == 'Player' else target.name
+        attacker = 'You' if self.player else cap(self.name)
+        attacked = 'you' if target.player else target.name
         msg = attacker + ' '
         attack_roll = roll('1d20')
         min_dmg, max_dmg = die_range(self.damage_dice)
@@ -118,7 +118,7 @@ class Unit(Char):
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
             damage_roll = roll(self.damage_dice, critical_hit)
             force = damage_roll / full_damage
-            verb = 'hit{}'.format('' if player else 's')
+            verb = 'hit{}'.format('' if self.player else 's')
             if critical_hit:
                 msg += 'critically ' + verb
             elif force < 0.34:
@@ -131,9 +131,9 @@ class Unit(Char):
             target.take_damage(damage_roll)
         else:
             if attack_roll == 1:
-                msg += 'critically miss{}'.format('' if player else 'es')
+                msg += 'critically miss{}'.format('' if self.player else 'es')
             else:
-                msg += 'miss{}'.format('' if player else 'es')
+                msg += 'miss{}'.format('' if self.player else 'es')
             self.game.messenger.add('{} {}.'.format(msg, attacked))
 
     def take_damage(self, damage):
@@ -148,9 +148,9 @@ class Unit(Char):
 
     def die(self):
         self.game.messenger.add('{} dies.'.format(cap(self.name)))
-        if not (self.name == 'Player' and 'debug' in argv):
+        if not (self.player and 'debug' in argv):
             self.kill()  # TODO: bugged!
-            if not self.name == 'Player':
+            if not self.player:
                 for item in self.equipped:
                     self.unequip(item, quiet=True, force=True)
                 for item in self.inventory:

@@ -4,10 +4,7 @@
 - [x] items
 - [x] statuses + timers
 - [x] initiative/speed system
-- [ ] add more dungeon levels
-  - [x] level transition
-  - [x] introduce way to regen life
-  - [x] add more monsters that scale with dungeon depth
+- [x] add more dungeon levels
 - [ ] experience
   - [ ] defeated enemies grant xp
   - [ ] on gained xp breakpoints increase stats

@@ -58,7 +58,7 @@ class MonsterManager(object):
                                 key=lambda m: m.ticks_left)
         while self.order and self.order[0].ticks_left == self.ticks_passed:
             unit = self.order.pop(0)
-            if unit.name != 'Player' and self.game.player.current_HP > 0:
+            if not unit.player and self.game.player.current_HP > 0:
                 unit.act(target)
             else:
                 for unit in self.game.dungeon.level.units:

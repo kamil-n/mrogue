@@ -51,8 +51,8 @@ class Level(tcod.map.Map):
                 h = random.randint(2, 3)
                 for x in range(nx - w, nx + w + 1):
                     for y in range(ny - h, ny + h + 1):
-                        #if 1 < x < self.mapDim[0] - 1 and 1 < y < self.mapDim[1] - 1:
-                        self._dig(x, y)
+                        if 1 < x < self.mapDim[0] - 1 and 1 < y < self.mapDim[1] - 1:
+                            self._dig(x, y)
         stairs_up = None
         stairs_down = None
         # place stairs up
@@ -151,7 +151,7 @@ class Dungeon(object):
     def new_level(self):
         self.level.pos = self.game.player.pos
         self.level = Level(self.mapDim)
-        self.game.items.create_loot(self.game.num_objects)
+        self.game.items.create_loot(self.game.num_objects, self.depth // 4)
         self.game.monsters.create_monsters(self.game.num_objects + self.depth)
         self.levels.append(self.level)
 
@@ -193,7 +193,7 @@ class Dungeon(object):
         if not adjacent(unit.pos, check):
             return False
         if not self.level.walkable[check[0]][check[1]]:
-            if unit.name != 'Player':
+            if not unit.player:
                 self.game.messenger.add(
                     '{} runs into the wall.'.format(unit.name))
                 return
@@ -202,7 +202,7 @@ class Dungeon(object):
                 return False
         target = self.unit_at(check)
         if target:
-            if unit.name == 'Player' and unit != target:
+            if unit.player and unit != target:
                 unit.attack(target)
                 unit.moved = False
                 return True
@@ -240,10 +240,10 @@ class Dungeon(object):
             if geometry != original_geometry:
                 return True
         for unit in self.level.units:
-            if unit.name != 'Player' and self.level.fov[unit.pos[0]][unit.pos[1]]:
+            if not unit.player and self.level.fov[unit.pos[0]][unit.pos[1]]:
                 return True
         for obj in self.level.objects_on_map:
-            if obj.name != 'Player' and adjacent((x, y), obj.pos):
+            if issubclass(type(obj), Item) and adjacent((x, y), obj.pos):
                 return True
 
     def look_around(self):

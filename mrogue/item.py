@@ -16,10 +16,10 @@ from mrogue import Char, decompile_dmg_die, compile_dmg_die, roll_gaussian, wait
 from mrogue.item_data import *
 
 
-def get_random_template(data) -> (dict, type):
+def get_random_template(data, level) -> (dict, type):
     while type(data) != list:
         key, data = random.choice(list(data.items()))
-    template = random.choice(data)
+    template = data[level]
     item_type = Item
     if template['type'] == 'wearable':
         if template['subtype'] == 'weapon':
@@ -54,28 +54,28 @@ class ItemManager(object):
         for p in self.templates_file['consumables']['potions']:
             potion_colors[p['name']] = random.choice(list(materials['potions'].items()))
 
-    def create_loot(self, num_items):
+    def create_loot(self, num_items, level):
         for i in range(num_items):
-            self.random_item(None).dropped(self.game.dungeon.find_spot())
+            self.random_item(None, level=level).dropped(self.game.dungeon.find_spot())
 
-    def random_item(self, target=None, groups=None):
+    def random_item(self, target=None, groups=None, level=0):
         tmp = None
         itype = None
         if not target:
             target = random.choices(
                 list(self.templates_file.keys()), [1, 2, 2])[0]
         if target in self.templates_file:
-            tmp, itype = get_random_template(self.templates_file[target])
+            tmp, itype = get_random_template(self.templates_file[target], level)
         else:
             if target in self.templates_file['weapons']:
                 return Weapon(self, get_random_template(
-                    self.templates_file['weapons'][target])[0], groups, True)
+                    self.templates_file['weapons'][target], level)[0], groups, True)
             elif target in self.templates_file['armor']:
                 return Armor(self, get_random_template(
-                    self.templates_file['armor'][target])[0], groups, True)
+                    self.templates_file['armor'][target], level)[0], groups, True)
             elif target in self.templates_file['consumables']:
                 return Consumable(self, get_random_template(
-                    self.templates_file['consumables'][target])[0], groups)
+                    self.templates_file['consumables'][target], level)[0], groups)
         return itype(self, tmp, groups) if itype == Consumable else itype(self, tmp, groups, True)
 
     def try_equip(self, item):

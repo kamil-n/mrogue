@@ -17,8 +17,9 @@ load_statuses = {
 
 class Player(mrogue.unit.Unit):
     def __init__(self, game):
-        super().__init__('Player', game, ('@', 'lighter_red'),
+        super().__init__('Hero', game, ('@', 'lighter_red'),
                          10, 1.0, 1, '1d2+1', 11, 20)
+        self.player = True
         self.dijsktra_map = Dijkstra(game.dungeon.level.walkable)
         self.dijsktra_map.set_goal(*self.pos)
         self.load_status = 'light'
