@@ -6,7 +6,7 @@ from numpy import asarray
 import tcod.console
 import tcod.event
 
-__version__ = 'v0.4.6.4'
+__version__ = 'v0.4.6.5'
 
 
 directions = asarray([

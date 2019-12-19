@@ -29,6 +29,7 @@ class Unit(Char):
         self.damage_dice = self.default_damage_dice
         self.base_armor_class = armor_class  # i.e. from Dexterity or natural
         self.armor_class = self.base_armor_class
+        self.damage_reduction = self.armor_class / 100
         self.current_HP = current_hp
         self.max_HP = current_hp
         self.moved = False
@@ -53,6 +54,7 @@ class Unit(Char):
             self.damage_dice = item.damage
         elif item.type == Armor:
             self.armor_class += item.armor_class_modifier
+            self.damage_reduction = self.armor_class / 100
         msg = '{} equipped {}.'.format(self.name, item.name)
         item.remove(self.inventory)
         if self.player:
@@ -76,6 +78,7 @@ class Unit(Char):
             self.damage_dice = self.default_damage_dice
         elif item.type == Armor:
             self.armor_class -= item.armor_class_modifier  # TODO: ditto
+            self.damage_reduction = self.armor_class / 100
         msg = '{} unequipped {}.'.format(self.name, item.name)
         item.remove(self.equipped)
         if not quiet:
@@ -137,6 +140,8 @@ class Unit(Char):
             self.game.messenger.add('{} {}.'.format(msg, attacked))
 
     def take_damage(self, damage):
+        absorption = int(self.damage_reduction * damage)
+        damage -= absorption
         self.current_HP -= damage
         if self.current_HP < 1:
             self.die()
