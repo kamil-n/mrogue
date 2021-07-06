@@ -3,6 +3,7 @@
 import numpy
 import random
 from sys import argv
+from os import path
 import tcod.bsp
 import tcod.map
 from mrogue import adjacent, directions
@@ -155,6 +156,32 @@ class Dungeon(object):
         self.game.monsters.create_monsters(self.game.num_objects + self.depth)
         self.levels.append(self.level)
 
+    def level_from_string(self, level_string):
+        tcod_map = tcod.map.Map(self.mapDim[0], self.mapDim[1], 'F')
+        tcod_map.objects_on_map = []
+        tcod_map.units = []
+        tcod_map.tiles = numpy.full((self.mapDim[0], self.mapDim[1]), tileset['wall'], order='F')
+        temp = []
+        for i in range(self.mapDim[0]):
+            row = []
+            for j in range(self.mapDim[1]):
+                r = random.randint(64, 128)
+                row.append(tcod.Color(r, r, r))
+            temp.append(row)
+        tcod_map.colors = numpy.empty((self.mapDim[0], self.mapDim[1]), object, order='F')
+        tcod_map.colors[...] = temp
+        tcod_map.explored = numpy.zeros((self.mapDim[0], self.mapDim[1]), bool, order='F')
+        level_array = level_string.split()
+        i = 0
+        while i < self.mapDim[1]:
+            line = [ch for ch in level_array[i]]
+            tcod_map.tiles[:, i] = line
+            i += 1
+        floor_mask = (tcod_map.tiles == '·')
+        tcod_map.walkable[:] = floor_mask
+        tcod_map.transparent[:] = floor_mask
+        return tcod_map
+
     def descend(self, pos):
         if self.level.tiles[pos[0]][pos[1]] == tileset['stairs_down']:
             self.depth += 1
@@ -162,7 +189,17 @@ class Dungeon(object):
             if self.depth < len(self.levels):
                 self.level = self.levels[self.depth]
             else:
-                self.new_level()
+                if self.depth == 8:
+                    import zlib
+                    with open(path.join(self.game.dir, 'level8.dat'), 'rb') as f:
+                        level_string = str(zlib.decompress(f.read()), 'utf-8')
+                    self.level = self.level_from_string(level_string)
+                    self.level.pos = (48, 35)
+                    self.level.walkable[48, 35] = self.level.transparent[48, 35] = True
+                    self.game.monsters.create_monsters(self.game.num_objects + self.depth)
+                    self.levels.append(self.level)
+                else:
+                    self.new_level()
             self.game.player.change_level(self.level)
             return True
         self.game.messenger.add('There are no downward stairs here.')
