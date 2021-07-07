@@ -25,7 +25,7 @@ class Messenger(object):
             if buffer:
                 self.window.print(len(line) + 1, 0, '-more-', tcod.yellow)
                 self.window.blit(self.game.screen, 0, self.game.screen.height - 1)
-                tcod.console_flush()
+                self.game.context.present(self.game.screen)
                 wait(32)
             else:
                 self.window.blit(self.game.screen, 0, self.game.screen.height - 1)

@@ -4,7 +4,6 @@ from os import path
 import sys
 from numpy import nonzero
 import tcod
-import tcod.console
 import tcod.event
 from mrogue import __version__, wait, key_is, mod_is, directions
 from mrogue.map import Dungeon
@@ -41,7 +40,7 @@ def help_screen():
         '',
         'Esc - close pop-up windows like this one.'
     ]
-    win = tcod.console.Console(65, len(help_contents) + 2, 'F')
+    win = tcod.Console(65, len(help_contents) + 2, 'F')
     win.draw_frame(0, 0, 65, len(help_contents) + 2,
                    'Welcome to MRogue {}!'.format(__version__), False)
     for i in range(len(help_contents)):
@@ -49,22 +48,23 @@ def help_screen():
     return win
 
 
-def message_screen(screen, messages):
-    window = tcod.console.Console(65, 12, 'F')
+def message_screen(screen, context, messages):
+
+    window = tcod.Console(65, 12, 'F')
     scroll = len(messages) - 10 if len(messages) > 10 else 0
     while True:
         window.clear()
         window.draw_frame(0, 0, 65, 12, 'Messages')
         if scroll > 0:
-            window.print(0, 1, chr(24), tcod.black, tcod.white)
+            window.print(0, 1, chr(0x2191), tcod.black, tcod.white)
         for i in range(len(messages)):
             if i > 10 - 1:
                 break
             window.print(1, 1 + i, messages[i+scroll])
         if 10 + scroll < len(messages):
-            window.print(0, 10, chr(25), tcod.black, tcod.white)
+            window.print(0, 10, chr(0x2193), tcod.black, tcod.white)
         window.blit(screen, 12, 12, bg_alpha=0.95)
-        tcod.console_flush()
+        context.present(screen)
         key = wait()
         if key_is(key, 27):
             return False
@@ -83,15 +83,17 @@ class Rogue(object):
             self.dir = path.dirname(sys.executable)
         else:
             self.dir = path.dirname(__file__)
-        tcod.console_set_custom_font(
+        self.font = tcod.tileset.load_tilesheet(
             path.join(self.dir, 'terminal10x16_gs_ro.png'),
-            tcod.FONT_LAYOUT_ASCII_INROW | tcod.FONT_TYPE_GREYSCALE)
-        self.screen = tcod.console_init_root(
-            100, 40,
-            'MRogue {}'.format(__version__),
-            renderer=tcod.RENDERER_SDL2,
-            order='F',
-            vsync=True)
+            16,
+            16,
+            tcod.tileset.CHARMAP_CP437)
+        self.screen = tcod.Console(100, 40, 'F')
+        self.context = tcod.context.new(
+            columns=self.screen.width,
+            rows=self.screen.height,
+            tileset=self.font,
+            renderer=tcod.RENDERER_SDL2)
         self.dungeon = Dungeon(self)
         self.items = ItemManager(self)
         self.monsters = MonsterManager(self,)
@@ -108,14 +110,14 @@ class Rogue(object):
                 break
         self.dungeon.look_around()
         if self.player.current_HP < 1 and 'debug' not in sys.argv:
-            win = tcod.console.Console(20, 4, 'F')
+            win = tcod.Console(20, 4, 'F')
             win.draw_frame(0, 0, 20, 4, 'Game over.', False)
             win.print(6, 2, 'YOU DIED', tcod.red)
             self.dungeon.draw_map()
             self.player.show_stats()
             self.messenger.show()
             win.blit(self.screen, 10, 10)
-            tcod.console_flush()
+            self.context.present(self.screen)
             wait(tcod.event.K_ESCAPE)
             return True
         return False
@@ -124,7 +126,7 @@ class Rogue(object):
         self.dungeon.draw_map()
         self.player.show_stats()
         self.messenger.show()
-        tcod.console_flush()
+        self.context.present(self.screen)
 
     def handle_input(self, key):
         if key_is(key, tcod.event.K_i):
@@ -152,11 +154,11 @@ class Rogue(object):
                         key[0], *self.player.pos)):
                 return True
         elif key_is(key, tcod.event.K_m, tcod.event.KMOD_SHIFT):
-            message_screen(self.screen, self.messenger.message_history)
+            message_screen(self.screen, self.context, self.messenger.message_history)
         elif key_is(key, tcod.event.K_h, tcod.event.KMOD_SHIFT):
             win = help_screen()
             win.blit(self.screen, 12, 12, bg_alpha=0.95)
-            tcod.console_flush()
+            self.context.present(self.screen)
             wait(tcod.event.K_ESCAPE)
         elif key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
             return True

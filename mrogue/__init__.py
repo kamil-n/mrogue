@@ -6,7 +6,7 @@ from numpy import asarray
 import tcod.console
 import tcod.event
 
-__version__ = 'v0.4.6.6'
+__version__ = 'v0.4.7.0'
 
 
 directions = asarray([
@@ -170,7 +170,7 @@ def wait(character=None, mod=tcod.event.KMOD_NONE):
                     return event.sym, event.mod
 
 
-def select_option(screen, options):
+def select_option(screen, context, options):
     num_options = len(options)
     w, h = 23, num_options + 2
     dialog = tcod.console.Console(w, h, 'F')
@@ -178,7 +178,7 @@ def select_option(screen, options):
     for i in range(num_options):
         dialog.print(2, i + 1, '{}) {}'.format(options[i][0], options[i][1]))
     dialog.blit(screen, 4 + 10, 4 + 1)
-    tcod.console_flush()
+    context.present(screen)
 
 
 def random_scroll_name():

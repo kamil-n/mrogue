@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-Module to support items (equipment) implementation.
-
-"""
 
 from json import loads
 from os import path
 import random
 import string
 import tcod
-import tcod.console
 import tcod.constants
 import tcod.event
 from mrogue import Char, decompile_dmg_die, compile_dmg_die, roll_gaussian, wait, select_option, random_scroll_name, key_is, cap
@@ -153,8 +148,7 @@ class ItemManager(object):
         if total_items > item_limit:
             window_height = 5 + item_limit
         width = 68
-        window = tcod.console.Console(width, window_height, 'F')
-        # tcod.console_set_default_foreground(window, tcod.light_orange)
+        window = tcod.Console(width, window_height, 'F')
         scroll = 0
         while True:
             window.clear()
@@ -171,7 +165,7 @@ class ItemManager(object):
             inventory = self.prepare_inventory(raw_inventory, sort[0])
             self.print_list(inventory, window, window_height, 2, scroll, item_limit, True)
             window.blit(self.game.screen, 4, 4)
-            tcod.console_flush()
+            self.game.context.present(self.game.screen)
             key = wait()
             if key_is(key, 27):
                 return False
@@ -196,7 +190,7 @@ class ItemManager(object):
                     context_actions.append(('a', 'Equip item', self.try_equip))
                 if not i in self.game.player.equipped:
                     context_actions.append(('b', 'Drop item', self.game.player.drop_item))
-                select_option(self.game.screen, context_actions)
+                select_option(self.game.screen, self.game.context, context_actions)
                 while True:
                     selection = wait()
                     if key_is(selection, 27):
@@ -211,7 +205,7 @@ class ItemManager(object):
 
     def show_equipment(self):
         w, h = 49, 8
-        window = tcod.console.Console(w, h, 'F')
+        window = tcod.Console(w, h, 'F')
         while True:
             window.draw_frame(0, 0, w, h, 'Equipment')
             window.print(2, 1, 'Select a slot to manage or Esc to close:')
@@ -237,7 +231,7 @@ class ItemManager(object):
                                  enchantment_colors[item.enchantment_level])
                 i += 1
             window.blit(self.game.screen, 4, 4)
-            tcod.console_flush()
+            self.game.context.present(self.game.screen)
             key = wait()
             if key_is(key, 27):
                 return False
@@ -261,13 +255,13 @@ class ItemManager(object):
                     width = 48
                     last_letter = 96 + total_items
                     scroll = 0
-                    selection = tcod.console.Console(width, height, 'F')
+                    selection = tcod.Console(width, height, 'F')
                     while True:
                         selection.draw_frame(0, 0, width, height,
                                              'Select item to equip:')
                         self.print_list(items, selection, height,  0, scroll, limit, False)
                         selection.blit(self.game.screen, 4 + 10, 4 + 2)
-                        tcod.console_flush()
+                        self.game.context.present(self.game.screen)
                         reaction = wait()
                         if key_is(reaction, 27):
                             break

@@ -10,10 +10,11 @@ from mrogue import adjacent, directions
 from mrogue.item import Item
 
 
-tileset = {'wall': chr(219),
-           'floor': chr(250),
-           'stairs_down': chr(242),
-           'stairs_up': chr(243)}
+tileset = {
+           'wall': chr(0x2588),
+           'floor': chr(0xB7),
+           'stairs_down': chr(0x2265),
+           'stairs_up': chr(0x2264)}
 
 
 class Level(tcod.map.Map):
