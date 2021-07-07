@@ -7,7 +7,7 @@ import string
 import tcod
 import tcod.constants
 import tcod.event
-from mrogue import Char, decompile_dmg_die, compile_dmg_die, roll_gaussian, wait, select_option, random_scroll_name, key_is, cap
+from mrogue import Char, decompile_dmg_die, compile_dmg_die, roll_gaussian, wait, select_option, random_scroll_name, ignore_mods, key_is, cap
 from mrogue.item_data import *
 
 
@@ -167,6 +167,9 @@ class ItemManager(object):
             window.blit(self.game.screen, 4, 4)
             self.game.context.present(self.game.screen)
             key = wait()
+            # ignore NumLock
+            if key[1] & ignore_mods == ignore_mods:
+                key = (key[0], key[1] - ignore_mods)
             if key_is(key, 27):
                 return False
             elif key_is(key, tcod.event.K_DOWN):
