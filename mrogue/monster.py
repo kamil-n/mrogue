@@ -7,7 +7,7 @@ from mrogue import roll, adjacent
 import mrogue.unit
 
 
-class MonsterManager(object):
+class MonsterManager:
     game = None
     order = None
     ticks_passed = 0

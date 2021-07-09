@@ -3,7 +3,7 @@
 all_timers = []
 
 
-class Timer(object):
+class Timer:
     def __init__(self, duration, action):
         self.duration = duration
         self.action = action

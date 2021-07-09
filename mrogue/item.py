@@ -39,7 +39,7 @@ def circular(sequence):
             yield element
 
 
-class ItemManager(object):
+class ItemManager:
     def __init__(self, game):
         self.game = game
         with open(path.join(game.dir, 'item_templates.json')) as f:

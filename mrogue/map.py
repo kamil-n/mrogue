@@ -138,7 +138,7 @@ class Level(tcod.map.Map):
         self.walkable[x][y] = walkable
 
 
-class Dungeon(object):
+class Dungeon:
     levels = []
     depth = 0
     game = None

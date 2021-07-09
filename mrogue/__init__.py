@@ -6,7 +6,7 @@ from numpy import asarray
 import tcod.console
 import tcod.event
 
-__version__ = 'v0.4.7.1'
+__version__ = 'v0.4.7.2'
 
 
 directions = asarray([
@@ -28,7 +28,7 @@ directions = asarray([
 ])
 
 
-class Char(object):
+class Char:
     def __init__(self):
         self.icon = ''
         self.color = tcod.white

@@ -5,7 +5,7 @@ from textwrap import wrap
 import tcod.console
 
 
-class Messenger(object):
+class Messenger:
     _message_list = []
     message_history = []
 

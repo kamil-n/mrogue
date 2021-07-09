@@ -37,12 +37,12 @@ class Unit(Char):
     def update(self):
         pass
 
-    def load_update(self):
+    def burden_update(self):
         pass
 
     def add_item(self, item: Item):
         item.add(self.inventory)
-        self.load_update()
+        self.burden_update()
 
     def equip(self, item: Weapon or Armor, quiet=False):
         for i in self.equipped:
@@ -65,7 +65,7 @@ class Unit(Char):
     def use(self, item: Consumable):
         effect = item.used(self)
         item.remove(self.inventory)
-        self.load_update()
+        self.burden_update()
         self.game.messenger.add(effect)
 
     def unequip(self, item: Weapon or Armor, quiet=False, force=False):
@@ -88,7 +88,7 @@ class Unit(Char):
     def drop_item(self, item: Item, quiet=False):
         item.remove(self.inventory, self.equipped)
         item.dropped(self.pos)
-        self.load_update()
+        self.burden_update()
         msg = '{} dropped {}.'.format(self.name, item.name)
         if not quiet:
             self.game.messenger.add(msg)
@@ -97,7 +97,7 @@ class Unit(Char):
         if itemlist:
             item = itemlist.pop(0)
             item.add(self.inventory)
-            self.load_update()
+            self.burden_update()
             item.picked()
             msg = '{} picked up {}.'.format(self.name, item.name)
             self.game.messenger.add(msg)

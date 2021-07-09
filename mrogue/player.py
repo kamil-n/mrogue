@@ -25,12 +25,8 @@ class Player(mrogue.unit.Unit):
         self.identified_consumables = []
         self.health_regen_cooldown = 0
         self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')
-        self.add_item(Weapon(game.items,
-                             game.items.templates_file['weapons']['maces'][0],
-                             None))
-        self.add_item(Armor(game.items,
-                            game.items.templates_file['armor']['chest'][0],
-                            None))
+        self.add_item(Weapon(game.items, game.items.templates_file['weapons']['maces'][0], None))
+        self.add_item(Armor(game.items, game.items.templates_file['armor']['chest'][0], None))
         for item in list(self.inventory):
             self.equip(item, quiet=True)
         self.add(game.dungeon.level.objects_on_map, game.dungeon.level.units)
@@ -96,8 +92,8 @@ class Player(mrogue.unit.Unit):
             elif tile == tileset['stairs_up']:
                 self.game.messenger.add('There are stairs leading up here.')
 
-    def load_update(self):
-        super().load_update()
+    def burden_update(self):
+        super().burden_update()
         total_load = sum([i.weight for i in self.inventory + self.equipped])
         if total_load < self.load_thresholds[0]:
             self.load_status = 'light'

@@ -5,7 +5,7 @@ from mrogue.item import Consumable
 from mrogue.unit import Unit
 
 
-class Effect(object):
+class Effect:
     def __init__(self, messenger, from_item: Consumable, for_unit: Unit):
         self.source = from_item
         self.target = for_unit
