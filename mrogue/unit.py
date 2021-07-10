@@ -3,12 +3,27 @@
 from sys import argv
 import tcod.constants
 from mrogue.item import Item, Weapon, Armor, Consumable
-from mrogue import Char, roll, cap, die_range
+from mrogue import Char, roll, cap, compile_dmg_die, decompile_dmg_die
+
+
+class AbilityScore:
+    def __init__(self, name, score):
+        self.name = name
+        self._original_score = self.score = score
+        self.mod = (score - 10) // 2
+
+    def modify(self, modifier):
+        self.score = self.score + modifier
+        self.mod = (self.score - 10) // 2
+
+    def set(self, value):
+        self.score = value
+        self.mod = (self.score - 10) // 2
 
 
 class Unit(Char):
-    def __init__(self, name, game, icon, sight_range, speed, to_hit,
-                 damage_dice, armor_class, current_hp):
+    def __init__(self, name, game, icon, sight_range, abi_scores, keywords, speed, proficiency,
+                 damage_dice, ac_bonus, base_hp_from_dice):
         super().__init__()
         self.player = False
         self.game = game
@@ -20,18 +35,27 @@ class Unit(Char):
         self.color = vars(tcod.constants)[icon[1]]
         self.layer = 1
         self.sight_range = sight_range
+        self.abilities = {
+            'str': AbilityScore('Strength', abi_scores[0]),
+            'dex': AbilityScore('Dexterity', abi_scores[1]),
+            'con': AbilityScore('Constitution', abi_scores[2])
+        }
         self.load_thresholds = (5.0, 30.0, 50.0)
         self.speed = speed
         self.ticks_left = int(speed * 100)
-        self.base_to_hit = to_hit  # i.e. from Strength or size
-        self.to_hit = self.base_to_hit
-        self.default_damage_dice = damage_dice  # unarmed attacks
+        self.keywords = keywords
+        self.proficiency = proficiency
+        self.ability_bonus = self.abilities['dex'].mod if 'finesse' in keywords else self.abilities['str'].mod
+        self.to_hit = self.proficiency + self.ability_bonus
+        num, sides, mod = decompile_dmg_die(damage_dice)
+        self.default_damage_dice = compile_dmg_die(num, sides, mod + self.ability_bonus)  # unarmed attacks
         self.damage_dice = self.default_damage_dice
-        self.base_armor_class = armor_class  # i.e. from Dexterity or natural
-        self.armor_class = self.base_armor_class
+        self.base_armor_class = 10 + self.abilities['dex'].mod
+        self.ac_bonus = ac_bonus
+        self.armor_class = self.base_armor_class + self.ac_bonus
         self.damage_reduction = self.armor_class / 100
-        self.current_HP = current_hp
-        self.max_HP = current_hp
+        self.current_HP = base_hp_from_dice + self.abilities['con'].mod
+        self.max_HP = base_hp_from_dice
         self.moved = False
 
     def update(self):
@@ -49,14 +73,17 @@ class Unit(Char):
             if item.slot == i.slot:
                 self.unequip(i)
         item.add(self.equipped)
+        item.remove(self.inventory)
         if item.type == Weapon:
-            self.to_hit += item.to_hit_modifier
-            self.damage_dice = item.damage
-        elif item.type == Armor:
-            self.armor_class += item.armor_class_modifier
+            self.to_hit = self.proficiency + self.ability_bonus + item.to_hit_modifier
+            num, sides, mod = decompile_dmg_die(item.damage)
+            self.damage_dice = compile_dmg_die(num, sides, mod + self.ability_bonus)
+        elif item.type == Armor:  # TODO: possibly bugged, either here or in unequip()
+            bonus_armor_from_equipped = sum([i.armor_class_modifier for i in self.equipped if i.type == Armor])
+            # print(f"AC: base={10 + self.abilities['dex'].mod + self.ac_bonus}, equipped={bonus_armor_from_equipped}")
+            self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_armor_from_equipped
             self.damage_reduction = self.armor_class / 100
         msg = '{} equipped {}.'.format(self.name, item.name)
-        item.remove(self.inventory)
         if self.player:
             item.identified()
         if not quiet:
@@ -73,14 +100,16 @@ class Unit(Char):
             self.game.messenger.add('Cursed items can\'t be unequipped.')
             return False
         item.add(self.inventory)
+        item.remove(self.equipped)
         if item.type == Weapon:
-            self.to_hit -= item.to_hit_modifier  # TODO: should recalculate
+            self.to_hit = self.proficiency + self.ability_bonus
             self.damage_dice = self.default_damage_dice
         elif item.type == Armor:
-            self.armor_class -= item.armor_class_modifier  # TODO: ditto
+            bonus_armor_from_equipped = sum([i.armor_class_modifier for i in self.equipped if i.type == Armor])
+            # print(f"AC: base={10 + self.abilities['dex'].mod + self.ac_bonus}, equipped={bonus_armor_from_equipped}")
+            self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_armor_from_equipped
             self.damage_reduction = self.armor_class / 100
         msg = '{} unequipped {}.'.format(self.name, item.name)
-        item.remove(self.equipped)
         if not quiet:
             self.game.messenger.add(msg)
         return True
@@ -115,21 +144,10 @@ class Unit(Char):
         attacked = 'you' if target.player else target.name
         msg = attacker + ' '
         attack_roll = roll('1d20')
-        min_dmg, max_dmg = die_range(self.damage_dice)
-        full_damage = max_dmg - min_dmg + 1
         critical_hit = attack_roll == 20
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
             damage_roll = roll(self.damage_dice, critical_hit)
-            force = damage_roll / full_damage
-            verb = 'hit{}'.format('' if self.player else 's')
-            if critical_hit:
-                msg += 'critically ' + verb
-            elif force < 0.34:
-                msg += 'barely ' + verb
-            elif force < 0.67:
-                msg += verb
-            else:
-                msg += 'accurately ' + verb
+            msg += ('critically ' if critical_hit else '') + 'hit{}'.format('' if self.player else 's')
             self.game.messenger.add('{} {}.'.format(msg, attacked))
             target.take_damage(damage_roll)
         else:

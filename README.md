@@ -5,9 +5,21 @@
 - [x] statuses + timers
 - [x] initiative/speed system
 - [x] add more dungeon levels
+- [ ] player character stats
+  - [x] 3 base stats: STR, DEX, CON
+    - [x] STR enhances to_hit, dmg, carry capacity
+    - [x] DEX enhances AC, speed
+    - [x] CON enhances HP
+  - [ ] 3 remaining stats: INT, WIS, CHA (beginning with just saving throws perhaps)
+  - [ ] miscellaneous other characteristics
+    - [ ] race (stat bonuses)
+    - [ ] class (hit die, proficiencies)
+  - [ ] stats screen
 - [ ] experience
   - [ ] defeated enemies grant xp
   - [ ] on gained xp breakpoints increase stats
+- ranged combat...
+- magic combat...
 - more objects on map...
 - skills...
 - character customization...

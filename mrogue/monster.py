@@ -84,10 +84,12 @@ class Monster(mrogue.unit.Unit):
                          game,
                          (template['icon'], template['color']),
                          10,
+                         template['ability_scores'],
+                         template['keywords'],
                          template['speed'],
-                         template['to_hit'],
+                         template['proficiency'],
                          template['dmg_die_unarmed'],
-                         template['ac'],
+                         template['ac_bonus'],
                          roll(template['hit_die']))
         self.path = None
         if 'weapon' in template and random.randint(0, 1):

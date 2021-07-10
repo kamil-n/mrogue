@@ -17,11 +17,12 @@ load_statuses = {
 
 class Player(mrogue.unit.Unit):
     def __init__(self, game):
-        super().__init__('Hero', game, (chr(0x263A), 'lighter_red'), 10, 1.0, 1, '1d2+1', 11, 20)
+        super().__init__('Hero', game, (chr(0x263A), 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, '1d2', 0, 20)
         self.player = True
         self.dijsktra_map = Dijkstra(game.dungeon.level.walkable)
         self.dijsktra_map.set_goal(*self.pos)
         self.load_status = 'light'
+        self.load_thresholds = tuple(threshold + self.abilities['str'].mod for threshold in self.load_thresholds)
         self.identified_consumables = []
         self.health_regen_cooldown = 0
         self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')
@@ -103,7 +104,7 @@ class Player(mrogue.unit.Unit):
             self.load_status = 'heavy'
         else:
             self.load_status = 'immobile'
-        self.speed = 1.0 * load_statuses[self.load_status][0]
+        self.speed = load_statuses[self.load_status][0] - self.abilities['dex'].mod / 100
 
     def in_slot(self, slot):
         for i in self.equipped:
