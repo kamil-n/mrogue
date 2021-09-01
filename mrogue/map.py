@@ -153,7 +153,7 @@ class Dungeon:
     def new_level(self):
         self.level.pos = self.game.player.pos
         self.level = Level(self.mapDim)
-        self.game.items.create_loot(self.game.num_objects, self.depth // 4)
+        self.game.items.create_loot(self.game.num_objects)  # , self.depth // 4)
         self.game.monsters.create_monsters(self.game.num_objects + self.depth)
         self.levels.append(self.level)
 

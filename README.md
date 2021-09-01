@@ -1,4 +1,5 @@
 ##### TODO list:
+- [x] reworked item & monster spawning
 - [ ] clean up code up to this point
 - [ ] add more monsters and items
 - [x] items
@@ -7,9 +8,6 @@
 - [x] add more dungeon levels
 - [ ] player character stats
   - [x] 3 base stats: STR, DEX, CON
-    - [x] STR enhances to_hit, dmg, carry capacity
-    - [x] DEX enhances AC, speed
-    - [x] CON enhances HP
   - [ ] 3 remaining stats: INT, WIS, CHA (beginning with just saving throws perhaps)
   - [ ] miscellaneous other characteristics
     - [ ] race (stat bonuses)

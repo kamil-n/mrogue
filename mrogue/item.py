@@ -1,77 +1,35 @@
 # -*- coding: utf-8 -*-
 
-from json import loads
-from os import path
-import random
-import string
 import tcod
 import tcod.constants
 import tcod.event
-from mrogue import Char, decompile_dmg_die, compile_dmg_die, roll_gaussian, wait, select_option, random_scroll_name, ignore_mods, key_is, cap
+from mrogue import *
 from mrogue.item_data import *
-
-
-def get_random_template(data, level) -> (dict, type):
-    while type(data) != list:
-        key, data = random.choice(list(data.items()))
-    template = data[level]
-    item_type = Item
-    if template['type'] == 'wearable':
-        if template['subtype'] == 'weapon':
-            item_type = Weapon
-        elif template['subtype'] == 'armor':
-            item_type = Armor
-    elif template['type'] == 'consumable':
-        item_type = Consumable
-    return template, item_type
-
-
-def get_item_equipped_in_slot(unit, slot):
-    for item in unit.equipped:
-        if item.slot == slot:
-            return item
-    return None
-
-
-def circular(sequence):
-    while sequence:
-        for element in sequence:
-            yield element
 
 
 class ItemManager:
     def __init__(self, game):
         self.game = game
-        with open(path.join(game.dir, 'item_templates.json')) as f:
-            self.templates_file = loads(f.read())
-        for s in self.templates_file['consumables']['scrolls']:
+        for s in filter(lambda x: x['type'] == 'scroll', templates):
             scroll_names[s['name']] = random_scroll_name()
-        for p in self.templates_file['consumables']['potions']:
+        for p in filter(lambda x: x['type'] == 'potion', templates):
             potion_colors[p['name']] = random.choice(list(materials['potions'].items()))
 
-    def create_loot(self, num_items, level):
+    def create_loot(self, num_items):  # , level):
         for i in range(num_items):
-            self.random_item(None, level=level).dropped(self.game.dungeon.find_spot())
+            self.random_item().dropped(self.game.dungeon.find_spot())
 
-    def random_item(self, target=None, groups=None, level=0):
-        tmp = None
-        itype = None
-        if not target:
-            target = random.choices(
-                list(self.templates_file.keys()), [1, 2, 2])[0]
-        if target in self.templates_file:
-            tmp, itype = get_random_template(self.templates_file[target], level)
+    def random_item(self, keyword=None, groups=None):
+        if keyword:
+            target = random.choice(list(filter(lambda x: keyword[0] in (x.get('keywords') or []), templates)))
         else:
-            if target in self.templates_file['weapons']:
-                return Weapon(self, get_random_template(
-                    self.templates_file['weapons'][target], level)[0], groups, True)
-            elif target in self.templates_file['armor']:
-                return Armor(self, get_random_template(
-                    self.templates_file['armor'][target], level)[0], groups, True)
-            elif target in self.templates_file['consumables']:
-                return Consumable(self, get_random_template(
-                    self.templates_file['consumables'][target], level)[0], groups)
-        return itype(self, tmp, groups) if itype == Consumable else itype(self, tmp, groups, True)
+            target = random.choice(templates)
+        if target['type'] == 'weapon':
+            return Weapon(self, target, groups, True)
+        elif target['type'] == 'armor':
+            return Armor(self, target, groups, True)
+        elif target['type'] in ('scroll', 'potion'):
+            return Consumable(self, target, groups)
 
     def try_equip(self, item):
         existing = self.game.player.in_slot(item.slot)
@@ -138,6 +96,10 @@ class ItemManager:
             window.print(0, height - 3, chr(25), tcod.black, tcod.white)
 
     def show_inventory(self):
+        def circular(sequence):
+            while sequence:
+                for element in sequence:
+                    yield element
         sorts = circular([('slot', 47), ('weight', 56), ('value', 62), ('name', 5)])
         sort = next(sorts)
         raw_inventory = self.game.player.inventory + self.game.player.equipped
@@ -191,7 +153,7 @@ class ItemManager:
                     context_actions.append(('a', 'Unequip item', self.game.player.unequip))
                 elif i.type == Weapon or i.type == Armor:
                     context_actions.append(('a', 'Equip item', self.try_equip))
-                if not i in self.game.player.equipped:
+                if i not in self.game.player.equipped:
                     context_actions.append(('b', 'Drop item', self.game.player.drop_item))
                 select_option(self.game.screen, self.game.context, context_actions)
                 while True:
@@ -207,6 +169,11 @@ class ItemManager:
                 isinstance(i, Item) and i.pos == coordinates]
 
     def show_equipment(self):
+        def get_item_equipped_in_slot(which):
+            for worn in self.game.player.equipped:
+                if worn.slot == which:
+                    return worn
+            return None
         w, h = 49, 8
         window = tcod.Console(w, h, 'F')
         while True:
@@ -216,7 +183,7 @@ class ItemManager:
             slots = ('hand', 'head', 'chest', 'feet')
             for slot in slots:
                 window.print(2, i, '{}) {:>5}:'.format(chr(94+i), cap(slot)))
-                item = get_item_equipped_in_slot(self.game.player, slot)
+                item = get_item_equipped_in_slot(slot)
                 if item:
                     summary = '{:22.22}{}('.format(
                         item.interface_name,
@@ -239,8 +206,7 @@ class ItemManager:
             if key_is(key, 27):
                 return False
             elif key[0] in range(97, 97 + len(slots)):
-                item = get_item_equipped_in_slot(
-                    self.game.player, slots[key[0] - 97])
+                item = get_item_equipped_in_slot(slots[key[0] - 97])
                 if item:
                     return self.game.player.unequip(item)
                 else:
@@ -396,15 +362,14 @@ class Consumable(Item):
             template['icon'])
         self.weight = self.base_weight
         self.value = self.base_value
-        if template['subtype'] == 'scroll':
+        if template['type'] == 'scroll':
             self.color = vars(tcod.constants)[template['color']]
             self.name = 'a scroll titled ' + scroll_names[template['name']]
-        elif template['subtype'] == 'potion':
+        elif template['type'] == 'potion':
             self.color = potion_colors[template['name']][1]
             self.name = potion_colors[template['name']][0] + ' potion'
-        self.identified_name = 'a {} of {}'.format(template['subtype'], template['name'])
+        self.identified_name = 'a {} of {}'.format(template['type'], template['name'])
         self.interface_name = self.name
-        self.subtype = template['subtype']
         self.slot = ''
         self.effect = template['effect']
         self.uses = template['number_of_uses']

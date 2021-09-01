@@ -5,6 +5,7 @@ from tcod.path import Dijkstra
 import mrogue.unit
 from mrogue import cap
 from mrogue.item import Weapon, Armor
+from mrogue.item_data import templates
 from mrogue.map import tileset
 
 load_statuses = {
@@ -26,8 +27,8 @@ class Player(mrogue.unit.Unit):
         self.identified_consumables = []
         self.health_regen_cooldown = 0
         self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')
-        self.add_item(Weapon(game.items, game.items.templates_file['weapons']['maces'][0], None))
-        self.add_item(Armor(game.items, game.items.templates_file['armor']['chest'][0], None))
+        self.add_item(Weapon(game.items, templates[5], None))  # mace
+        self.add_item(Armor(game.items, templates[10], None))  # tunic
         for item in list(self.inventory):
             self.equip(item, quiet=True)
         self.add(game.dungeon.level.objects_on_map, game.dungeon.level.units)

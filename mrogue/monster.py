@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from json import loads
-from os import path
 import random
 from mrogue import roll, adjacent
 import mrogue.unit
+from mrogue.monster_data import templates
 
 
 class MonsterManager:
@@ -14,31 +13,20 @@ class MonsterManager:
 
     def __init__(self, game):
         self.game = game
-        self.monster_templates = {}
         self.selection_for_level = []
-        with open(path.join(game.dir, 'monster_templates.json')) as f:
-            for group, fields in loads(f.read()).items():
-                self.monster_templates[group] = {'monsters': [],
-                                                 'chances': {}}
-                for lvl in range(int(fields['level_range'][0]),
-                                 int(fields['level_range'][2])+1):
-                    self.monster_templates[group]['monsters'] = fields['subtypes']
-                    self.monster_templates[group]['chances'][lvl] =\
-                        [int(i) for i in fields['occurrences'][str(lvl)].split()]
         for i in range(8+1):
             this_level = []
-            for group, data in self.monster_templates.items():
-                if i in data['chances']:
+            for group, data in templates.items():
+                if i in data['occurrences'].keys():
                     this_level.append(group)
             self.selection_for_level.append(this_level)
 
     def create_monsters(self, num, **kwargs):
         for i in range(num):
-            group = random.choice(
-                self.selection_for_level[self.game.dungeon.depth])
+            group = random.choice(self.selection_for_level[self.game.dungeon.depth])
             template = random.choices(
-                self.monster_templates[group]['monsters'],
-                self.monster_templates[group]['chances'][self.game.dungeon.depth])[0]
+                templates[group]['subtypes'],
+                templates[group]['occurrences'][self.game.dungeon.depth])[0]
             m = Monster(self.game, template,
                         (self.game.dungeon.level.objects_on_map,
                          self.game.dungeon.level.units))

@@ -100,7 +100,7 @@ class Rogue(object):
         self.monsters.create_monsters(self.num_objects)
         self.messenger = Messenger(self)
         self.player = Player(self)
-        self.items.create_loot(self.num_objects, 0)
+        self.items.create_loot(self.num_objects)
 
     def update_dungeon(self):
         self.turn += 1

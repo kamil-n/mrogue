@@ -80,7 +80,6 @@ class Unit(Char):
             self.damage_dice = compile_dmg_die(num, sides, mod + self.ability_bonus)
         elif item.type == Armor:  # TODO: possibly bugged, either here or in unequip()
             bonus_armor_from_equipped = sum([i.armor_class_modifier for i in self.equipped if i.type == Armor])
-            # print(f"AC: base={10 + self.abilities['dex'].mod + self.ac_bonus}, equipped={bonus_armor_from_equipped}")
             self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_armor_from_equipped
             self.damage_reduction = self.armor_class / 100
         msg = '{} equipped {}.'.format(self.name, item.name)
@@ -106,7 +105,6 @@ class Unit(Char):
             self.damage_dice = self.default_damage_dice
         elif item.type == Armor:
             bonus_armor_from_equipped = sum([i.armor_class_modifier for i in self.equipped if i.type == Armor])
-            # print(f"AC: base={10 + self.abilities['dex'].mod + self.ac_bonus}, equipped={bonus_armor_from_equipped}")
             self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_armor_from_equipped
             self.damage_reduction = self.armor_class / 100
         msg = '{} unequipped {}.'.format(self.name, item.name)
