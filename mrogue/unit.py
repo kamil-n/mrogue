@@ -3,25 +3,20 @@
 from sys import argv
 import tcod.constants
 from mrogue.item import Item, Weapon, Armor, Consumable
-from mrogue import Char, roll, cap, compile_dmg_die, decompile_dmg_die
+from mrogue.utils import *
 
 
 class AbilityScore:
     def __init__(self, name, score):
         self.name = name
         self._original_score = self.score = score
-        self.mod = (score - 10) // 2
 
-    def modify(self, modifier):
-        self.score = self.score + modifier
-        self.mod = (self.score - 10) // 2
-
-    def set(self, value):
-        self.score = value
-        self.mod = (self.score - 10) // 2
+    @property
+    def mod(self):
+        return (self.score - 10) // 2
 
 
-class Unit(Char):
+class Unit(Instance):
     def __init__(self, name, game, icon, sight_range, abi_scores, keywords, speed, proficiency,
                  damage_dice, ac_bonus, base_hp_from_dice):
         super().__init__()

@@ -6,8 +6,9 @@ from sys import argv
 from os import path
 import tcod.bsp
 import tcod.map
-from mrogue import adjacent, directions
+from mrogue.io import directions
 from mrogue.item import Item
+from mrogue.utils import adjacent
 
 
 tileset = {

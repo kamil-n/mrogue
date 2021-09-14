@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import random
-from mrogue import roll, adjacent
 import mrogue.unit
 from mrogue.monster_data import templates
+from mrogue.utils import roll, adjacent
 
 
 class MonsterManager:

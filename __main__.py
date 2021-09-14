@@ -2,21 +2,16 @@
 
 from os import path
 import sys
-from numpy import nonzero
 import tcod
 import tcod.event
-from mrogue import __version__, wait, key_is, mod_is, directions
+from mrogue import __version__
 from mrogue.map import Dungeon
 from mrogue.message import Messenger
+from mrogue.io import *
 from mrogue.item import ItemManager
 from mrogue.monster import MonsterManager
 from mrogue.player import Player
 from mrogue.timers import Timer
-
-
-def direction_from(key, x, y):
-    placement = nonzero(directions == key)
-    return x + placement[2][0]-1, y + placement[1][0]-1
 
 
 def help_screen():
@@ -49,7 +44,6 @@ def help_screen():
 
 
 def message_screen(screen, context, messages):
-
     window = tcod.Console(65, 12, 'F')
     scroll = len(messages) - 10 if len(messages) > 10 else 0
     while True:

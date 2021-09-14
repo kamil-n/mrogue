@@ -3,10 +3,10 @@
 import tcod.console
 from tcod.path import Dijkstra
 import mrogue.unit
-from mrogue import cap
 from mrogue.item import Weapon, Armor
 from mrogue.item_data import templates
 from mrogue.map import tileset
+from mrogue.utils import cap, find_in
 
 load_statuses = {
     'light': (0.8, tcod.green),
@@ -36,10 +36,8 @@ class Player(mrogue.unit.Unit):
     def show_stats(self):
         self.status_bar.clear()
         self.status_bar.print(0, 0, 'HP:')
-        self.status_bar.print(3, 0, '%2d/%d' % (self.current_HP, self.max_HP),
-                              tcod.color_lerp(
-                                  tcod.red, tcod.green,
-                                  self.current_HP / self.max_HP))
+        r, g, b = tcod.color_lerp(tcod.red, tcod.green, self.current_HP / self.max_HP)
+        self.status_bar.print(3, 0, '%2d/%d' % (self.current_HP, self.max_HP), (r, g, b))
         self.status_bar.print(11, 0, 'AC:%2d' % self.armor_class)
         self.status_bar.print(19, 0, 'Atk:{:+d}/{}'.format(
             self.to_hit, self.damage_dice))
@@ -108,6 +106,4 @@ class Player(mrogue.unit.Unit):
         self.speed = load_statuses[self.load_status][0] - self.abilities['dex'].mod / 100
 
     def in_slot(self, slot):
-        for i in self.equipped:
-            if i.slot == slot:
-                return i
+        find_in(self.equipped, 'slot', slot)

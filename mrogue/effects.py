@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from mrogue import roll
 from mrogue.item import Consumable
 from mrogue.unit import Unit
+from mrogue.utils import roll
 
 
 class Effect:

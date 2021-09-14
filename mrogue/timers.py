@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
 
-all_timers = []
-
-
 class Timer:
+    all_timers = []
+
     def __init__(self, duration, action):
         self.duration = duration
         self.action = action
-        all_timers.append(self)
+        self.all_timers.append(self)
 
-    @staticmethod
-    def update():
-        for t in all_timers:
+    @classmethod
+    def update(cls):
+        for t in cls.all_timers:
             t.tick()
 
     def tick(self):
         self.duration -= 1
         if self.duration < 0:
             self.action()
-            all_timers.remove(self)
+            self.all_timers.remove(self)

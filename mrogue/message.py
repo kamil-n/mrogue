@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from mrogue import wait
+from mrogue.io import wait
 from textwrap import wrap
 import tcod.console
 

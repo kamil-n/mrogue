@@ -3,8 +3,9 @@
 import tcod
 import tcod.constants
 import tcod.event
-from mrogue import *
+from mrogue.io import *
 from mrogue.item_data import *
+from mrogue.utils import *
 
 
 class ItemManager:
@@ -16,7 +17,7 @@ class ItemManager:
             potion_colors[p['name']] = random.choice(list(materials['potions'].items()))
 
     def create_loot(self, num_items):  # , level):
-        for i in range(num_items):
+        for _ in range(num_items):
             self.random_item().dropped(self.game.dungeon.find_spot())
 
     def random_item(self, keyword=None, groups=None):
@@ -100,6 +101,16 @@ class ItemManager:
             while sequence:
                 for element in sequence:
                     yield element
+
+        def select_option(options):
+            num_options = len(options)
+            w, h = 23, num_options + 2
+            dialog = tcod.console.Console(w, h, 'F')
+            dialog.draw_frame(0, 0, w, h, 'Select an action:')
+            for i in range(num_options):
+                dialog.print(2, i + 1, '{}) {}'.format(options[i][0], options[i][1]))
+            dialog.blit(self.game.screen, 4 + 10, 4 + 1)
+            self.game.context.present(self.game.screen)
         sorts = circular([('slot', 47), ('weight', 56), ('value', 62), ('name', 5)])
         sort = next(sorts)
         raw_inventory = self.game.player.inventory + self.game.player.equipped
@@ -155,7 +166,7 @@ class ItemManager:
                     context_actions.append(('a', 'Equip item', self.try_equip))
                 if i not in self.game.player.equipped:
                     context_actions.append(('b', 'Drop item', self.game.player.drop_item))
-                select_option(self.game.screen, self.game.context, context_actions)
+                select_option(context_actions)
                 while True:
                     selection = wait()
                     if key_is(selection, 27):
@@ -243,7 +254,7 @@ class ItemManager:
                             return True
 
 
-class Item(Char):
+class Item(Instance):
     def __init__(self, sub, manager, name, base_weight, base_value, icon):
         super().__init__()
         self.type = sub.__class__
@@ -253,10 +264,7 @@ class Item(Char):
         self.base_value = base_value
         self.identified_value = base_value
         self.value = base_value
-        if isinstance(icon, int):
-            self.icon = chr(icon)
-        else:
-            self.icon = icon
+        self.icon = chr(icon) if isinstance(icon, int) else icon
         self.layer = 2
         self.status_identified = False
         self.name = name

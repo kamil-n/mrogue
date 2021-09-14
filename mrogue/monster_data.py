@@ -156,7 +156,7 @@ templates = {
                 'hit_die': '1d5',
                 'dmg_die_unarmed': '1d4+1',
                 'keywords': [],
-                'weapon': ['lights'],
+                'weapon': ['light'],
                 'speed': 0.95,
                 'proficiency': 4,
                 'ac_bonus': 2
