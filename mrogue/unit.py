@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from copy import copy
 from sys import argv
 import tcod.constants
-from mrogue.item import Item, Weapon, Armor, Consumable
+from mrogue.item import Item, Weapon, Armor, Consumable, Stackable
 from mrogue.utils import *
 
 
@@ -85,7 +86,6 @@ class Unit(Instance):
 
     def use(self, item: Consumable):
         effect = item.used(self)
-        item.remove(self.inventory)
         self.burden_update()
         self.game.messenger.add(effect)
 
@@ -108,8 +108,14 @@ class Unit(Instance):
         return True
 
     def drop_item(self, item: Item, quiet=False):
-        item.remove(self.inventory, self.equipped)
-        item.dropped(self.pos)
+        if item.amount > 1:
+            item.amount -= 1
+            new_item = copy(item)
+            new_item.amount = 1
+            new_item.dropped(self.pos)
+        else:
+            item.remove(self.inventory, self.equipped)
+            item.dropped(self.pos)
         self.burden_update()
         msg = '{} dropped {}.'.format(self.name, item.name)
         if not quiet:
@@ -118,9 +124,22 @@ class Unit(Instance):
     def pickup_item(self, itemlist: list):
         if itemlist:
             item = itemlist.pop(0)
-            item.add(self.inventory)
+            if issubclass(type(item), Stackable):
+                existing_item = find_in(self.inventory, 'name', item.name)
+                if existing_item:
+                    existing_item.amount += 1
+                else:
+                    new_item = copy(item)
+                    new_item.amount = 1
+                    new_item.add(self.inventory)
+                if item.amount > 1:
+                    item.amount -= 1
+                else:
+                    item.picked()
+            else:
+                item.add(self.inventory)
+                item.picked()
             self.burden_update()
-            item.picked()
             msg = '{} picked up {}.'.format(self.name, item.name)
             self.game.messenger.add(msg)
             return True
@@ -165,7 +184,7 @@ class Unit(Instance):
     def die(self):
         self.game.messenger.add('{} dies.'.format(cap(self.name)))
         if not (self.player and 'debug' in argv):
-            self.kill()  # TODO: bugged!
+            self.kill()
             if not self.player:
                 for item in self.equipped:
                     self.unequip(item, quiet=True, force=True)

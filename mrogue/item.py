@@ -30,7 +30,7 @@ class ItemManager:
         elif target['type'] == 'armor':
             return Armor(self, target, groups, True)
         elif target['type'] in ('scroll', 'potion'):
-            return Consumable(self, target, groups)
+            return Consumable(self, target, 1, groups)
 
     def try_equip(self, item):
         existing = self.game.player.in_slot(item.slot)
@@ -40,29 +40,14 @@ class ItemManager:
         self.game.player.equip(item)
         return True
 
-    def prepare_inventory(self, item_list, sort):
-        item_list.sort(key=lambda x: (getattr(x, sort), x.name))
-        items = []
-        i = 0
-        while i < len(item_list):
-            sublist = [item_list[i]]
-            while i < len(item_list) - 1 and item_list[i+1].name == item_list[i].name:
-                i += 1
-                sublist.append(item_list[i])
-            items.append(sublist)
-            i += 1
-        return items
-
     def print_list(self, inventory, window, height, offset, scroll, limit, show_details=False):
         if scroll > 0:
             window.print(0, 1 + offset, chr(24), tcod.black, tcod.white)
         for i in range(len(inventory)):
             if i > limit - 1:
                 break
-            j = i + scroll
-            it = inventory[j][0]
-            amount = len(inventory[j])
-            prefix = '' if amount == 1 else '({}) '.format(amount)
+            it = inventory[i+scroll]
+            prefix = '' if it.amount == 1 else '({}) '.format(it.amount)
             if it in self.game.player.equipped:
                 prefix = '(E) '
             suffix = ''
@@ -84,14 +69,14 @@ class ItemManager:
                 color = tcod.gray
             elif it.status_identified and hasattr(it, 'enchantment_level'):
                 color = enchantment_colors[it.enchantment_level]
-            window.print(1, 1 + i + offset, '{}) '.format(string.ascii_letters[j]))
+            window.print(1, 1 + i + offset, '{}) '.format(string.ascii_letters[i+scroll]))
             window.print(4, 1 + i + offset, it.icon, it.color)
             window.print(6, 1 + i + offset, summary, color)
             if show_details:
                 details = '{:>6} {:6.2f}  {:>6.2f}'.format(
                     it.slot,
-                    it.weight * amount,
-                    it.value * amount)
+                    it.weight * it.amount,
+                    it.value * it.amount)
                 window.print(46, 1 + i + offset, details)
         if limit + scroll < len(inventory):
             window.print(0, height - 3, chr(25), tcod.black, tcod.white)
@@ -114,7 +99,7 @@ class ItemManager:
         sorts = circular([('slot', 47), ('weight', 56), ('value', 62), ('name', 5)])
         sort = next(sorts)
         raw_inventory = self.game.player.inventory + self.game.player.equipped
-        inventory = self.prepare_inventory(raw_inventory, sort[0])
+        inventory = sorted(raw_inventory, key=lambda x: (getattr(x, sort[0]), x.name))
         total_items = len(inventory)
         item_limit = 14
         window_height = 5 + total_items
@@ -135,7 +120,7 @@ class ItemManager:
             window.print(53, window_height - 2, '{:6.2f} {:7.2f}'.format(
                 sum([i.weight for i in raw_inventory]),
                 sum([i.value for i in raw_inventory])))
-            inventory = self.prepare_inventory(raw_inventory, sort[0])
+            inventory = sorted(raw_inventory, key=lambda x: (getattr(x, sort[0]), x.name))
             self.print_list(inventory, window, window_height, 2, scroll, item_limit, True)
             window.blit(self.game.screen, 4, 4)
             self.game.context.present(self.game.screen)
@@ -152,7 +137,7 @@ class ItemManager:
             elif key_is(key, tcod.event.K_SLASH):
                 sort = next(sorts)
             elif key in letters and letters[key] in range(total_items):
-                i = inventory[letters[key]][0]
+                i = inventory[letters[key]]
                 highlight_line = 3 + letters[key] - scroll
                 if 3 <= highlight_line <= window_height - 3:
                     window.draw_rect(1, highlight_line, width - 2, 1, 0, bg=tcod.blue)
@@ -222,7 +207,7 @@ class ItemManager:
                     return self.game.player.unequip(item)
                 else:
                     items = list(filter(lambda x: x.slot == slots[key[0] - 97], self.game.player.inventory))
-                    items = self.prepare_inventory(items, sort='enchantment_level')
+                    items.sort(key=lambda x: (getattr(x, 'enchantment_level'), x.name))
                     if len(items) < 1:
                         continue
                     window.draw_rect(1, 3 + key[0] - 97, w - 2, 1, 0, bg=tcod.blue)
@@ -250,7 +235,7 @@ class ItemManager:
                         elif key_is(reaction, tcod.event.K_UP):
                             scroll -= 1 if scroll > 0 else 0
                         elif reaction[0] in range(97, last_letter + 1):
-                            self.game.player.equip(items[reaction[0] - 97][0])
+                            self.game.player.equip(items[reaction[0] - 97])
                             return True
 
 
@@ -268,6 +253,7 @@ class Item(Instance):
         self.layer = 2
         self.status_identified = False
         self.name = name
+        self.amount = 1
         self.interface_name = name  # TEMP
         self.identified_name = name  # TEMP
 
@@ -359,24 +345,33 @@ class Armor(Item):
         self.add(groups)
 
 
-class Consumable(Item):
-    def __init__(self, manager, template, groups):
-        super().__init__(
-            self,
-            manager,
-            template['name'],
-            template['base_weight'],
-            template['base_value'],
-            template['icon'])
-        self.weight = self.base_weight
-        self.value = self.base_value
+class Stackable(Item):
+    def __init__(self, manager, template, amount, groups):
+        super().__init__(self, manager, template['name'], template['base_weight'],
+                         template['base_value'], template['icon'])
+        self.amount = amount
+        self.weight = self.base_weight * self.amount
+        self.value = self.base_value * self.amount
+        self.add(groups)
+
+    def used(self, _):
+        self.amount -= 1
+        if self.amount == 0:
+            self.kill()
+
+
+class Consumable(Stackable):
+    def __init__(self, manager, template, amount, groups):
+        super().__init__(manager, template, amount, groups)
+        prefix = 'a' if self.amount == 1 else self.amount
+        suffix = 's' if self.amount > 1 else ''
         if template['type'] == 'scroll':
             self.color = vars(tcod.constants)[template['color']]
-            self.name = 'a scroll titled ' + scroll_names[template['name']]
+            self.name = f"{prefix} scroll{suffix} titled {scroll_names[template['name']]}"
         elif template['type'] == 'potion':
             self.color = potion_colors[template['name']][1]
-            self.name = potion_colors[template['name']][0] + ' potion'
-        self.identified_name = 'a {} of {}'.format(template['type'], template['name'])
+            self.name = f"{prefix} {potion_colors[template['name']][0]} potion{suffix}"
+        self.identified_name = f"{prefix} {template['type']}{suffix} of {template['name']}"
         self.interface_name = self.name
         self.slot = ''
         self.effect = template['effect']
@@ -388,6 +383,7 @@ class Consumable(Item):
     def used(self, target):
         self.identified()
         self.manager.game.messenger.add('This is {}.'.format(self.name))
+        super().used(None)
         from mrogue.effects import Effect
         effect = Effect(self.manager.game.messenger, self, target)
         return effect.apply()
