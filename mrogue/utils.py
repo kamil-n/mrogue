@@ -2,11 +2,10 @@
 
 import random
 import string
-from mrogue.io import Char
 
 
-def adjacent(fr, to, range=1):
-    return abs(fr[0] - to[0]) <= range and abs(fr[1] - to[1]) <= range
+def adjacent(fr, to, distance=1):
+    return abs(fr[0] - to[0]) <= distance and abs(fr[1] - to[1]) <= distance
 
 
 def find_in(where, attribute, like, many=False):
@@ -20,11 +19,11 @@ def find_in(where, attribute, like, many=False):
     return results or None
 
 
-def roll(die_string, crit=False):
+def roll(die_string, critical=False):
     num_die, sides, mod = decompile_dmg_die(die_string)
-    if crit:
+    if critical:
         num_die *= 2
-    roll_result = sum([random.randint(1, sides) for i in range(num_die)]) + mod
+    roll_result = sum([random.randint(1, sides) for _ in range(num_die)]) + mod
     return 1 if roll_result < 1 else roll_result
 
 
@@ -57,10 +56,6 @@ def compile_dmg_die(num_die, sides, modifier):
     return die_string
 
 
-def cap(word):
-    return word[0].upper() + word[1:]
-
-
 def random_scroll_name():
     name = ''
     for i in range(random.randint(1, 3)):
@@ -68,28 +63,3 @@ def random_scroll_name():
             name += random.choice(string.ascii_uppercase)
         name += ' '
     return name.rstrip()
-
-
-class Instance(Char):
-    def __init__(self):
-        super().__init__()
-        self._groups = []
-
-    def add(self, *groups):
-        for group in groups:
-            if group is not None:
-                group.append(self)
-                if group not in self._groups:
-                    self._groups.append(group)
-
-    def remove(self, *groups):
-        for group in groups:
-            if self in group:
-                group.remove(self)
-            if group in self._groups:
-                self._groups.remove(group)
-
-    def kill(self):
-        for group in self._groups:
-            group.remove(self)
-            self._groups.remove(group)

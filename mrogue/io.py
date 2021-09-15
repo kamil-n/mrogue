@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import tcod.event
-from numpy import asarray, nonzero
+import numpy as np
 
-directions = asarray([
+directions = np.asarray([
     [
         [0, tcod.event.K_UP, 0],
         [tcod.event.K_LEFT, 0, tcod.event.K_RIGHT],
@@ -20,15 +20,17 @@ directions = asarray([
         [49, 50, 51]
     ]
 ])
+
 ignore_keys = (
     tcod.event.K_LALT, tcod.event.K_RALT,
     tcod.event.K_LSHIFT, tcod.event.K_RSHIFT,
     tcod.event.K_LCTRL, tcod.event.K_RCTRL)
+
 ignore_mods = tcod.event.KMOD_NUM
 
 
 def direction_from(key, x, y):
-    placement = nonzero(directions == key)
+    placement = np.nonzero(directions == key)
     return x + placement[2][0]-1, y + placement[1][0]-1
 
 
@@ -66,7 +68,7 @@ def wait(character=None, mod=tcod.event.KMOD_NONE):
                     return event.sym, event.mod
 
 
-class Char:
+class Glyph:
     def __init__(self):
         self.icon = ''
         self.color = tcod.white

@@ -66,9 +66,9 @@ materials = {
 }
 
 
-letters = dict(zip([(l, tcod.event.KMOD_NONE) for l in range(97, 97 + 26 + 1)], range(26)))
-letters.update(dict(zip([(l, tcod.event.KMOD_LSHIFT) for l in range(97, 97 + 26 + 1)], range(26, 26 + 26))))
-letters.update(dict(zip([(l, tcod.event.KMOD_RSHIFT) for l in range(97, 97 + 26 + 1)], range(26, 26 + 26))))
+letters = dict(zip([(letter, tcod.event.KMOD_NONE) for letter in range(97, 97 + 26 + 1)], range(26)))
+letters.update(dict(zip([(letter, tcod.event.KMOD_LSHIFT) for letter in range(97, 97 + 26 + 1)], range(26, 26 + 26))))
+letters.update(dict(zip([(letter, tcod.event.KMOD_RSHIFT) for letter in range(97, 97 + 26 + 1)], range(26, 26 + 26))))
 scroll_names = {}
 potion_colors = {}
 

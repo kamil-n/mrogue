@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import numpy
 import random
+import numpy as np
 from sys import argv
 from os import path
 import tcod.bsp
 import tcod.map
-from mrogue.io import directions
-from mrogue.item import Item
-from mrogue.utils import adjacent
+import mrogue.item
+import mrogue.utils
 
 
-tileset = {
+tiles = {
            'wall': chr(0x2588),
            'floor': chr(0xB7),
            'stairs_down': chr(0x2265),
@@ -24,8 +23,7 @@ class Level(tcod.map.Map):
         self.objects_on_map = []
         self.units = []
         super().__init__(self.mapDim[0], self.mapDim[1], 'F')
-        self.tiles = numpy.full((self.mapDim[0], self.mapDim[1]),
-                                tileset['wall'], order='F')
+        self.tiles = np.full((self.mapDim[0], self.mapDim[1]), tiles['wall'], order='F')
         temp = []
         for i in range(self.mapDim[0]):
             row = []
@@ -33,11 +31,9 @@ class Level(tcod.map.Map):
                 r = random.randint(64, 128)
                 row.append(tcod.Color(r, r, r))
             temp.append(row)
-        self.colors = numpy.empty((self.mapDim[0], self.mapDim[1]),
-                                  object, order='F')
+        self.colors = np.empty((self.mapDim[0], self.mapDim[1]), object, order='F')
         self.colors[...] = temp
-        self.explored = numpy.zeros((self.mapDim[0], self.mapDim[1]),
-                                    bool, order='F')
+        self.explored = np.zeros((self.mapDim[0], self.mapDim[1]), bool, order='F')
         bsp = tcod.bsp.BSP(0, 0, self.mapDim[0], self.mapDim[1])
         bsp.split_recursive(4, 11, 8, 1.0, 1.0)
         vector = []
@@ -56,21 +52,19 @@ class Level(tcod.map.Map):
                     for y in range(ny - h, ny + h + 1):
                         if 1 < x < self.mapDim[0] - 1 and 1 < y < self.mapDim[1] - 1:
                             self._dig(x, y)
-        stairs_up = None
-        stairs_down = None
         # place stairs up
         if not first:
             while True:
                 x = random.randint(1, self.mapDim[0] - 1)
                 y = random.randint(2, self.mapDim[1] - 1)
-                if self.tiles[x][y] == tileset['floor']:
+                if self.tiles[x][y] == tiles['floor']:
                     stairs_up = (x, y)
                     break
         # place stairs down
         while True:
             x = random.randint(1, self.mapDim[0] - 1)
             y = random.randint(2, self.mapDim[1] - 1)
-            if self.walkable[x][y] and self.tiles[x][y] != tileset['stairs_up']:
+            if self.walkable[x][y] and self.tiles[x][y] != tiles['stairs_up']:
                 stairs_down = (x, y)
                 break
         # dig tunnels from opposite nodes to partition line center
@@ -100,17 +94,15 @@ class Level(tcod.map.Map):
             self._dig_tunnel(*node1[1], *partition_center)
             self._dig_tunnel(*node2[1], *partition_center)
         if not first:
-            self.tiles[stairs_up[0]][stairs_up[1]] = tileset['stairs_up']
+            self.tiles[stairs_up[0]][stairs_up[1]] = tiles['stairs_up']
             self.colors[stairs_up[0]][stairs_up[1]] = tcod.yellow
             self.pos = stairs_up
-        self.tiles[stairs_down[0]][stairs_down[1]] = tileset['stairs_down']
+        self.tiles[stairs_down[0]][stairs_down[1]] = tiles['stairs_down']
         self.colors[stairs_down[0]][stairs_down[1]] = tcod.yellow
 
     def _dig_tunnel(self, x1, y1, x2, y2):
-        absx = abs(x2 - x1)
-        absy = abs(y2 - y1)
-        dx = 0 if x1 == x2 else int(absx / (x2 - x1))
-        dy = 0 if y1 == y2 else int(absy / (y2 - y1))
+        dx = 0 if x1 == x2 else int(abs(x2 - x1) / (x2 - x1))
+        dy = 0 if y1 == y2 else int(abs(y2 - y1) / (y2 - y1))
         horizontal = random.random() > 0.5
         distance = 0
         broken = 100
@@ -121,14 +113,14 @@ class Level(tcod.map.Map):
             else:
                 y1 += dy
             distance += 1
-            if self.tiles[x1][y1] == tileset['wall']:
+            if self.tiles[x1][y1] == tiles['wall']:
                 broken = distance
             self._dig(x1, y1)
             if random.random() > 0.7 and distance - broken > 1:
                 horizontal = not horizontal
         self._dig(x2, y2)
 
-    def _dig(self, x, y, tile=tileset['floor'], color=None,
+    def _dig(self, x, y, tile=tiles['floor'], color=None,
              transparent=True, walkable=True):
         self.tiles[x][y] = tile
         if not color:
@@ -162,7 +154,7 @@ class Dungeon:
         tcod_map = tcod.map.Map(self.mapDim[0], self.mapDim[1], 'F')
         tcod_map.objects_on_map = []
         tcod_map.units = []
-        tcod_map.tiles = numpy.full((self.mapDim[0], self.mapDim[1]), tileset['wall'], order='F')
+        tcod_map.tiles = np.full((self.mapDim[0], self.mapDim[1]), tiles['wall'], order='F')
         temp = []
         for i in range(self.mapDim[0]):
             row = []
@@ -170,9 +162,9 @@ class Dungeon:
                 r = random.randint(64, 128)
                 row.append(tcod.Color(r, r, r))
             temp.append(row)
-        tcod_map.colors = numpy.empty((self.mapDim[0], self.mapDim[1]), object, order='F')
+        tcod_map.colors = np.empty((self.mapDim[0], self.mapDim[1]), object, order='F')
         tcod_map.colors[...] = temp
-        tcod_map.explored = numpy.zeros((self.mapDim[0], self.mapDim[1]), bool, order='F')
+        tcod_map.explored = np.zeros((self.mapDim[0], self.mapDim[1]), bool, order='F')
         level_array = level_string.split()
         i = 0
         while i < self.mapDim[1]:
@@ -185,7 +177,7 @@ class Dungeon:
         return tcod_map
 
     def descend(self, pos):
-        if self.level.tiles[pos[0]][pos[1]] == tileset['stairs_down']:
+        if self.level.tiles[pos[0]][pos[1]] == tiles['stairs_down']:
             self.depth += 1
             self.game.monsters.stop_monsters()
             if self.depth < len(self.levels):
@@ -208,7 +200,7 @@ class Dungeon:
         return False
 
     def ascend(self, pos):
-        if self.level.tiles[pos[0]][pos[1]] == tileset['stairs_up']:
+        if self.level.tiles[pos[0]][pos[1]] == tiles['stairs_up']:
             self.depth -= 1
             self.game.monsters.stop_monsters()
             self.level = self.levels[self.depth]
@@ -229,12 +221,11 @@ class Dungeon:
         if unit.pos == check or unit.speed == 0.0:
             unit.move(False)
             return True
-        if not adjacent(unit.pos, check):
+        if not mrogue.utils.adjacent(unit.pos, check):
             return False
         if not self.level.walkable[check[0]][check[1]]:
             if not unit.player:
-                self.game.messenger.add(
-                    '{} runs into the wall.'.format(unit.name))
+                self.game.messenger.add(f'{unit.name} runs into the wall.')
                 return
             else:
                 self.game.messenger.add('You can\'t move there.')
@@ -253,7 +244,7 @@ class Dungeon:
     def automove(self, pos, direction):
         if self.scan(*pos, None):
             return False
-        placement = numpy.nonzero(directions == direction)
+        placement = np.nonzero(mrogue.io.directions == direction)
         dx = placement[2][0] - 1
         dy = placement[1][0] - 1
         x = pos[0]
@@ -282,7 +273,7 @@ class Dungeon:
             if not unit.player and self.level.fov[unit.pos[0]][unit.pos[1]]:
                 return True
         for obj in self.level.objects_on_map:
-            if issubclass(type(obj), Item) and adjacent((x, y), obj.pos):
+            if issubclass(type(obj), mrogue.item.Item) and mrogue.utils.adjacent((x, y), obj.pos):
                 return True
 
     def look_around(self):
@@ -327,10 +318,7 @@ class Dungeon:
 
     def neighbors(self, of):
         x, y = of
-        results = [(x-1, y), (x, y+1), (x+1, y), (x, y-1),
-                   (x-1, y-1), (x+1, y-1), (x-1, y+1), (x+1, y+1)]
-        results = list(filter(lambda p: 0 < p[0] <= self.mapDim[0] and
-                              0 < p[1] <= self.mapDim[1], results))
-        results = list(filter(lambda p: self.level.walkable[p[0]][p[1]],
-                              results))
+        results = [(x-1, y), (x, y+1), (x+1, y), (x, y-1), (x-1, y-1), (x+1, y-1), (x-1, y+1), (x+1, y+1)]
+        results = list(filter(lambda p: 0 < p[0] <= self.mapDim[0] and 0 < p[1] <= self.mapDim[1], results))
+        results = list(filter(lambda p: self.level.walkable[p[0]][p[1]], results))
         return results

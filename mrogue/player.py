@@ -2,11 +2,11 @@
 
 import tcod.console
 from tcod.path import Dijkstra
+import mrogue.item
+import mrogue.item_data
+import mrogue.map
 import mrogue.unit
-from mrogue.item import Weapon, Armor
-from mrogue.item_data import templates
-from mrogue.map import tileset
-from mrogue.utils import cap, find_in
+import mrogue.utils
 
 load_statuses = {
     'light': (0.8, tcod.green),
@@ -27,24 +27,21 @@ class Player(mrogue.unit.Unit):
         self.identified_consumables = []
         self.health_regen_cooldown = 0
         self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')
-        self.add_item(Weapon(game.items, templates[5], None))  # mace
-        self.add_item(Armor(game.items, templates[10], None))  # tunic
-        for item in list(self.inventory):
-            self.equip(item, quiet=True)
+        self.add_item(mrogue.item.Weapon(game.items, mrogue.item_data.templates[5], None))  # mace
+        self.add_item(mrogue.item.Armor(game.items, mrogue.item_data.templates[10], None))  # tunic
+        for freebie in list(self.inventory):
+            self.equip(freebie, quiet=True)
         self.add(game.dungeon.level.objects_on_map, game.dungeon.level.units)
 
     def show_stats(self):
         self.status_bar.clear()
         self.status_bar.print(0, 0, 'HP:')
         r, g, b = tcod.color_lerp(tcod.red, tcod.green, self.current_HP / self.max_HP)
-        self.status_bar.print(3, 0, '%2d/%d' % (self.current_HP, self.max_HP), (r, g, b))
+        self.status_bar.print(3, 0, f'{self.current_HP:2d}/{self.max_HP}', (r, g, b))
         self.status_bar.print(11, 0, 'AC:%2d' % self.armor_class)
-        self.status_bar.print(19, 0, 'Atk:{:+d}/{}'.format(
-            self.to_hit, self.damage_dice))
-        self.status_bar.print(32, 0, 'Load: {}'.format(
-            self.load_status), load_statuses[self.load_status][1])
-        self.status_bar.print(47, 0, 'Depth: {}'.format(
-            self.game.dungeon.depth))
+        self.status_bar.print(19, 0, f'Atk:{self.to_hit:+d}/{self.damage_dice}')
+        self.status_bar.print(32, 0, f'Load: {self.load_status}', load_statuses[self.load_status][1])
+        self.status_bar.print(47, 0, f'Depth: {self.game.dungeon.depth}')
         self.status_bar.print(66, 0, 'Press Q to quit, H for help.')
         self.status_bar.blit(self.game.screen)
 
@@ -84,12 +81,11 @@ class Player(mrogue.unit.Unit):
                     self.game.messenger.add('{} items are lying here.'.format(
                         len(items)))
                 else:
-                    self.game.messenger.add('{} is lying here.'.format(
-                        cap(items[0].name)))
+                    self.game.messenger.add(f'{mrogue.cap(items[0].name)} is lying here.')
             tile = self.game.dungeon.level.tiles[self.pos[0]][self.pos[1]]
-            if tile == tileset['stairs_down']:
+            if tile == mrogue.map.tiles['stairs_down']:
                 self.game.messenger.add('There are stairs leading down here.')
-            elif tile == tileset['stairs_up']:
+            elif tile == mrogue.map.tiles['stairs_up']:
                 self.game.messenger.add('There are stairs leading up here.')
 
     def burden_update(self):
@@ -106,4 +102,4 @@ class Player(mrogue.unit.Unit):
         self.speed = load_statuses[self.load_status][0] - self.abilities['dex'].mod / 100
 
     def in_slot(self, slot):
-        find_in(self.equipped, 'slot', slot)
+        mrogue.utils.find_in(self.equipped, 'slot', slot)

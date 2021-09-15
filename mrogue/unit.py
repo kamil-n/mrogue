@@ -3,8 +3,8 @@
 from copy import copy
 from sys import argv
 import tcod.constants
-from mrogue.item import Item, Weapon, Armor, Consumable, Stackable
-from mrogue.utils import *
+import mrogue.item
+import mrogue.utils
 
 
 class AbilityScore:
@@ -17,7 +17,7 @@ class AbilityScore:
         return (self.score - 10) // 2
 
 
-class Unit(Instance):
+class Unit(mrogue.Entity):
     def __init__(self, name, game, icon, sight_range, abi_scores, keywords, speed, proficiency,
                  damage_dice, ac_bonus, base_hp_from_dice):
         super().__init__()
@@ -43,8 +43,8 @@ class Unit(Instance):
         self.proficiency = proficiency
         self.ability_bonus = self.abilities['dex'].mod if 'finesse' in keywords else self.abilities['str'].mod
         self.to_hit = self.proficiency + self.ability_bonus
-        num, sides, mod = decompile_dmg_die(damage_dice)
-        self.default_damage_dice = compile_dmg_die(num, sides, mod + self.ability_bonus)  # unarmed attacks
+        num, sides, mod = mrogue.utils.decompile_dmg_die(damage_dice)
+        self.default_damage_dice = mrogue.utils.compile_dmg_die(num, sides, mod + self.ability_bonus)  # unarmed attacks
         self.damage_dice = self.default_damage_dice
         self.base_armor_class = 10 + self.abilities['dex'].mod
         self.ac_bonus = ac_bonus
@@ -60,54 +60,54 @@ class Unit(Instance):
     def burden_update(self):
         pass
 
-    def add_item(self, item: Item):
+    def add_item(self, item: mrogue.item.Item):
         item.add(self.inventory)
         self.burden_update()
 
-    def equip(self, item: Weapon or Armor, quiet=False):
+    def equip(self, item: mrogue.item.Weapon or mrogue.item.Armor, quiet=False):
         for i in self.equipped:
             if item.slot == i.slot:
                 self.unequip(i)
         item.add(self.equipped)
         item.remove(self.inventory)
-        if item.type == Weapon:
+        if item.type == mrogue.item.Weapon:
             self.to_hit = self.proficiency + self.ability_bonus + item.to_hit_modifier
-            num, sides, mod = decompile_dmg_die(item.damage)
-            self.damage_dice = compile_dmg_die(num, sides, mod + self.ability_bonus)
-        elif item.type == Armor:  # TODO: possibly bugged, either here or in unequip()
-            bonus_armor_from_equipped = sum([i.armor_class_modifier for i in self.equipped if i.type == Armor])
-            self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_armor_from_equipped
+            num, sides, mod = mrogue.utils.decompile_dmg_die(item.damage)
+            self.damage_dice = mrogue.utils.compile_dmg_die(num, sides, mod + self.ability_bonus)
+        elif item.type == mrogue.item.Armor:  # TODO: possibly bugged, either here or in unequip()
+            bonus_ac_equipped = sum([i.armor_class_modifier for i in self.equipped if i.type == mrogue.item.Armor])
+            self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
             self.damage_reduction = self.armor_class / 100
-        msg = '{} equipped {}.'.format(self.name, item.name)
+        msg = f'{self.name} equipped {item.name}.'
         if self.player:
             item.identified()
         if not quiet:
             self.game.messenger.add(msg)
 
-    def use(self, item: Consumable):
+    def use(self, item: mrogue.item.Consumable):
         effect = item.used(self)
         self.burden_update()
         self.game.messenger.add(effect)
 
-    def unequip(self, item: Weapon or Armor, quiet=False, force=False):
+    def unequip(self, item: mrogue.item.Weapon or mrogue.item.Armor, quiet=False, force=False):
         if item.enchantment_level < 0 and not force:
             self.game.messenger.add('Cursed items can\'t be unequipped.')
             return False
         item.add(self.inventory)
         item.remove(self.equipped)
-        if item.type == Weapon:
+        if item.type == mrogue.item.Weapon:
             self.to_hit = self.proficiency + self.ability_bonus
             self.damage_dice = self.default_damage_dice
-        elif item.type == Armor:
-            bonus_armor_from_equipped = sum([i.armor_class_modifier for i in self.equipped if i.type == Armor])
-            self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_armor_from_equipped
+        elif item.type == mrogue.item.Armor:
+            bonus_ac_equipped = sum([i.armor_class_modifier for i in self.equipped if i.type == mrogue.item.Armor])
+            self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
             self.damage_reduction = self.armor_class / 100
-        msg = '{} unequipped {}.'.format(self.name, item.name)
+        msg = f'{self.name} unequipped {item.name}.'
         if not quiet:
             self.game.messenger.add(msg)
         return True
 
-    def drop_item(self, item: Item, quiet=False):
+    def drop_item(self, item: mrogue.item.Item, quiet=False):
         if item.amount > 1:
             item.amount -= 1
             new_item = copy(item)
@@ -117,15 +117,15 @@ class Unit(Instance):
             item.remove(self.inventory, self.equipped)
             item.dropped(self.pos)
         self.burden_update()
-        msg = '{} dropped {}.'.format(self.name, item.name)
+        msg = f'{self.name} dropped {item.name}.'
         if not quiet:
             self.game.messenger.add(msg)
 
     def pickup_item(self, itemlist: list):
         if itemlist:
             item = itemlist.pop(0)
-            if issubclass(type(item), Stackable):
-                existing_item = find_in(self.inventory, 'name', item.name)
+            if issubclass(type(item),  mrogue.item.Stackable):
+                existing_item = mrogue.utils.find_in(self.inventory, 'name', item.name)
                 if existing_item:
                     existing_item.amount += 1
                 else:
@@ -140,7 +140,7 @@ class Unit(Instance):
                 item.add(self.inventory)
                 item.picked()
             self.burden_update()
-            msg = '{} picked up {}.'.format(self.name, item.name)
+            msg = f'{self.name} picked up {item.name}.'
             self.game.messenger.add(msg)
             return True
         else:
@@ -152,21 +152,21 @@ class Unit(Instance):
         self.moved = success
 
     def attack(self, target):
-        attacker = 'You' if self.player else cap(self.name)
+        attacker = 'You' if self.player else mrogue.cap(self.name)
         attacked = 'you' if target.player else target.name
         msg = attacker + ' '
-        attack_roll = roll('1d20')
+        attack_roll = mrogue.utils.roll('1d20')
         critical_hit = attack_roll == 20
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
-            damage_roll = roll(self.damage_dice, critical_hit)
-            msg += ('critically ' if critical_hit else '') + 'hit{}'.format('' if self.player else 's')
+            damage_roll = mrogue.utils.roll(self.damage_dice, critical_hit)
+            msg += f"{'critically ' if critical_hit else ''}hit{'' if self.player else 's'}"
             self.game.messenger.add('{} {}.'.format(msg, attacked))
             target.take_damage(damage_roll)
         else:
             if attack_roll == 1:
-                msg += 'critically miss{}'.format('' if self.player else 'es')
+                msg += f"critically miss{'' if self.player else 'es'}"
             else:
-                msg += 'miss{}'.format('' if self.player else 'es')
+                msg += f"miss{'' if self.player else 'es'}"
             self.game.messenger.add('{} {}.'.format(msg, attacked))
 
     def take_damage(self, damage):
@@ -182,7 +182,7 @@ class Unit(Instance):
             self.current_HP = self.max_HP
 
     def die(self):
-        self.game.messenger.add('{} dies.'.format(cap(self.name)))
+        self.game.messenger.add(f'{mrogue.cap(self.name)} dies.')
         if not (self.player and 'debug' in argv):
             self.kill()
             if not self.player:

@@ -4,14 +4,12 @@ from os import path
 import sys
 import tcod
 import tcod.event
-from mrogue import __version__
-from mrogue.map import Dungeon
-from mrogue.message import Messenger
-from mrogue.io import *
-from mrogue.item import ItemManager
-from mrogue.monster import MonsterManager
-from mrogue.player import Player
-from mrogue.timers import Timer
+import mrogue.item
+import mrogue.map
+import mrogue.message
+import mrogue.monster
+import mrogue.player
+import mrogue.timers
 
 
 def help_screen():
@@ -36,8 +34,7 @@ def help_screen():
         'Esc - close pop-up windows like this one.'
     ]
     win = tcod.Console(65, len(help_contents) + 2, 'F')
-    win.draw_frame(0, 0, 65, len(help_contents) + 2,
-                   'Welcome to MRogue {}!'.format(__version__), False)
+    win.draw_frame(0, 0, 65, len(help_contents) + 2, f'Welcome to MRogue {mrogue.__version__}!', False)
     for i in range(len(help_contents)):
         win.print(1, i + 1, help_contents[i])
     return win
@@ -59,12 +56,12 @@ def message_screen(screen, context, messages):
             window.print(0, 10, chr(0x2193), tcod.black, tcod.white)
         window.blit(screen, 12, 12, bg_alpha=0.95)
         context.present(screen)
-        key = wait()
-        if key_is(key, 27):
+        key = mrogue.io.wait()
+        if mrogue.io.key_is(key, 27):
             return False
-        elif key_is(key, tcod.event.K_DOWN):
+        elif mrogue.io.key_is(key, tcod.event.K_DOWN):
             scroll += 1 if 10 + scroll < len(messages) else 0
-        elif key_is(key, tcod.event.K_UP):
+        elif mrogue.io.key_is(key, tcod.event.K_UP):
             scroll -= 1 if scroll > 0 else 0
 
 
@@ -87,18 +84,19 @@ class Rogue(object):
             columns=self.screen.width,
             rows=self.screen.height,
             tileset=self.font,
-            renderer=tcod.RENDERER_SDL2)
-        self.dungeon = Dungeon(self)
-        self.items = ItemManager(self)
-        self.monsters = MonsterManager(self,)
+            renderer=tcod.RENDERER_SDL2,
+            title=f'MRogue {mrogue.__version__}')
+        self.dungeon = mrogue.map.Dungeon(self)
+        self.items = mrogue.item.ItemManager(self)
+        self.monsters = mrogue.monster.MonsterManager(self,)
         self.monsters.create_monsters(self.num_objects)
-        self.messenger = Messenger(self)
-        self.player = Player(self)
+        self.messenger = mrogue.message.Messenger(self)
+        self.player = mrogue.player.Player(self)
         self.items.create_loot(self.num_objects)
 
     def update_dungeon(self):
         self.turn += 1
-        Timer.update()
+        mrogue.timers.Timer.update()
         while True:
             if self.monsters.handle_monsters(self.player):
                 break
@@ -112,7 +110,7 @@ class Rogue(object):
             self.messenger.show()
             win.blit(self.screen, 10, 10)
             self.context.present(self.screen)
-            wait(tcod.event.K_ESCAPE)
+            mrogue.io.wait(tcod.event.K_ESCAPE)
             return True
         return False
 
@@ -123,53 +121,51 @@ class Rogue(object):
         self.context.present(self.screen)
 
     def handle_input(self, key):
-        if key_is(key, tcod.event.K_i):
+        if mrogue.io.key_is(key, tcod.event.K_i):
             if self.items.show_inventory():
                 return True
-        elif key_is(key, tcod.event.K_e):
+        elif mrogue.io.key_is(key, tcod.event.K_e):
             if self.items.show_equipment():
                 return True
-        elif key_is(key, tcod.event.K_COMMA):
+        elif mrogue.io.key_is(key, tcod.event.K_COMMA):
             if self.player.pickup_item(
                     self.items.get_item_on_map(self.player.pos)):
                 return True
-        elif key_is(key, tcod.event.K_PERIOD, tcod.event.KMOD_SHIFT):
+        elif mrogue.io.key_is(key, tcod.event.K_PERIOD, tcod.event.KMOD_SHIFT):
             if self.dungeon.descend(self.player.pos):
                 return True
-        elif key_is(key, tcod.event.K_COMMA, tcod.event.KMOD_SHIFT):
+        elif mrogue.io.key_is(key, tcod.event.K_COMMA, tcod.event.KMOD_SHIFT):
             if self.dungeon.ascend(self.player.pos):
                 return True
-        elif key[0] in directions and mod_is(key[1], tcod.event.KMOD_SHIFT):
+        elif key[0] in mrogue.io.directions and mrogue.io.mod_is(key[1], tcod.event.KMOD_SHIFT):
             if self.dungeon.automove(self.player.pos, key[0]):
                 return True
-        elif key[0] in directions:
+        elif key[0] in mrogue.io.directions:
             if self.dungeon.movement(
-                    self.player, direction_from(
+                    self.player, mrogue.io.direction_from(
                         key[0], *self.player.pos)):
                 return True
-        elif key_is(key, tcod.event.K_m, tcod.event.KMOD_SHIFT):
+        elif mrogue.io.key_is(key, tcod.event.K_m, tcod.event.KMOD_SHIFT):
             message_screen(self.screen, self.context, self.messenger.message_history)
-        elif key_is(key, tcod.event.K_h, tcod.event.KMOD_SHIFT):
+        elif mrogue.io.key_is(key, tcod.event.K_h, tcod.event.KMOD_SHIFT):
             win = help_screen()
             win.blit(self.screen, 12, 12, bg_alpha=0.95)
             self.context.present(self.screen)
-            wait(tcod.event.K_ESCAPE)
-        elif key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
+            mrogue.io.wait(tcod.event.K_ESCAPE)
+        elif mrogue.io.key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
             return True
         else:
-            self.messenger.add('Unknown command: {}{}'.format(
-                'mod+' if key[1] else '',
-                chr(key[0]) if key[0] < 256 else '<?>'))
+            self.messenger.add(f"Unknown command: {'mod+' if key[1] else ''}{chr(key[0]) if key[0] < 256 else '<?>'}")
         return False
 
     def mainloop(self):
         key = (0, 0)
-        while not key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
+        while not mrogue.io.key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
             if self.update_dungeon():
                 break
             while True:
                 self.draw_dungeon()
-                key = wait()
+                key = mrogue.io.wait()
                 self.messenger.clear()
                 self.player.moved = False
                 if self.handle_input(key):

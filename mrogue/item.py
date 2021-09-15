@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 
+from random import choice
+import string
 import tcod
 import tcod.constants
 import tcod.event
-from mrogue.io import *
-from mrogue.item_data import *
-from mrogue.utils import *
+import mrogue.item_data
+import mrogue.utils
 
 
 class ItemManager:
     def __init__(self, game):
         self.game = game
-        for s in filter(lambda x: x['type'] == 'scroll', templates):
-            scroll_names[s['name']] = random_scroll_name()
-        for p in filter(lambda x: x['type'] == 'potion', templates):
-            potion_colors[p['name']] = random.choice(list(materials['potions'].items()))
+        for s in filter(lambda x: x['type'] == 'scroll', mrogue.item_data.templates):
+            mrogue.item_data.scroll_names[s['name']] = mrogue.utils.random_scroll_name()
+        for p in filter(lambda x: x['type'] == 'potion', mrogue.item_data.templates):
+            mrogue.item_data.potion_colors[p['name']] = choice(list(mrogue.item_data.materials['potions'].items()))
 
     def create_loot(self, num_items):  # , level):
         for _ in range(num_items):
@@ -22,9 +23,9 @@ class ItemManager:
 
     def random_item(self, keyword=None, groups=None):
         if keyword:
-            target = random.choice(list(filter(lambda x: keyword[0] in (x.get('keywords') or []), templates)))
+            target = choice(list(filter(lambda x: keyword[0] in (x.get('keywords') or []), mrogue.item_data.templates)))
         else:
-            target = random.choice(templates)
+            target = choice(mrogue.item_data.templates)
         if target['type'] == 'weapon':
             return Weapon(self, target, groups, True)
         elif target['type'] == 'armor':
@@ -47,36 +48,30 @@ class ItemManager:
             if i > limit - 1:
                 break
             it = inventory[i+scroll]
-            prefix = '' if it.amount == 1 else '({}) '.format(it.amount)
+            prefix = '' if it.amount == 1 else f'({it.amount}) '
             if it in self.game.player.equipped:
                 prefix = '(E) '
             suffix = ''
             if it.type == Weapon:
                 suffix = ' ({:+d}/{})'.format(
-                    it.to_hit_modifier if it.status_identified else
-                    it.base_to_hit,
+                    it.to_hit_modifier if it.status_identified else it.base_to_hit,
                     it.damage if it.status_identified else it.base_damage)
             elif it.type == Armor:
-                suffix = ' ({:+d})'.format(
-                    it.armor_class_modifier if it.status_identified else
-                    it.base_armor_class)
+                suffix = f' ({it.armor_class_modifier if it.status_identified else it.base_armor_class:+d})'
             name = it.interface_name
             if len(prefix) + len(name) + len(suffix) > 40:
                 name = name[:40 - len(prefix) - len(suffix) - 1] + '+'
-            summary = '{}'.format(prefix + name + suffix)
+            summary = prefix + name + suffix
             color = tcod.white
             if it in self.game.player.equipped:
                 color = tcod.gray
             elif it.status_identified and hasattr(it, 'enchantment_level'):
-                color = enchantment_colors[it.enchantment_level]
-            window.print(1, 1 + i + offset, '{}) '.format(string.ascii_letters[i+scroll]))
+                color = mrogue.item_data.enchantment_colors[it.enchantment_level]
+            window.print(1, 1 + i + offset, f'{string.ascii_letters[i+scroll]}) ')
             window.print(4, 1 + i + offset, it.icon, it.color)
             window.print(6, 1 + i + offset, summary, color)
             if show_details:
-                details = '{:>6} {:6.2f}  {:>6.2f}'.format(
-                    it.slot,
-                    it.weight * it.amount,
-                    it.value * it.amount)
+                details = f'{it.slot:>6} {it.weight * it.amount:6.2f}  {it.value * it.amount:>6.2f}'
                 window.print(46, 1 + i + offset, details)
         if limit + scroll < len(inventory):
             window.print(0, height - 3, chr(25), tcod.black, tcod.white)
@@ -93,7 +88,7 @@ class ItemManager:
             dialog = tcod.console.Console(w, h, 'F')
             dialog.draw_frame(0, 0, w, h, 'Select an action:')
             for i in range(num_options):
-                dialog.print(2, i + 1, '{}) {}'.format(options[i][0], options[i][1]))
+                dialog.print(2, i + 1, f'{options[i][0]}) {options[i][1]}')
             dialog.blit(self.game.screen, 4 + 10, 4 + 1)
             self.game.context.present(self.game.screen)
         sorts = circular([('slot', 47), ('weight', 56), ('value', 62), ('name', 5)])
@@ -124,21 +119,21 @@ class ItemManager:
             self.print_list(inventory, window, window_height, 2, scroll, item_limit, True)
             window.blit(self.game.screen, 4, 4)
             self.game.context.present(self.game.screen)
-            key = wait()
+            key = mrogue.io.wait()
             # ignore NumLock
-            if key[1] & ignore_mods == ignore_mods:
-                key = (key[0], key[1] - ignore_mods)
-            if key_is(key, 27):
+            if key[1] & mrogue.io.ignore_mods == mrogue.io.ignore_mods:
+                key = (key[0], key[1] - mrogue.io.ignore_mods)
+            if mrogue.io.key_is(key, 27):
                 return False
-            elif key_is(key, tcod.event.K_DOWN):
+            elif mrogue.io.key_is(key, tcod.event.K_DOWN):
                 scroll += 1 if item_limit + scroll < total_items else 0
-            elif key_is(key, tcod.event.K_UP):
+            elif mrogue.io.key_is(key, tcod.event.K_UP):
                 scroll -= 1 if scroll > 0 else 0
-            elif key_is(key, tcod.event.K_SLASH):
+            elif mrogue.io.key_is(key, tcod.event.K_SLASH):
                 sort = next(sorts)
-            elif key in letters and letters[key] in range(total_items):
-                i = inventory[letters[key]]
-                highlight_line = 3 + letters[key] - scroll
+            elif key in mrogue.item_data.letters and mrogue.item_data.letters[key] in range(total_items):
+                i = inventory[mrogue.item_data.letters[key]]
+                highlight_line = 3 + mrogue.item_data.letters[key] - scroll
                 if 3 <= highlight_line <= window_height - 3:
                     window.draw_rect(1, highlight_line, width - 2, 1, 0, bg=tcod.blue)
                     window.blit(self.game.screen, 4, 4)
@@ -153,8 +148,8 @@ class ItemManager:
                     context_actions.append(('b', 'Drop item', self.game.player.drop_item))
                 select_option(context_actions)
                 while True:
-                    selection = wait()
-                    if key_is(selection, 27):
+                    selection = mrogue.io.wait()
+                    if mrogue.io.key_is(selection, 27):
                         break
                     elif selection[0] in range(97, 97 + len(context_actions)):
                         result = context_actions[selection[0] - 97][2](i)  # TODO: better lookup of appropriate action
@@ -178,12 +173,10 @@ class ItemManager:
             i = 3
             slots = ('hand', 'head', 'chest', 'feet')
             for slot in slots:
-                window.print(2, i, '{}) {:>5}:'.format(chr(94+i), cap(slot)))
+                window.print(2, i, f'{chr(94+i)}) {mrogue.cap(slot):>5}:')
                 item = get_item_equipped_in_slot(slot)
                 if item:
-                    summary = '{:22.22}{}('.format(
-                        item.interface_name,
-                        '+' if len(item.interface_name) > 22 else ' ')
+                    summary = f"{item.interface_name:22.22}{'+' if len(item.interface_name) > 22 else ' '}("
                     if item.type == Weapon:
                         summary += '{:+d}/{})'.format(
                             item.to_hit_modifier if item.status_identified else
@@ -194,12 +187,12 @@ class ItemManager:
                         summary += '{:+d})'.format(item.armor_class_modifier)
                     window.print(12, i, item.icon, item.color)
                     window.print(14, i, summary,
-                                 enchantment_colors[item.enchantment_level])
+                                 mrogue.item_data.enchantment_colors[item.enchantment_level])
                 i += 1
             window.blit(self.game.screen, 4, 4)
             self.game.context.present(self.game.screen)
-            key = wait()
-            if key_is(key, 27):
+            key = mrogue.io.wait()
+            if mrogue.io.key_is(key, 27):
                 return False
             elif key[0] in range(97, 97 + len(slots)):
                 item = get_item_equipped_in_slot(slots[key[0] - 97])
@@ -222,24 +215,23 @@ class ItemManager:
                     scroll = 0
                     selection = tcod.Console(width, height, 'F')
                     while True:
-                        selection.draw_frame(0, 0, width, height,
-                                             'Select item to equip:')
+                        selection.draw_frame(0, 0, width, height, 'Select item to equip:')
                         self.print_list(items, selection, height,  0, scroll, limit, False)
                         selection.blit(self.game.screen, 4 + 10, 4 + 2)
                         self.game.context.present(self.game.screen)
-                        reaction = wait()
-                        if key_is(reaction, 27):
+                        reaction = mrogue.io.wait()
+                        if mrogue.io.key_is(reaction, 27):
                             break
-                        elif key_is(reaction, tcod.event.K_DOWN):
+                        elif mrogue.io.key_is(reaction, tcod.event.K_DOWN):
                             scroll += 1 if limit + scroll < total_items else 0
-                        elif key_is(reaction, tcod.event.K_UP):
+                        elif mrogue.io.key_is(reaction, tcod.event.K_UP):
                             scroll -= 1 if scroll > 0 else 0
                         elif reaction[0] in range(97, last_letter + 1):
                             self.game.player.equip(items[reaction[0] - 97])
                             return True
 
 
-class Item(Instance):
+class Item(mrogue.Entity):
     def __init__(self, sub, manager, name, base_weight, base_value, icon):
         super().__init__()
         self.type = sub.__class__
@@ -282,13 +274,13 @@ class Weapon(Item):
             template['base_value'],
             template['icon'])
         if randomize:
-            r_key, r_val = random.choice(list(materials['weapons'].items()))
+            r_key, r_val = choice(list(mrogue.item_data.materials['weapons'].items()))
             self.material = r_val
-            self.quality = roll_gaussian(1, 5, 1.15) - 3
-            self.enchantment_level = roll_gaussian(1, 3, 0.5) - 2
+            self.quality = mrogue.utils.roll_gaussian(1, 5, 1.15) - 3
+            self.enchantment_level = mrogue.utils.roll_gaussian(1, 3, 0.5) - 2
             self.name = r_key + ' ' + self.name
         else:
-            self.material = materials['weapons'][template['material']]
+            self.material = mrogue.item_data.materials['weapons'][template['material']]
             self.quality = int(template['quality'])
             self.enchantment_level = int(template['ench_lvl'])
             self.name = template['material'] + ' ' + self.name
@@ -298,15 +290,16 @@ class Weapon(Item):
         self.slot = template['slot']
         self.interface_name = '* ' + self.name
         self.identified_name = ('{} {} {}'.format(
-            quality_levels[self.quality],
-            enchantment_levels[self.enchantment_level], self.name)).strip()
+            mrogue.item_data.quality_levels[self.quality],
+            mrogue.item_data.enchantment_levels[self.enchantment_level],
+            self.name)).strip()
         self.identified_name = ' '.join(self.identified_name.split())
         self.speed_modifier = template['speed_modifier']
         self.base_to_hit = template['to_hit_modifier']
         self.to_hit_modifier = self.base_to_hit + self.quality + self.enchantment_level
-        num, sides, mod = decompile_dmg_die(template['damage_string'])
-        self.base_damage = compile_dmg_die(num, sides, mod)
-        self.damage = compile_dmg_die(num, sides, mod + self.enchantment_level)
+        num, sides, mod = mrogue.utils.decompile_dmg_die(template['damage_string'])
+        self.base_damage = mrogue.utils.compile_dmg_die(num, sides, mod)
+        self.damage = mrogue.utils.compile_dmg_die(num, sides, mod + self.enchantment_level)
         self.add(groups)
 
 
@@ -320,13 +313,13 @@ class Armor(Item):
             template['base_value'],
             template['icon'])
         if randomize:
-            r_key, r_val = random.choice(list(materials['armor'].items()))
+            r_key, r_val = choice(list(mrogue.item_data.materials['armor'].items()))
             self.material = r_val
-            self.quality = roll_gaussian(1, 5, 1.15) - 3
-            self.enchantment_level = roll_gaussian(1, 3, 0.5) - 2
+            self.quality = mrogue.utils.roll_gaussian(1, 5, 1.15) - 3
+            self.enchantment_level = mrogue.utils.roll_gaussian(1, 3, 0.5) - 2
             self.name = r_key + ' ' + self.name
         else:
-            self.material = materials['armor'][template['material']]
+            self.material = mrogue.item_data.materials['armor'][template['material']]
             self.quality = int(template['quality'])
             self.enchantment_level = int(template['ench_lvl'])
             self.name = template['material'] + ' ' + self.name
@@ -336,8 +329,9 @@ class Armor(Item):
         self.slot = template['slot']
         self.interface_name = '* ' + self.name
         self.identified_name = ('{} {} {}'.format(
-            quality_levels[self.quality],
-            enchantment_levels[self.enchantment_level], self.name)).strip()
+            mrogue.item_data.quality_levels[self.quality],
+            mrogue.item_data.enchantment_levels[self.enchantment_level],
+            self.name)).strip()
         self.identified_name = ' '.join(self.identified_name.split())
         ac_mod = template['armor_class_modifier']
         self.base_armor_class = ac_mod
@@ -367,10 +361,10 @@ class Consumable(Stackable):
         suffix = 's' if self.amount > 1 else ''
         if template['type'] == 'scroll':
             self.color = vars(tcod.constants)[template['color']]
-            self.name = f"{prefix} scroll{suffix} titled {scroll_names[template['name']]}"
+            self.name = f"{prefix} scroll{suffix} titled {mrogue.item_data.scroll_names[template['name']]}"
         elif template['type'] == 'potion':
-            self.color = potion_colors[template['name']][1]
-            self.name = f"{prefix} {potion_colors[template['name']][0]} potion{suffix}"
+            self.color = mrogue.item_data.potion_colors[template['name']][1]
+            self.name = f"{prefix} {mrogue.item_data.potion_colors[template['name']][0]} potion{suffix}"
         self.identified_name = f"{prefix} {template['type']}{suffix} of {template['name']}"
         self.interface_name = self.name
         self.slot = ''

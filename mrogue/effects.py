@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from mrogue.item import Consumable
-from mrogue.unit import Unit
-from mrogue.utils import roll
+import mrogue.item
+import mrogue.unit
+import mrogue.utils
 
 
 class Effect:
-    def __init__(self, messenger, from_item: Consumable, for_unit: Unit):
+    def __init__(self, messenger, from_item: mrogue.item.Consumable, for_unit: mrogue.unit.Unit):
         self.source = from_item
         self.target = for_unit
         self.messenger = messenger
@@ -27,7 +27,7 @@ class Effect:
                     self.target.unequip(self.target.equipped[i], force=True)
 
         elif keyword == 'heal':
-            self.target.heal(roll(self.source.effect.split()[1]))
+            self.target.heal(mrogue.utils.roll(self.source.effect.split()[1]))
             feedback = 'Some of your wounds are healed.'
 
         elif keyword == 'ac_bonus':

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from mrogue.io import wait
 from textwrap import wrap
 import tcod.console
+import mrogue.io
 
 
 class Messenger:
@@ -26,7 +26,7 @@ class Messenger:
                 self.window.print(len(line) + 1, 0, '-more-', tcod.yellow)
                 self.window.blit(self.game.screen, 0, self.game.screen.height - 1)
                 self.game.context.present(self.game.screen)
-                wait(32)
+                mrogue.io.wait(32)
             else:
                 self.window.blit(self.game.screen, 0, self.game.screen.height - 1)
 
