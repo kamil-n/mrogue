@@ -70,35 +70,22 @@ class Rogue(object):
     num_objects = 10
 
     def __init__(self):
-        if getattr(sys, 'frozen', False):
-            self.dir = path.dirname(sys.executable)
-        else:
-            self.dir = path.dirname(__file__)
-        self.font = tcod.tileset.load_tilesheet(
-            path.join(self.dir, 'terminal10x16_gs_ro.png'),
-            16,
-            16,
-            tcod.tileset.CHARMAP_CP437)
-        self.screen = tcod.Console(100, 40, 'F')
-        self.context = tcod.context.new(
-            columns=self.screen.width,
-            rows=self.screen.height,
-            tileset=self.font,
-            renderer=tcod.RENDERER_SDL2,
-            title=f'MRogue {mrogue.__version__}')
-        self.dungeon = mrogue.map.Dungeon(self)
-        self.items = mrogue.item.ItemManager(self)
-        self.monsters = mrogue.monster.MonsterManager(self,)
-        self.monsters.create_monsters(self.num_objects)
-        self.messenger = mrogue.message.Messenger(self)
-        self.player = mrogue.player.Player(self)
+        font = tcod.tileset.load_tilesheet(
+            path.join(mrogue.work_dir, 'terminal10x16_gs_ro.png'), 16, 16, tcod.tileset.CHARMAP_CP437)
+        self.screen = mrogue.io.Screen(100, 40, font)
+        self.context = self.screen.context
+        self.dungeon = mrogue.map.Dungeon()
+        self.items = mrogue.item.ItemManager()
+        mrogue.monster.MonsterManager().create_monsters(self.num_objects, self.dungeon._depth)
+        self.messenger = mrogue.message.Messenger()
+        self.player = mrogue.player.Player()
         self.items.create_loot(self.num_objects)
 
     def update_dungeon(self):
         self.turn += 1
         mrogue.timers.Timer.update()
         while True:
-            if self.monsters.handle_monsters(self.player):
+            if mrogue.monster.MonsterManager().handle_monsters(self.player):
                 break
         self.dungeon.look_around()
         if self.player.current_HP < 1 and 'debug' not in sys.argv:
@@ -132,14 +119,14 @@ class Rogue(object):
                     self.items.get_item_on_map(self.player.pos)):
                 return True
         elif mrogue.io.key_is(key, tcod.event.K_PERIOD, tcod.event.KMOD_SHIFT):
-            if self.dungeon.descend(self.player.pos):
+            if self.dungeon.descend(self.player.pos, self.num_objects):
                 return True
         elif mrogue.io.key_is(key, tcod.event.K_COMMA, tcod.event.KMOD_SHIFT):
             if self.dungeon.ascend(self.player.pos):
                 return True
-        elif key[0] in mrogue.io.directions and mrogue.io.mod_is(key[1], tcod.event.KMOD_SHIFT):
-            if self.dungeon.automove(self.player.pos, key[0]):
-                return True
+        # elif key[0] in mrogue.io.directions and mrogue.io.mod_is(key[1], tcod.event.KMOD_SHIFT):
+        #     if self.dungeon.automove(self.player.pos, key[0]):
+        #         return True
         elif key[0] in mrogue.io.directions:
             if self.dungeon.movement(
                     self.player, mrogue.io.direction_from(

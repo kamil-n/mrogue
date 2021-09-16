@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import mrogue.item
-import mrogue.unit
 import mrogue.utils
+from mrogue.message import Messenger
+from mrogue.timers import Timer
 
 
 class Effect:
-    def __init__(self, messenger, from_item: mrogue.item.Consumable, for_unit: mrogue.unit.Unit):
+    def __init__(self, from_item, for_unit):
         self.source = from_item
         self.target = for_unit
-        self.messenger = messenger
 
     def apply(self):
         feedback = ''
@@ -36,9 +35,8 @@ class Effect:
 
             def lower_ac():
                 self.target.armor_class -= arg
-                self.messenger.add('Your skin turns back to normal.')
+                Messenger.add('Your skin turns back to normal.')
 
-            from mrogue.timers import Timer
             Timer(duration, lower_ac)
             self.target.armor_class += arg
             feedback = 'Your skin turns into scales.'

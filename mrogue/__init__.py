@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import sys
+from os import path
 from mrogue.io import Glyph
 
-__version__ = 'v0.5.2'
+__version__ = 'v0.6.0'
 
-
-def cap(word):
-    return word[0].upper() + word[1:]
+if getattr(sys, 'frozen', False):
+    work_dir = path.dirname(sys.executable)
+else:
+    work_dir = path.dirname(__file__)
+    work_dir = path.dirname(work_dir)
 
 
 class Entity(io.Glyph):

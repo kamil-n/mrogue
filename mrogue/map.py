@@ -6,9 +6,12 @@ from sys import argv
 from os import path
 import tcod.bsp
 import tcod.map
+import mrogue.io
 import mrogue.item
+import mrogue.message
+import mrogue.monster
+import mrogue.player
 import mrogue.utils
-
 
 tiles = {
            'wall': chr(0x2588),
@@ -132,23 +135,25 @@ class Level(tcod.map.Map):
 
 
 class Dungeon:
-    levels = []
-    depth = 0
-    game = None
+    _levels = []
+    _depth = 0
+    current_level = None
+    # screen = None
     mapTop = 1
+    mapDim = None
 
-    def __init__(self, game):
-        self.mapDim = (game.screen.width, game.screen.height - 1)
-        self.level = Level(self.mapDim, True)
-        self.levels.append(self.level)
-        self.game = game
+    def __init__(self):
+        self.screen = mrogue.io.Screen.get()
+        Dungeon.mapDim = (self.screen.width, self.screen.height - 1)
+        Dungeon.current_level = Level(self.mapDim, True)
+        Dungeon._levels.append(Dungeon.current_level)
 
-    def new_level(self):
-        self.level.pos = self.game.player.pos
-        self.level = Level(self.mapDim)
-        self.game.items.create_loot(self.game.num_objects)  # , self.depth // 4)
-        self.game.monsters.create_monsters(self.game.num_objects + self.depth)
-        self.levels.append(self.level)
+    def new_level(self, num_objects):
+        Dungeon.current_level.pos = mrogue.player.Player.get().pos
+        Dungeon.current_level = Level(self.mapDim)
+        mrogue.item.ItemManager.create_loot(num_objects)  # , Dungeon._depth // 4)
+        mrogue.monster.MonsterManager.create_monsters(num_objects, Dungeon._depth)
+        Dungeon._levels.append(Dungeon.current_level)
 
     def level_from_string(self, level_string):
         tcod_map = tcod.map.Map(self.mapDim[0], self.mapDim[1], 'F')
@@ -176,61 +181,64 @@ class Dungeon:
         tcod_map.transparent[:] = floor_mask
         return tcod_map
 
-    def descend(self, pos):
-        if self.level.tiles[pos[0]][pos[1]] == tiles['stairs_down']:
-            self.depth += 1
-            self.game.monsters.stop_monsters()
-            if self.depth < len(self.levels):
-                self.level = self.levels[self.depth]
+    def descend(self, pos, num_objects):
+        if Dungeon.current_level.tiles[pos[0]][pos[1]] == tiles['stairs_down']:
+            Dungeon._depth += 1
+            mrogue.monster.MonsterManager.stop_monsters()
+            if Dungeon._depth < len(Dungeon._levels):
+                Dungeon.current_level = Dungeon._levels[Dungeon._depth]
             else:
-                if self.depth == 8:
+                if Dungeon._depth == 8:
                     import zlib
-                    with open(path.join(self.game.dir, 'level8.dat'), 'rb') as f:
+                    with open(path.join(mrogue.work_dir, 'level8.dat'), 'rb') as f:
                         level_string = str(zlib.decompress(f.read()), 'utf-8')
-                    self.level = self.level_from_string(level_string)
-                    self.level.pos = (48, 35)
-                    self.level.walkable[48, 35] = self.level.transparent[48, 35] = True
-                    self.game.monsters.create_monsters(self.game.num_objects + self.depth)
-                    self.levels.append(self.level)
+                    Dungeon.current_level = self.level_from_string(level_string)
+                    Dungeon.current_level.pos = (48, 35)
+                    Dungeon.current_level.walkable[48, 35] = Dungeon.current_level.transparent[48, 35] = True
+                    mrogue.monster.MonsterManager.create_monsters(num_objects, Dungeon._depth)
+                    Dungeon._levels.append(Dungeon.current_level)
                 else:
-                    self.new_level()
-            self.game.player.change_level(self.level)
+                    self.new_level(num_objects)
+            mrogue.player.Player.get().change_level(Dungeon.current_level)
             return True
-        self.game.messenger.add('There are no downward stairs here.')
+        mrogue.message.Messenger.add('There are no downward stairs here.')
         return False
 
-    def ascend(self, pos):
-        if self.level.tiles[pos[0]][pos[1]] == tiles['stairs_up']:
-            self.depth -= 1
-            self.game.monsters.stop_monsters()
-            self.level = self.levels[self.depth]
-            self.game.player.change_level(self.level)
+    @classmethod
+    def ascend(cls, pos):
+        if cls.current_level.tiles[pos[0]][pos[1]] == tiles['stairs_up']:
+            cls._depth -= 1
+            mrogue.monster.MonsterManager.stop_monsters()
+            cls.current_level = cls._levels[cls._depth]
+            mrogue.player.Player.get().change_level(cls.current_level)
             return True
-        self.game.messenger.add('There are no upward stairs here.')
+        mrogue.message.Messenger.add('There are no upward stairs here.')
         return False
 
-    def find_spot(self):
+    @classmethod
+    def find_spot(cls):
         while True:
-            x = random.randint(1, self.mapDim[0] - 1)
-            y = random.randint(self.mapTop + 1,
-                               self.mapDim[1] - 1)
-            if self.level.walkable[x][y] and not self.unit_at((x, y)):
+            x = random.randint(1, cls.mapDim[0] - 1)
+            y = random.randint(cls.mapTop + 1,
+                               cls.mapDim[1] - 1)
+            if cls.current_level.walkable[x][y] and not cls.unit_at((x, y)):
                 return x, y
 
-    def movement(self, unit, check):
+    @classmethod
+    def movement(cls, unit, check):
         if unit.pos == check or unit.speed == 0.0:
             unit.move(False)
             return True
         if not mrogue.utils.adjacent(unit.pos, check):
             return False
-        if not self.level.walkable[check[0]][check[1]]:
+        if not cls.current_level.walkable[check[0]][check[1]]:
             if not unit.player:
-                self.game.messenger.add(f'{unit.name} runs into the wall.')
+                mrogue.message.Messenger.add(f'{unit.name} runs into the wall.')
                 return
             else:
-                self.game.messenger.add('You can\'t move there.')
+                mrogue.message.Messenger.add('You can\'t move there.')
                 return False
-        target = self.unit_at(check)
+        target = cls.unit_at(check)
         if target:
             if unit.player and unit != target:
                 unit.attack(target)
@@ -241,6 +249,7 @@ class Dungeon:
             unit.move()
             return True
 
+    ''' temporarily disabled due to calling unreachable methods
     def automove(self, pos, direction):
         if self.scan(*pos, None):
             return False
@@ -249,76 +258,78 @@ class Dungeon:
         dy = placement[1][0] - 1
         x = pos[0]
         y = pos[1]
-        geometry = self.level.walkable[x-1:x+2, y-1:y+2].sum()
+        geometry = Dungeon.current_level.walkable[x-1:x+2, y-1:y+2].sum()
         while True:
             if self.scan(x, y, geometry):
                 break
-            if self.game.update_dungeon():
+            if GAME.update_dungeon():
                 break
-            self.game.draw_dungeon()
-            self.game.messenger.clear()
+            GAME.draw_dungeon()
+            Messenger.clear()
             x += dx
             y += dy
-            if not self.level.walkable[x][y]:
+            if not Dungeon.current_level.walkable[x][y]:
                 break
-            self.movement(self.game.player, (x, y))
-        return True
+            self.movement(Player.get(), (x, y))
+        return True'''
 
-    def scan(self, x, y, original_geometry):
+    @classmethod
+    def scan(cls, x, y, original_geometry):
         if original_geometry:
-            geometry = self.level.walkable[x-1:x+2, y-1:y+2].sum()
+            geometry = cls.current_level.walkable[x-1:x+2, y-1:y+2].sum()
             if geometry != original_geometry:
                 return True
-        for unit in self.level.units:
-            if not unit.player and self.level.fov[unit.pos[0]][unit.pos[1]]:
+        for unit in cls.current_level.units:
+            if not unit.player and cls.current_level.fov[unit.pos[0]][unit.pos[1]]:
                 return True
-        for obj in self.level.objects_on_map:
+        for obj in cls.current_level.objects_on_map:
             if issubclass(type(obj), mrogue.item.Item) and mrogue.utils.adjacent((x, y), obj.pos):
                 return True
 
-    def look_around(self):
-        radius = self.game.player.sight_range
-        pos = self.game.player.pos
-        self.level.compute_fov(*pos, radius, algorithm=tcod.FOV_BASIC)
+    @classmethod
+    def look_around(cls):
+        radius = mrogue.player.Player.get().sight_range
+        pos = mrogue.player.Player.get().pos
+        cls.current_level.compute_fov(*pos, radius, algorithm=tcod.FOV_BASIC)
 
-    def unit_at(self, where: tuple):
-        for unit in self.level.units:
+    @classmethod
+    def unit_at(cls, where: tuple):
+        for unit in cls.current_level.units:
             if unit.pos == where:
                 return unit
         return None
 
     def draw_map(self):
-        self.game.screen.clear()
+        self.screen.clear()
+        level = Dungeon.current_level
         if 'debug' in argv:
             for x in range(0, self.mapDim[0]):
                 for y in range(1, self.mapDim[1]):
-                    self.game.screen.print(x, y, self.level.tiles[x][y],
-                                           self.level.colors[x][y] * 1.00)
+                    self.screen.print(x, y, level.tiles[x][y],  level.colors[x][y] * 1.00)
         else:
             for x in range(0, self.mapDim[0]):
                 for y in range(1, self.mapDim[1]):
-                    if self.level.fov[x][y]:
-                        self.level.explored[x][y] = True
-                        self.game.screen.print(x, y, self.level.tiles[x][y],
-                                               self.level.colors[x][y] * 1.00)
-                    elif self.level.explored[x][y]:
-                        self.game.screen.print(x, y, self.level.tiles[x][y],
-                                               self.level.colors[x][y] * 0.35)
+                    if level.fov[x][y]:
+                        level.explored[x][y] = True
+                        self.screen.print(x, y, level.tiles[x][y], level.colors[x][y] * 1.00)
+                    elif level.explored[x][y]:
+                        self.screen.print(x, y, level.tiles[x][y], level.colors[x][y] * 0.35)
         priority = []
-        for thing in self.level.objects_on_map:
-            if self.level.fov[thing.pos[0]][thing.pos[1]] or 'debug' in argv:
+        for thing in level.objects_on_map:
+            if level.fov[thing.pos[0]][thing.pos[1]] or 'debug' in argv:
                 if thing.layer < 2:
                     priority.append(thing)
                 else:
-                    self.game.screen.print(*thing.pos, thing.icon, thing.color)
+                    self.screen.print(*thing.pos, thing.icon, thing.color)
         for thing in priority:
-            self.game.screen.print(*thing.pos, thing.icon, thing.color)
-        self.game.screen.print(*self.game.player.pos, self.game.player.icon,
-                               self.game.player.color)
+            self.screen.print(*thing.pos, thing.icon, thing.color)
+        player = mrogue.player.Player.get()
+        self.screen.print(*player.pos, player.icon, player.color)
 
-    def neighbors(self, of):
+    @classmethod
+    def neighbors(cls, of):
         x, y = of
         results = [(x-1, y), (x, y+1), (x+1, y), (x, y-1), (x-1, y-1), (x+1, y-1), (x-1, y+1), (x+1, y+1)]
-        results = list(filter(lambda p: 0 < p[0] <= self.mapDim[0] and 0 < p[1] <= self.mapDim[1], results))
-        results = list(filter(lambda p: self.level.walkable[p[0]][p[1]], results))
+        results = list(filter(lambda p: 0 < p[0] <= cls.mapDim[0] and 0 < p[1] <= cls.mapDim[1], results))
+        results = list(filter(lambda p: cls.current_level.walkable[p[0]][p[1]], results))
         return results

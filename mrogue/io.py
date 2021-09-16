@@ -2,6 +2,7 @@
 
 import tcod.event
 import numpy as np
+import mrogue
 
 directions = np.asarray([
     [
@@ -72,3 +73,22 @@ class Glyph:
     def __init__(self):
         self.icon = ''
         self.color = tcod.white
+
+
+class Screen(tcod.Console):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(Screen, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, width, height, font):
+        super().__init__(width, height, 'F')
+        self.context = tcod.context.new(
+            columns=width, rows=height, tileset=font,
+            renderer=tcod.RENDERER_SDL2, title=f'MRogue {mrogue.__version__}')
+
+    @classmethod
+    def get(cls):
+        return cls._instance

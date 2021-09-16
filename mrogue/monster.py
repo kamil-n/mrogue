@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import random
+import mrogue.item
+import mrogue.map
 import mrogue.monster_data
+import mrogue.player
 import mrogue.unit
 import mrogue.utils
 
 
 class MonsterManager:
-    game = None
     order = None
     ticks_passed = 0
+    selection_for_level = []
 
-    def __init__(self, game):
-        self.game = game
-        self.selection_for_level = []
+    def __init__(self):
         for i in range(8+1):
             this_level = []
             for group, data in mrogue.monster_data.templates.items():
@@ -21,51 +22,55 @@ class MonsterManager:
                     this_level.append(group)
             self.selection_for_level.append(this_level)
 
-    def create_monsters(self, num, **kwargs):
-        for i in range(num):
-            group = random.choice(self.selection_for_level[self.game.dungeon.depth])
+    @classmethod
+    def create_monsters(cls, num, depth, **kwargs):
+        level = mrogue.map.Dungeon.current_level
+        for i in range(num + depth):
+            group = random.choice(cls.selection_for_level[depth])
             template = random.choices(
                 mrogue.monster_data.templates[group]['subtypes'],
-                mrogue.monster_data.templates[group]['occurrences'][self.game.dungeon.depth])[0]
-            m = Monster(self.game, template, (self.game.dungeon.level.objects_on_map, self.game.dungeon.level.units))
+                mrogue.monster_data.templates[group]['occurrences'][depth])[0]
+            m = Monster(template, (level.objects_on_map, level.units))
             if kwargs:
                 for key, val in kwargs.items():
                     setattr(m, key, val)
 
-    def handle_monsters(self, target):
-        if self.order:
-            for monster in self.order:
-                monster.ticks_left = monster.ticks_left - self.ticks_passed
-            self.order = None
-        if not self.order:
-            self.ticks_passed = min(m.ticks_left for m in self.game.dungeon.level.units)
-            self.order = sorted(self.game.dungeon.level.units, key=lambda m: m.ticks_left)
-        while self.order and self.order[0].ticks_left == self.ticks_passed:
-            monster = self.order.pop(0)
-            if not monster.player and self.game.player.current_HP > 0:
+    @classmethod
+    def handle_monsters(cls, target):
+        if cls.order:
+            for monster in cls.order:
+                monster.ticks_left = monster.ticks_left - cls.ticks_passed
+            cls.order = None
+        if not cls.order:
+            cls.ticks_passed = min(m.ticks_left for m in mrogue.map.Dungeon.current_level.units)
+            cls.order = sorted(mrogue.map.Dungeon.current_level.units, key=lambda m: m.ticks_left)
+        player = mrogue.player.Player.get()
+        while cls.order and cls.order[0].ticks_left == cls.ticks_passed:
+            monster = cls.order.pop(0)
+            if not monster.player and player.current_HP > 0:
                 monster.act(target)
             else:
-                for monster in self.game.dungeon.level.units:
+                for monster in mrogue.map.Dungeon.current_level.units:
                     monster.update()
-                if self.game.player.speed != 0.0:
-                    self.game.player.ticks_left = int(
-                        self.game.player.speed * 100)
+                if player.speed != 0.0:
+                    player.ticks_left = int(
+                        player.speed * 100)
                 else:
-                    self.game.player.ticks_left = 100.0
+                    player.ticks_left = 100.0
                 return True
         return False
 
-    def stop_monsters(self):
-        for monster in self.game.dungeon.level.units:
+    @classmethod
+    def stop_monsters(cls):
+        for monster in mrogue.map.Dungeon.current_level.units:
             if hasattr(monster, 'path'):
                 monster.path = None
-        self.order.clear()
+        cls.order.clear()
 
 
 class Monster(mrogue.unit.Unit):
-    def __init__(self, game, template, groups):
+    def __init__(self, template, groups):
         super().__init__(template['name'],
-                         game,
                          (template['icon'], template['color']),
                          10,
                          template['ability_scores'],
@@ -77,7 +82,7 @@ class Monster(mrogue.unit.Unit):
                          mrogue.utils.roll(template['hit_die']))
         self.path = None
         if 'weapon' in template and random.randint(0, 1):
-            self.game.items.random_item(template['weapon'], self.inventory)
+            mrogue.item.ItemManager.random_item(template['weapon'], self.inventory)
         for group in groups:
             group.append(self)
 
@@ -98,22 +103,23 @@ class Monster(mrogue.unit.Unit):
                abs(self.pos[1] - target_position[1]) <= self.sight_range
 
     def approach(self, goal):
+        player = mrogue.player.Player.get()
         if self.path:  # if already on a path
             if goal != self.path[-1]:  # if target moved, find new path
-                self.path = self.game.player.dijsktra_map.get_path(*self.pos)
+                self.path = player.dijsktra_map.get_path(*self.pos)
                 self.path.pop()
         else:  # find a path to target
-            self.path = self.game.player.dijsktra_map.get_path(*self.pos)
+            self.path = player.dijsktra_map.get_path(*self.pos)
             self.path.pop()
-        if self.game.dungeon.unit_at(self.path[-1]):
+        if mrogue.map.Dungeon.unit_at(self.path[-1]):
             self.wander(goal)
             return
-        self.game.dungeon.movement(self, self.path.pop())
+        mrogue.map.Dungeon.movement(self, self.path.pop())
 
     def wander(self, towards=None):
         free_spots = list(filter(
-                lambda p: not self.game.dungeon.unit_at(p),
-                self.game.dungeon.neighbors(self.pos)))
+                lambda p: not mrogue.map.Dungeon.unit_at(p),
+                mrogue.map.Dungeon.neighbors(self.pos)))
         if len(free_spots) > 0:
             to = None
             if towards:
@@ -122,4 +128,4 @@ class Monster(mrogue.unit.Unit):
                     to = min(pairs, key=lambda v: v[0] * v[0] + v[1] * v[1])[2]
             else:
                 to = random.choice(free_spots)
-            self.game.dungeon.movement(self, to)
+            mrogue.map.Dungeon.movement(self, to)

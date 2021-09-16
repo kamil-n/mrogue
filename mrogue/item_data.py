@@ -23,7 +23,7 @@ enchantment_colors = {
 }
 
 materials = {
-    'weapons': {
+    'weapon': {
         'wooden': ('0.7', '0.5', 'darker_orange'),
         'bone': ('0.8', '0.6', 'lightest_amber'),
         'copper': ('0.8', '0.6', 'copper'),

@@ -2,9 +2,12 @@
 
 import tcod.console
 from tcod.path import Dijkstra
+import mrogue.io
 import mrogue.item
 import mrogue.item_data
 import mrogue.map
+import mrogue.message
+import mrogue.monster
 import mrogue.unit
 import mrogue.utils
 
@@ -17,21 +20,32 @@ load_statuses = {
 
 
 class Player(mrogue.unit.Unit):
-    def __init__(self, game):
-        super().__init__('Hero', game, (chr(0x263A), 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, '1d2', 0, 20)
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(Player, cls).__new__(cls)
+        return cls._instance
+
+    @classmethod
+    def get(cls):
+        return cls._instance
+
+    def __init__(self):
+        super().__init__('Hero', (chr(0x263A), 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, '1d2', 0, 20)
         self.player = True
-        self.dijsktra_map = Dijkstra(game.dungeon.level.walkable)
+        self.dijsktra_map = Dijkstra(mrogue.map.Dungeon.current_level.walkable)
         self.dijsktra_map.set_goal(*self.pos)
         self.load_status = 'light'
         self.load_thresholds = tuple(threshold + self.abilities['str'].mod for threshold in self.load_thresholds)
         self.identified_consumables = []
         self.health_regen_cooldown = 0
-        self.status_bar = tcod.console.Console(game.screen.width, 1, 'F')
-        self.add_item(mrogue.item.Weapon(game.items, mrogue.item_data.templates[5], None))  # mace
-        self.add_item(mrogue.item.Armor(game.items, mrogue.item_data.templates[10], None))  # tunic
+        self.status_bar = tcod.console.Console(mrogue.io.Screen.get().width, 1, 'F')
+        self.add_item(mrogue.item.Wearable(mrogue.item_data.templates[5], None))  # mace
+        self.add_item(mrogue.item.Wearable(mrogue.item_data.templates[10], None))  # tunic
         for freebie in list(self.inventory):
             self.equip(freebie, quiet=True)
-        self.add(game.dungeon.level.objects_on_map, game.dungeon.level.units)
+        self.add(mrogue.map.Dungeon.current_level.objects_on_map, mrogue.map.Dungeon.current_level.units)
 
     def show_stats(self):
         self.status_bar.clear()
@@ -41,9 +55,9 @@ class Player(mrogue.unit.Unit):
         self.status_bar.print(11, 0, 'AC:%2d' % self.armor_class)
         self.status_bar.print(19, 0, f'Atk:{self.to_hit:+d}/{self.damage_dice}')
         self.status_bar.print(32, 0, f'Load: {self.load_status}', load_statuses[self.load_status][1])
-        self.status_bar.print(47, 0, f'Depth: {self.game.dungeon.depth}')
+        self.status_bar.print(47, 0, f'Depth: {mrogue.map.Dungeon._depth}')
         self.status_bar.print(66, 0, 'Press Q to quit, H for help.')
-        self.status_bar.blit(self.game.screen)
+        self.status_bar.blit(mrogue.io.Screen.get())
 
     def regenerate_health(self):
         self.health_regen_cooldown -= 1
@@ -52,15 +66,15 @@ class Player(mrogue.unit.Unit):
         if self.current_HP < self.max_HP:
             self.health_regen_cooldown = 35
             self.heal(1)
-            self.game.monsters.create_monsters(1, sight_range=100)
+            mrogue.monster.MonsterManager.create_monsters(1, mrogue.map.Dungeon._depth, sight_range=100)
 
     def move(self, success=True):
         super().move(success)
         if not success:
             if self.speed == 0.0:
-                self.game.messenger.add('You are overburdened!')
+                mrogue.message.Messenger.add('You are overburdened!')
             else:
-                self.game.messenger.add('You shuffle in place.')
+                mrogue.message.Messenger.add('You shuffle in place.')
         else:
             self.dijsktra_map.set_goal(*self.pos)
 
@@ -75,18 +89,18 @@ class Player(mrogue.unit.Unit):
         super().update()
         self.regenerate_health()
         if self.moved:
-            items = self.game.items.get_item_on_map(self.pos)
+            items = mrogue.item.ItemManager.get_item_on_map(self.pos)
             if items:
                 if len(items) > 1:
-                    self.game.messenger.add('{} items are lying here.'.format(
-                        len(items)))
+                    mrogue.message.Messenger.add('{} items are lying here.'.format(len(items)))
                 else:
-                    self.game.messenger.add(f'{mrogue.cap(items[0].name)} is lying here.')
-            tile = self.game.dungeon.level.tiles[self.pos[0]][self.pos[1]]
+                    safe_cap = items[0].name[0].upper() + items[0].name[1:]
+                    mrogue.message.Messenger.add(f'{safe_cap} is lying here.')
+            tile = mrogue.map.Dungeon.current_level.tiles[self.pos[0]][self.pos[1]]
             if tile == mrogue.map.tiles['stairs_down']:
-                self.game.messenger.add('There are stairs leading down here.')
+                mrogue.message.Messenger.add('There are stairs leading down here.')
             elif tile == mrogue.map.tiles['stairs_up']:
-                self.game.messenger.add('There are stairs leading up here.')
+                mrogue.message.Messenger.add('There are stairs leading up here.')
 
     def burden_update(self):
         super().burden_update()

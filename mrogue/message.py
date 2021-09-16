@@ -8,31 +8,34 @@ import mrogue.io
 class Messenger:
     _message_list = []
     message_history = []
+    window = None
 
-    def __init__(self, game):
-        self.game = game
-        self.window = tcod.console.Console(game.screen.width, 1)
+    def __init__(self):
+        self.screen = mrogue.io.Screen.get()
+        Messenger.window = tcod.console.Console(self.screen.width, 1)
 
     def show(self):
         whole_message = ' '.join(self._message_list)
         if whole_message:
             self.message_history += wrap(whole_message, 63)
-        buffer = wrap(whole_message, self.game.screen.width - 7)
+        buffer = wrap(whole_message, self.screen.width - 7)
         while buffer:
             line = buffer.pop(0)
-            self.window.clear()
-            self.window.print(0, 0, line)
+            Messenger.window.clear()
+            Messenger.window.print(0, 0, line)
             if buffer:
-                self.window.print(len(line) + 1, 0, '-more-', tcod.yellow)
-                self.window.blit(self.game.screen, 0, self.game.screen.height - 1)
-                self.game.context.present(self.game.screen)
+                Messenger.window.print(len(line) + 1, 0, '-more-', tcod.yellow)
+                Messenger.window.blit(self.screen, 0, self.screen.height - 1)
+                mrogue.io.Screen.get().context.present(self.screen)
                 mrogue.io.wait(32)
             else:
-                self.window.blit(self.game.screen, 0, self.game.screen.height - 1)
+                Messenger.window.blit(self.screen, 0, self.screen.height - 1)
 
-    def add(self, message):
-        self._message_list.append(message)
+    @classmethod
+    def add(cls, message):
+        cls._message_list.append(message)
 
-    def clear(self):
-        del self._message_list[:]
-        self.window.clear()
+    @classmethod
+    def clear(cls):
+        del cls._message_list[:]
+        cls.window.clear()
