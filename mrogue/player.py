@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import tcod.console
 from tcod.path import Dijkstra
 import mrogue.io
@@ -55,7 +56,7 @@ class Player(mrogue.unit.Unit):
         self.status_bar.print(11, 0, 'AC:%2d' % self.armor_class)
         self.status_bar.print(19, 0, f'Atk:{self.to_hit:+d}/{self.damage_dice}')
         self.status_bar.print(32, 0, f'Load: {self.load_status}', load_statuses[self.load_status][1])
-        self.status_bar.print(47, 0, f'Depth: {mrogue.map.Dungeon._depth}')
+        self.status_bar.print(47, 0, f'Depth: {mrogue.map.Dungeon.depth()}')
         self.status_bar.print(66, 0, 'Press Q to quit, H for help.')
         self.status_bar.blit(mrogue.io.Screen.get())
 
@@ -66,7 +67,7 @@ class Player(mrogue.unit.Unit):
         if self.current_HP < self.max_HP:
             self.health_regen_cooldown = 35
             self.heal(1)
-            mrogue.monster.MonsterManager.create_monsters(1, mrogue.map.Dungeon._depth, sight_range=100)
+            mrogue.monster.MonsterManager.create_monsters(1, mrogue.map.Dungeon.depth(), sight_range=100)
 
     def move(self, success=True):
         super().move(success)
@@ -117,3 +118,17 @@ class Player(mrogue.unit.Unit):
 
     def in_slot(self, slot):
         mrogue.utils.find_in(self.equipped, 'slot', slot)
+
+    def check_pulse(self, dungeon, messenger):
+        if self.current_HP < 1 and 'debug' not in sys.argv:
+            window = tcod.Console(20, 4, 'F')
+            window.draw_frame(0, 0, 20, 4, 'Game over.', False)
+            window.print(6, 2, 'YOU DIED', tcod.red)
+            dungeon.draw_map()
+            self.show_stats()
+            messenger.show()
+            window.blit(mrogue.io.Screen.get(), 10, 10)
+            mrogue.io.Screen.present()
+            mrogue.io.wait(tcod.event.K_ESCAPE)
+            return True
+        return False

@@ -35,11 +35,11 @@ class ItemManager:
         if target['type'] in ('weapon', 'armor'):
             return Wearable(target, groups, True)
         elif target['type'] in ('scroll', 'potion'):
-            return Consumable(target, 2, groups)
+            return Consumable(target, 1, groups)
 
     @staticmethod
     def try_equip(item):
-        existing = Player.get().get().in_slot(item.slot)
+        existing = Player.get().in_slot(item.slot)
         if existing and existing.enchantment_level < 0:
             Messenger.add('You can\'t replace cursed items.')
             return False
@@ -96,7 +96,7 @@ class ItemManager:
             for i in range(num_options):
                 dialog.print(2, i + 1, f'{options[i][0]}) {options[i][1]}')
             dialog.blit(self.screen, 4 + 10, 4 + 1)
-            self.screen.context.present(self.screen)
+            self.screen.present()
         sorts = circular([('slot', 47), ('weight', 56), ('value', 62), ('name', 5)])
         sort = next(sorts)
         raw_inventory = Player.get().inventory + Player.get().equipped
@@ -124,9 +124,9 @@ class ItemManager:
             inventory = sorted(raw_inventory, key=lambda x: (getattr(x, sort[0]), x.name))
             self.print_list(inventory, window, window_height, 2, scroll, item_limit, True)
             window.blit(self.screen, 4, 4)
-            self.screen.context.present(self.screen)
+            self.screen.present()
             key = mrogue.io.wait()
-            # ignore NumLock
+            # ignore NumLock:
             if key[1] & mrogue.io.ignore_mods == mrogue.io.ignore_mods:
                 key = (key[0], key[1] - mrogue.io.ignore_mods)
             if mrogue.io.key_is(key, 27):
@@ -197,7 +197,7 @@ class ItemManager:
                                  mrogue.item_data.enchantment_colors[item.enchantment_level])
                 i += 1
             window.blit(self.screen, 4, 4)
-            self.screen.context.present(self.screen)
+            self.screen.present()
             key = mrogue.io.wait()
             if mrogue.io.key_is(key, 27):
                 return False
@@ -225,7 +225,7 @@ class ItemManager:
                         selection.draw_frame(0, 0, width, height, 'Select item to equip:')
                         self.print_list(items, selection, height,  0, scroll, limit, False)
                         selection.blit(self.screen, 4 + 10, 4 + 2)
-                        self.screen.context.present(self.screen)
+                        self.screen.present()
                         reaction = mrogue.io.wait()
                         if mrogue.io.key_is(reaction, 27):
                             break
@@ -283,7 +283,7 @@ class Wearable(Item):
     class Armor:
         def __init__(self, quality, enchantment_level, ac_mod):
             self.base_armor_class = ac_mod
-            self.armor_class_modifier = ac_mod + quality + enchantment_level * 3
+            self.armor_class_modifier = ac_mod + quality + enchantment_level * 2
 
     def __init__(self, template, groups, randomize=False):
         super().__init__(

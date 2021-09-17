@@ -69,6 +69,36 @@ def wait(character=None, mod=tcod.event.KMOD_NONE):
                     return event.sym, event.mod
 
 
+def help_screen():
+    help_contents = [
+        'Kill all monsters. To attack, \'walk\' into them.',
+        'Move with keyboard arrows, numpad or number keys.',
+        'Directions for number keys:',
+        '7\\ 8 /9',
+        '4- @ -6      (press 5 to pass turn)',
+        '1/ 2 \\3',
+        'Shift + direction = autorun.',
+        'Other keys:',
+        'e - open equipment screen. Press slot hotkeys to unequip items.',
+        'i - open inventory screen. Press hotkeys to manage items.',
+        ', (comma) - pick up items',
+        '> - descend to next level while standing on this icon.',
+        '< - ascend back to previous level while standing on this icon.',
+        'M - show message history.',
+        'H - show this help screen.',
+        'Q - close game when on main screen',
+        '',
+        'Esc - close pop-up windows like this one.'
+    ]
+    window = tcod.Console(65, len(help_contents) + 2, 'F')
+    window.draw_frame(0, 0, 65, len(help_contents) + 2, f'Welcome to MRogue {mrogue.__version__}!', False)
+    for i in range(len(help_contents)):
+        window.print(1, i + 1, help_contents[i])
+    window.blit(Screen.get(), 12, 12, bg_alpha=0.95)
+    Screen.get().present()
+    wait(tcod.event.K_ESCAPE)
+
+
 class Glyph:
     def __init__(self):
         self.icon = ''
@@ -77,6 +107,7 @@ class Glyph:
 
 class Screen(tcod.Console):
     _instance = None
+    _context = None
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
@@ -85,10 +116,14 @@ class Screen(tcod.Console):
 
     def __init__(self, width, height, font):
         super().__init__(width, height, 'F')
-        self.context = tcod.context.new(
+        Screen._context = tcod.context.new(
             columns=width, rows=height, tileset=font,
             renderer=tcod.RENDERER_SDL2, title=f'MRogue {mrogue.__version__}')
 
     @classmethod
     def get(cls):
         return cls._instance
+
+    @classmethod
+    def present(cls, *args, **kwargs):
+        cls._context.present(Screen._instance, *args, **kwargs)

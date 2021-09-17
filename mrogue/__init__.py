@@ -4,13 +4,12 @@ import sys
 from os import path
 from mrogue.io import Glyph
 
-__version__ = 'v0.6.0'
+__version__ = 'v0.6.1'
 
 if getattr(sys, 'frozen', False):
     work_dir = path.dirname(sys.executable)
 else:
-    work_dir = path.dirname(__file__)
-    work_dir = path.dirname(work_dir)
+    work_dir = path.dirname(path.dirname(__file__))
 
 
 class Entity(io.Glyph):

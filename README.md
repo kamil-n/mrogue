@@ -1,11 +1,6 @@
 ##### TODO list:
-- [x] reworked item & monster spawning
-- [ ] clean up code up to this point
+- [x] clean up code up to this point
 - [ ] add more monsters and items
-- [x] items
-- [x] statuses + timers
-- [x] initiative/speed system
-- [x] add more dungeon levels
 - [ ] player character stats
   - [x] 3 base stats: STR, DEX, CON
   - [ ] 3 remaining stats: INT, WIS, CHA (beginning with just saving throws perhaps)
@@ -21,3 +16,9 @@
 - more objects on map...
 - skills...
 - character customization...
+
+##### implemented:
+- [x] items
+- [x] statuses + timers
+- [x] initiative/speed system
+- [x] multiple dungeon levels

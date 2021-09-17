@@ -80,19 +80,16 @@ class Level(tcod.map.Map):
                 partition_center = (node.position, node.y + node.h // 2)
             dist_pairs = []
             for node_center in vector:
-                dist = (partition_center[0] - node_center[0]) ** 2 + \
-                       (partition_center[1] - node_center[1]) ** 2
+                dist = (partition_center[0] - node_center[0]) ** 2 + (partition_center[1] - node_center[1]) ** 2
                 dist_pairs.append((dist, node_center))
             dist_pairs.sort(key=lambda d: d[0], reverse=True)
             node1 = dist_pairs.pop()
             node2 = dist_pairs.pop()
             if node.horizontal:
-                while (node1[1][1] < partition_center[1]) == \
-                        (node2[1][1] < partition_center[1]):
+                while (node1[1][1] < partition_center[1]) == (node2[1][1] < partition_center[1]):
                     node2 = dist_pairs.pop()
             else:
-                while (node1[1][0] < partition_center[0]) == \
-                        (node2[1][0] < partition_center[0]):
+                while (node1[1][0] < partition_center[0]) == (node2[1][0] < partition_center[0]):
                     node2 = dist_pairs.pop()
             self._dig_tunnel(*node1[1], *partition_center)
             self._dig_tunnel(*node2[1], *partition_center)
@@ -123,8 +120,7 @@ class Level(tcod.map.Map):
                 horizontal = not horizontal
         self._dig(x2, y2)
 
-    def _dig(self, x, y, tile=tiles['floor'], color=None,
-             transparent=True, walkable=True):
+    def _dig(self, x, y, tile=tiles['floor'], color=None, transparent=True, walkable=True):
         self.tiles[x][y] = tile
         if not color:
             r = random.randint(64, 128)
@@ -138,7 +134,6 @@ class Dungeon:
     _levels = []
     _depth = 0
     current_level = None
-    # screen = None
     mapTop = 1
     mapDim = None
 
@@ -203,6 +198,10 @@ class Dungeon:
             return True
         mrogue.message.Messenger.add('There are no downward stairs here.')
         return False
+
+    @classmethod
+    def depth(cls):
+        return cls._depth
 
     @classmethod
     def ascend(cls, pos):
