@@ -1,5 +1,5 @@
 ##### TODO list:
-- [x] clean up code up to this point
+- [x] clean up code up to this point (ongoing)
 - [ ] add more monsters and items
 - [ ] player character stats
   - [x] 3 base stats: STR, DEX, CON

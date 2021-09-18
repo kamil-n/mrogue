@@ -58,9 +58,9 @@ class Rogue(object):
         elif mrogue.io.key_is(key, tcod.event.K_COMMA, tcod.event.KMOD_SHIFT):
             if self.dungeon.ascend(self.player.pos):
                 return True
-        # elif key[0] in mrogue.io.directions and mrogue.io.mod_is(key[1], tcod.event.KMOD_SHIFT):
-        #     if self.dungeon.automove(self.player.pos, key[0]):
-        #         return True
+        elif key[0] in mrogue.io.directions and mrogue.io.mod_is(key[1], tcod.event.KMOD_SHIFT):
+            if self.dungeon.automove(self.player.pos, key[0], self.draw_dungeon, self.update_dungeon):
+                return True
         elif key[0] in mrogue.io.directions:
             if self.dungeon.movement(self.player, mrogue.io.direction_from(key[0], *self.player.pos)):
                 return True

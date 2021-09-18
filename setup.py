@@ -5,7 +5,7 @@ from mrogue import __version__
 files = ['terminal10x16_gs_ro.png']
 buildOptions = dict(packages=[], excludes=[], include_files=files)
 base = 'Win32GUI' if sys.platform == 'win32' else None
-executables = [Executable('__main__.py', base=base, targetName='MRogue')]
+executables = [Executable('rogue.py', base=base, targetName='MRogue')]
 
 # execute with >>\path\to\python.exe setup.py build<<
 

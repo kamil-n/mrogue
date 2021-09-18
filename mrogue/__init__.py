@@ -4,7 +4,7 @@ import sys
 from os import path
 from mrogue.io import Glyph
 
-__version__ = 'v0.6.1'
+__version__ = 'v0.6.2'
 
 if getattr(sys, 'frozen', False):
     work_dir = path.dirname(sys.executable)

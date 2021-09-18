@@ -248,8 +248,7 @@ class Dungeon:
             unit.move()
             return True
 
-    ''' temporarily disabled due to calling unreachable methods
-    def automove(self, pos, direction):
+    def automove(self, pos, direction, render_func, update_func):
         if self.scan(*pos, None):
             return False
         placement = np.nonzero(mrogue.io.directions == direction)
@@ -261,16 +260,16 @@ class Dungeon:
         while True:
             if self.scan(x, y, geometry):
                 break
-            if GAME.update_dungeon():
+            if update_func():
                 break
-            GAME.draw_dungeon()
-            Messenger.clear()
+            render_func()
+            mrogue.message.Messenger.clear()
             x += dx
             y += dy
             if not Dungeon.current_level.walkable[x][y]:
                 break
-            self.movement(Player.get(), (x, y))
-        return True'''
+            self.movement(mrogue.player.Player.get(), (x, y))
+        return True
 
     @classmethod
     def scan(cls, x, y, original_geometry):
