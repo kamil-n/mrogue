@@ -6,7 +6,7 @@
   - [ ] 3 remaining stats: INT, WIS, CHA (beginning with just saving throws perhaps)
   - [ ] miscellaneous other characteristics
     - [ ] race (stat bonuses)
-    - [ ] class (hit die, proficiencies)
+    - [ ] class (hit dice, proficiencies)
   - [ ] stats screen
 - [ ] experience
   - [ ] defeated enemies grant xp

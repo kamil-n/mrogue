@@ -65,10 +65,11 @@ materials = {
     }
 }
 
-
+# dictionary of 52 key mappings (a-zA-Z)- 26 for small letters and 26 capital letters for both shift keys pressed
 letters = dict(zip([(letter, tcod.event.KMOD_NONE) for letter in range(97, 97 + 26 + 1)], range(26)))
 letters.update(dict(zip([(letter, tcod.event.KMOD_LSHIFT) for letter in range(97, 97 + 26 + 1)], range(26, 26 + 26))))
 letters.update(dict(zip([(letter, tcod.event.KMOD_RSHIFT) for letter in range(97, 97 + 26 + 1)], range(26, 26 + 26))))
+
 scroll_names = {}
 potion_colors = {}
 
