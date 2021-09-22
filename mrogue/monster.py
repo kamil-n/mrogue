@@ -128,6 +128,9 @@ class Monster(mrogue.unit.Unit):
         for group in groups:
             group.append(self)
 
+    def __repr__(self):
+        return f"Monster('{self.name}','{self.icon}')"  # ", {self.color})"
+
     def act(self, target: mrogue.unit.Unit) -> None:
         """Wander if Player not in range, approach otherwise, attack if adjacent
 

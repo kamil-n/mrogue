@@ -26,6 +26,7 @@ def find_in(where: list or tuple, attribute: str, like: object,
     :param many: if the function should return a list of multiple matches or just the first one
     :return: either a list of found elements, a single element or nothing
     """
+    # print(f"finding in {where}\n object with attr {attribute}, matching {like}, must be {instance}, many={many}:")
     results = []
     if instance:
         where = filter(lambda x: isinstance(x, instance), where)

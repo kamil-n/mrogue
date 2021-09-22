@@ -115,6 +115,12 @@ class Unit(mrogue.Entity):
         self.max_HP = base_hp_from_dice
         self.moved = False
 
+    def __repr__(self):
+        return f"Unit('{self.name}','{self.icon}')"  # ", {self.color})"
+
+    def __str__(self):
+        return f"{self.icon} '{self.name}'"  # " [{self.color}]"
+
     def update(self) -> None:
         pass
 

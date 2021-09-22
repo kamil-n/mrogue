@@ -63,6 +63,12 @@ class Item(mrogue.Entity):
         self.interface_name = name  # TEMP
         self.identified_name = name  # TEMP
 
+    def __repr__(self):
+        return f"Item('{self.name}', {self.type}, '{self.icon}')"  # ", {self.color})"
+
+    def __str__(self):
+        return f"{self.icon} '{self.name}' ({self.amount})"  # " [{self.color}]"
+
     def dropped(self, coordinates: tuple[int, int]) -> None:
         """Assign a position on the map and add this item to current level's objects group
 
@@ -166,6 +172,9 @@ class Wearable(Item):
             self.props = Wearable.Armor(self.quality, self.enchantment_level, template['armor_class_modifier'])
         self.add(groups)
 
+    def __repr__(self):
+        return f"Wearable('{self.name}', {self.subtype}, '{self.icon}')"  # ", {self.color})"
+
 
 class Stackable(Item):
     """Adds count on top of the Item class
@@ -237,6 +246,9 @@ class Consumable(Stackable):
         self.add(groups)
         if self.name in mrogue.player.Player.get().identified_consumables:
             self.identified()
+
+    def __repr__(self):
+        return f"Consumable('{self.name}', {self.subtype}, '{self.icon}')"  # ", {self.color})"
 
     def used(self, target: mrogue.unit.Unit) -> str:
         """Apply the related effect and fetch it's feedback message
