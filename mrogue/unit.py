@@ -5,6 +5,7 @@ Classes:
     * AbilityScore - Ability score as defined by Dungeon & Dragons rules
     * Unit - A mobile Entity
 """
+import random
 from copy import copy
 from sys import argv
 import tcod.constants
@@ -259,6 +260,8 @@ class Unit(mrogue.Entity):
         msg = attacker + ' '
         attack_roll = mrogue.utils.roll('1d20')
         critical_hit = attack_roll == 20
+        if target.player and critical_hit:
+            critical_hit = random.random() > target.crit_immunity
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
             damage_roll = mrogue.utils.roll(self.damage_dice, critical_hit)
             msg += f"{'critically ' if critical_hit else ''}hit{'' if self.player else 's'}"

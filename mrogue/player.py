@@ -38,6 +38,7 @@ class Player(mrogue.unit.Unit):
         * load_status - current load level (encumbrance)
         * identified_consumables - list of remember Consumables to be always identified
         * health_regen_cooldown - how many turns must pass before 1 HP is gained
+        * crit_immunity - critical hit immunity based on amount of blessed items equipped
         * status_bar - tcod.console.Console for displaying Player stats on the screen
     Methods:
         * show_stats() - prints information on the status bar
@@ -71,6 +72,7 @@ class Player(mrogue.unit.Unit):
         self.load_thresholds = tuple(threshold + self.abilities['str'].mod for threshold in self.load_thresholds)
         self.identified_consumables = []
         self.health_regen_cooldown = 0
+        self.crit_immunity = 0.0
         self.status_bar = tcod.console.Console(mrogue.io.Screen.get().width, 1, 'F')
         self.add_item(mrogue.item.Wearable(mrogue.item_data.templates[5], None))  # mace
         self.add_item(mrogue.item.Wearable(mrogue.item_data.templates[10], None))  # tunic
@@ -175,5 +177,25 @@ class Player(mrogue.unit.Unit):
             window.blit(mrogue.io.Screen.get(), 10, 10)
             mrogue.io.Screen.present()
             mrogue.io.wait(tcod.event.K_ESCAPE)
+            return True
+        return False
+
+    def equip(self, item, **kwargs) -> None:
+        """Check if Item being equipped is blessed to increase critical hit immunity by 25%
+
+        :param item: Item to be worn
+        """
+        super().equip(item, **kwargs)
+        if item.enchantment_level > 0:
+            self.crit_immunity += 0.25
+
+    def unequip(self, item, **kwargs) -> bool:
+        """Check if Item being removed is blessed to decrease critical hit immunity by 25%
+
+        :param item: Item to be removed
+        """
+        if super().unequip(item, **kwargs):
+            if item.enchantment_level > 0:
+                self.crit_immunity -= 0.25
             return True
         return False
