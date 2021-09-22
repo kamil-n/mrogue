@@ -346,7 +346,7 @@ class ItemManager:
         """
         if scroll > 0:
             # if already scrolled down, print the up arrow
-            window.print(0, 1 + offset, chr(24), tcod.black, tcod.white)
+            window.print(0, 1 + offset, chr(0x2191), tcod.black, tcod.white)
         for i in range(len(inventory)):
             if i > limit - 1:
                 break
@@ -379,7 +379,7 @@ class ItemManager:
                 window.print(46, 1 + i + offset, details)
         if limit + scroll < len(inventory):
             # if there are more items that would fit in the limit, print the down arrow
-            window.print(0, height - 3, chr(25), tcod.black, tcod.white)
+            window.print(0, height - 3, chr(0x2193), tcod.black, tcod.white)
 
     def show_inventory(self) -> bool:
         """Print the list of Items in the 'inventory' (backpack) group
