@@ -156,7 +156,7 @@ class Player(mrogue.unit.Unit):
         self.speed = load_statuses[self.load_status][0] - self.abilities['dex'].mod / 100
 
     def in_slot(self, slot: str):
-        mrogue.utils.find_in(self.equipped, 'slot', slot)
+        return mrogue.utils.find_in(self.equipped, 'slot', slot)
 
     def check_pulse(self, dungeon, messenger) -> bool:
         """Show the game over screen if hit points go below

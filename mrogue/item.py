@@ -324,7 +324,7 @@ class ItemManager:
         :param item: which Wearable to equip
         :return: True if Item could be equipped, False if there was a cursed Item in that slot
         """
-        existing = mrogue.player.Player.get().in_slot(item)
+        existing = mrogue.player.Player.get().in_slot(item.slot)
         if existing and existing.enchantment_level < 0:
             mrogue.message.Messenger.add('You can\'t replace cursed items.')
             return False
