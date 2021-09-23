@@ -64,7 +64,7 @@ class Player(mrogue.unit.Unit):
 
     def __init__(self):
         """Equip the player with a weapon and a piece of armor."""
-        super().__init__('Hero', (chr(0x263A), 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, '1d2', 0, 20)
+        super().__init__('you', (chr(0x263A), 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, '1d2', 0, 20)
         self.player = True
         self.dijkstra_map = Dijkstra(mrogue.map.Dungeon.current_level.walkable)
         self.dijkstra_map.set_goal(*self.pos)

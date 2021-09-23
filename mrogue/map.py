@@ -330,7 +330,7 @@ class Dungeon:
                 return x, y
 
     @classmethod
-    def movement(cls, unit: mrogue.unit.Unit, check: tuple[int, int]) -> bool or None:
+    def movement(cls, unit: mrogue.unit.Unit, check: tuple[int, int]) -> bool:
         """Check if movement to target cell is possible and perform an action
 
         :param unit: Unit that attemps movement
@@ -345,7 +345,10 @@ class Dungeon:
         if not mrogue.utils.adjacent(unit.pos, check):
             return False
         if not cls.current_level.walkable[check[0]][check[1]]:
-            mrogue.message.Messenger.add(f"{unit.name}'s movement is blocked by a wall.")
+            if not unit.player:
+                mrogue.message.Messenger.add(f'{unit.name} runs into the wall.')
+            else:
+                mrogue.message.Messenger.add('You can\'t move there.')
             return False
         target = cls.unit_at(check)
         # if a Unit occupies target space, attack it

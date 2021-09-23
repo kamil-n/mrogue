@@ -155,7 +155,7 @@ class Unit(mrogue.Entity):
             bonus_ac_equipped = sum([i.props.armor_class_modifier for i in self.equipped if i.subtype == 'armor'])
             self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
             self.damage_reduction = self.armor_class / 100
-        msg = f'{self.name} equipped {item.name}.'
+        msg = f'{self.name.capitalize()} equipped {item.name}.'
         if self.player:
             item.identified()
         if not quiet:
@@ -190,7 +190,7 @@ class Unit(mrogue.Entity):
             bonus_ac_equipped = sum([i.props.armor_class_modifier for i in self.equipped if i.subtype == 'armor'])
             self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
             self.damage_reduction = self.armor_class / 100
-        msg = f'{self.name} unequipped {item.name}.'
+        msg = f'{self.name.capitalize()} unequipped {item.name}.'
         if not quiet:
             mrogue.message.Messenger.add(msg)
         return True
@@ -210,7 +210,7 @@ class Unit(mrogue.Entity):
             item.remove(self.inventory, self.equipped)
             item.dropped(self.pos)
         self.burden_update()
-        msg = f'{self.name} dropped {item.name}.'
+        msg = f'{self.name.capitalize()} dropped {item.name}.'
         if not quiet:
             mrogue.message.Messenger.add(msg)
 
@@ -239,7 +239,7 @@ class Unit(mrogue.Entity):
                 item.add(self.inventory)
                 item.picked()
             self.burden_update()
-            msg = f'{self.name} picked up {item.name}.'
+            msg = f'{self.name.capitalize()} picked up {item.name}.'
             mrogue.message.Messenger.add(msg)
             return True
         else:
@@ -255,9 +255,7 @@ class Unit(mrogue.Entity):
 
         :param target: the other Unit
         """
-        attacker = 'You' if self.player else self.name.capitalize()
-        attacked = 'you' if target.player else target.name
-        msg = attacker + ' '
+        msg = self.name.capitalize() + ' '
         attack_roll = mrogue.utils.roll('1d20')
         critical_hit = attack_roll == 20
         if target.player and critical_hit:
@@ -265,14 +263,14 @@ class Unit(mrogue.Entity):
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
             damage_roll = mrogue.utils.roll(self.damage_dice, critical_hit)
             msg += f"{'critically ' if critical_hit else ''}hit{'' if self.player else 's'}"
-            mrogue.message.Messenger.add('{} {}.'.format(msg, attacked))
+            mrogue.message.Messenger.add('{} {}.'.format(msg, target.name))
             target.take_damage(damage_roll)
         else:
             if attack_roll == 1:
                 msg += f"critically miss{'' if self.player else 'es'}"
             else:
                 msg += f"miss{'' if self.player else 'es'}"
-            mrogue.message.Messenger.add('{} {}.'.format(msg, attacked))
+            mrogue.message.Messenger.add('{} {}.'.format(msg, target.name))
 
     def take_damage(self, damage: int) -> None:
         """Remove hit points and check if they go below minimum
@@ -296,7 +294,7 @@ class Unit(mrogue.Entity):
 
     def die(self) -> None:
         """Remove self from all lists and drop all items on the ground"""
-        mrogue.message.Messenger.add(f'{self.name.capitalize()} dies.')
+        mrogue.message.Messenger.add(f"{self.name.capitalize()} died.")
         if not (self.player and 'debug' in argv):
             self.kill()
             if not self.player:
