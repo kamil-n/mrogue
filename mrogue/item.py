@@ -438,7 +438,7 @@ class ItemManager:
             window.print(50, 1, '[/] Sort', tcod.yellow)
             window.print(6, 2, 'Name')
             window.print(48, 2, 'Slot     Wt     Val')
-            window.print(sort[1], 2, chr(25), tcod.yellow)
+            window.print(sort[1], 2, chr(0x2193), tcod.yellow)
             window.print(46, window_height - 2, 'Total:')
             window.print(53, window_height - 2, '{:6.2f} {:7.2f}'.format(
                 sum([i.weight for i in raw_inventory]),
