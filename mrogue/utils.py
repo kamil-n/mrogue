@@ -109,3 +109,12 @@ def random_scroll_name() -> str:
             name += random.choice(string.ascii_uppercase)
         name += ' '
     return name.rstrip()
+
+
+def print_result(func):
+    """A decorator to print return value from a function/method"""
+    def decorator(*args, **kwargs):
+        value = func(*args, **kwargs)
+        print(f'{func.__name__}: {value}')
+        return value
+    return decorator

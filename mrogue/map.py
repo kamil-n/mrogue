@@ -83,15 +83,17 @@ class Level(tcod.map.Map):
         # place rooms
         for node in bsp.inverted_level_order():
             if not node.children and random.random() <= .7:
-                # TODO: make this more pythonic
                 nx = node.x + node.w // 2
                 ny = node.y + node.h // 2
                 w = random.randint(3, 5)
                 h = random.randint(2, 3)
-                for x in range(nx - w, nx + w + 1):
-                    for y in range(ny - h, ny + h + 1):
-                        if 1 < x < self.mapDim[0] - 1 and 1 < y < self.mapDim[1] - 1:
-                            self._dig(x, y)
+                left = nx - w if nx - w > 0 else 1
+                right = nx + w + 1 if nx + w + 1 < self.mapDim[0] - 1 else self.mapDim[0] - 1
+                top = ny - h if ny - h > 1 else 2
+                bottom = ny + h + 1 if ny + h + 1 < self.mapDim[1] - 1 else self.mapDim[1] - 1
+                self.tiles[left:right, top:bottom] = tiles['floor']
+                self.transparent[left:right, top:bottom] = True
+                self.walkable[left:right, top:bottom] = True
         # place stairs up
         if not first:
             while True:
@@ -367,29 +369,39 @@ class Dungeon:
         :param update_func: reference to passage of time function from the game's main loop
         :return: False if auto movement can't be initiated, True if performed successfully
         """
-        def scan(target: tuple[int, int], original_geometry: int = None) -> bool:
+        def get_front(position: tuple[int, int], delta: tuple[int, int]) -> np.array:
+            """Get just the front strip of where player is facing for more reliable environment tracking"""
+            if delta[1] == 1:
+                return Dungeon.current_level.walkable[position[0] + delta[0] - 1, position[1] - 1:position[1] + 2]
+            elif delta[0] == 1:
+                return Dungeon.current_level.walkable[position[0] - 1:position[0] + 2, position[1] + delta[1] - 1]
+            else:
+                return Dungeon.current_level.walkable[position[0] + delta[0] - 1, position[1] + delta[1] - 1]
+
+        def scan(current_pos: tuple[int, int], delta_pos: tuple[int, int], original_geometry: np.array = None) -> bool:
             """Check if the map layout changed or if there is a Unit or Item """
-            if original_geometry:
-                new_geometry = Dungeon.current_level.walkable[target[0]-1:target[0]+2, target[1]-1:target[1]+2].sum()
-                if geometry != new_geometry:
+            if original_geometry is not None:
+                new_geometry = get_front(current_pos, delta_pos)
+                if not np.array_equal(geometry, new_geometry):
                     return True
             for unit in Dungeon.current_level.units:
-                if not unit.player and Dungeon.current_level.fov[unit.pos[0]][unit.pos[1]]:
+                if not unit.player and mrogue.utils.adjacent(current_pos, unit.pos, 2):
                     return True
             for obj in Dungeon.current_level.objects_on_map:
-                if issubclass(type(obj), mrogue.item.Item) and mrogue.utils.adjacent(target, obj.pos):
+                if issubclass(type(obj), mrogue.item.Item) and mrogue.utils.adjacent(current_pos, obj.pos):
                     return True
             return False
-        if scan(pos):
-            # don't auto move if there are Units or Items
-            return False
+
         placement = np.nonzero(mrogue.io.directions == direction)
         dx = placement[2][0] - 1
         dy = placement[1][0] - 1
-        geometry = Dungeon.current_level.walkable[pos[0]-1:pos[0]+2, pos[1]-1:pos[1]+2].sum()
+        if scan(pos, (0, 0)):  # delta unused in this case
+            # attempt normal movement if there are enemies or items in range
+            return self.movement(mrogue.player.Player.get(), (pos[0] + dx, pos[1] + dy))
+        geometry = get_front(pos, (dx+1, dy+1))
         while True:
-            # compare new geometry to current surroundings
-            if scan(pos, geometry):
+            # compare new geometry to starting conditions geometry
+            if scan(pos, (dx+1, dy+1), geometry):
                 # if the layout changes or there are Entities, stop automatic movement
                 break
             # stop movement if Player dies
