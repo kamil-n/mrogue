@@ -1,0 +1,8 @@
+- v0.4.6.4
+  - multiple dungeon levels
+- v0.4.3.0
+  - initiative/speed system
+- v0.4.2.5
+  - items
+- v0.4.2.0
+  - statuses + timers

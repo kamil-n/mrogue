@@ -19,7 +19,10 @@ import sys
 from os import path
 from mrogue.io import Glyph
 
-__version__ = 'v0.6.8'
+__author__ = 'Kamil Nienałtowski'
+__copyright__ = 'Copyright (C) 2018-2021 Kamil Nienałtowski'
+__license__ = 'GPL-3.0-or-later'
+__version__ = 'v0.6.9'
 
 if getattr(sys, 'frozen', False):
     work_dir = path.dirname(sys.executable)

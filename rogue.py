@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# Copyright (C) 2018-2021 Kamil Nienałtowski
+# License: GPL-3.0-or-later
 from os import path
 import tcod
 import tcod.event
