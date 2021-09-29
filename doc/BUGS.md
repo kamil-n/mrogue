@@ -1,1 +1,1 @@
-* sometimes a level is missing the stairs (confirmed no stairs down so far)
+--* sometimes a level is missing the stairs (confirmed no stairs down so far)-- **fixed in v0.6.10**

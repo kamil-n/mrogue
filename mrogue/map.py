@@ -81,40 +81,23 @@ class Level(tcod.map.Map):
                 vector.append((node.x + node.w // 2, node.y + node.h // 2))
 
         # place rooms
-        for node in bsp.inverted_level_order():
-            if not node.children and random.random() <= .7:
-                nx = node.x + node.w // 2
-                ny = node.y + node.h // 2
-                w = random.randint(3, 5)
-                h = random.randint(2, 3)
-                left = nx - w if nx - w > 0 else 1
-                right = nx + w + 1 if nx + w + 1 < self.mapDim[0] - 1 else self.mapDim[0] - 1
-                top = ny - h if ny - h > 1 else 2
-                bottom = ny + h + 1 if ny + h + 1 < self.mapDim[1] - 1 else self.mapDim[1] - 1
+        for node_center in vector:
+            if random.random() <= .7:
+                w, h = random.randint(3, 5), random.randint(2, 3)
+                left = max(node_center[0] - w, 1)
+                right = min(node_center[0] + w + 1, self.mapDim[0] - 1)
+                top = max(node_center[1] - h, 2)
+                bottom = min(node_center[1] + h + 1, self.mapDim[1] - 1)
                 self.tiles[left:right, top:bottom] = tiles['floor']
                 self.transparent[left:right, top:bottom] = True
                 self.walkable[left:right, top:bottom] = True
-        # place stairs up
-        if not first:
-            while True:
-                x = random.randint(1, self.mapDim[0] - 1)
-                y = random.randint(2, self.mapDim[1] - 1)
-                if self.tiles[x][y] == tiles['floor']:
-                    stairs_up = (x, y)
-                    break
-            self.tiles[stairs_up[0]][stairs_up[1]] = tiles['stairs_up']
-            self.colors[stairs_up[0]][stairs_up[1]] = tcod.yellow
-            self.pos = stairs_up
+        self.floor = np.argwhere(self.tiles == tiles['floor'])
 
-        # place stairs down
-        while True:
-            x = random.randint(1, self.mapDim[0] - 1)
-            y = random.randint(2, self.mapDim[1] - 1)
-            if self.walkable[x][y] and self.tiles[x][y] != tiles['stairs_up']:
-                stairs_down = (x, y)
-                break
-        self.tiles[stairs_down[0]][stairs_down[1]] = tiles['stairs_down']
-        self.colors[stairs_down[0]][stairs_down[1]] = tcod.yellow
+        # select coordinates for stairs before corridors so they would be placed only in rooms
+        if not first:
+            stairs_up = random.choice(self.floor)
+            self.pos = stairs_up
+        stairs_down = random.choice(self.floor)
 
         # dig tunnels from opposite nodes to partition line center
         for node in bsp.inverted_level_order():
@@ -144,6 +127,11 @@ class Level(tcod.map.Map):
             self._dig_tunnel(*node1[1], *partition_center)
             self._dig_tunnel(*node2[1], *partition_center)
 
+        # place stairs last so they won't be overwritten
+        if not first:
+            self._dig(stairs_up[0], stairs_up[1], tiles['stairs_up'], tcod.yellow, False)
+        self._dig(stairs_down[0], stairs_down[1], tiles['stairs_down'], tcod.yellow)
+
     def _dig_tunnel(self, x1: int, y1: int, x2: int, y2: int) -> None:
         """Connect two points, doing one turn after random amount of steps"""
         dx = 0 if x1 == x2 else int(abs(x2 - x1) / (x2 - x1))
@@ -158,7 +146,7 @@ class Level(tcod.map.Map):
             else:
                 y1 += dy
             distance += 1
-            # turn only after leavig the initial room
+            # turn only after leaving the initial room
             if self.tiles[x1][y1] == tiles['wall']:
                 broken = distance
             self._dig(x1, y1)
@@ -168,7 +156,7 @@ class Level(tcod.map.Map):
         self._dig(x2, y2)
 
     def _dig(self, x: int, y: int,
-             tile: int = tiles['floor'],
+             tile: str = tiles['floor'],
              color: tcod.Color = None,
              transparent: bool = True,
              walkable: bool = True) -> None:

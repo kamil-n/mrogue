@@ -120,7 +120,7 @@ class Player(mrogue.unit.Unit):
 
         :param level: the new Level of the Dungeon map
         """
-        self.pos = level.pos
+        self.pos = tuple(level.pos)
         self.dijkstra_map = Dijkstra(level.walkable)
         self.dijkstra_map.set_goal(*self.pos)
         if self not in level.units:
