@@ -102,7 +102,7 @@ class Player(mrogue.unit.Unit):
             self.health_regen_cooldown = 35
             self.heal(1)
             mrogue.message.Messenger.add('You regenerate some health.')
-            mrogue.monster.MonsterManager.create_monsters(1, mrogue.map.Dungeon.depth(), sight_range=100)
+            mrogue.monster.MonsterManager.spawn_monster(mrogue.map.Dungeon.depth(), sight_range=100)
 
     def move(self, success: bool = True) -> None:
         """Recalculate pathfinding map on each successful step"""

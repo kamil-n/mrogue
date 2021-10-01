@@ -132,6 +132,14 @@ class Level(tcod.map.Map):
         if not first:
             self._dig(stairs_up.x, stairs_up.y, tiles['stairs_up'], tcod.yellow, False)
         self._dig(stairs_down.x, stairs_down.y, tiles['stairs_down'], tcod.yellow)
+        # experimenting with noise map:
+        # noise = tcod.noise.Noise(dimensions=2, algorithm=tcod.noise.Algorithm.WAVELET, seed=42)
+        # samples = noise[tcod.noise.grid(shape=(self.mapDim.y, self.mapDim.x), scale=0.1, origin=(0, 0))]
+        # samples = (samples + 1.0) * 0.5
+        # threshold = 0.4
+        # self.tiles = np.select([samples < threshold, samples >= threshold], [tiles['wall'], tiles['floor']])
+        # self.transparent[:] = np.select([samples < threshold, samples >= threshold], [False, True])
+        # self.walkable[:] = np.select([samples < threshold, samples >= threshold], [False, True])
 
     def _dig_tunnel(self, x1: int, y1: int, x2: int, y2: int) -> None:
         """Connect two points, doing one turn after random amount of steps"""

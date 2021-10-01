@@ -24,6 +24,7 @@ class MonsterManager:
         * selection_for_level - a list of available Monster templates appropriate for each Level of the Dungeon
     Methods:
         * create_monsters() - prepares a list of Monsters with varying difficulty level
+        * spawn_monster() - add in a single Monster
         * handle_monsters() - makes Monsters perform their action
         * stop_monsters() - halts the movement of monsters
     """
@@ -41,12 +42,11 @@ class MonsterManager:
             self.selection_for_level.append(this_level)
 
     @classmethod
-    def create_monsters(cls, num: int, depth: int, **kwargs) -> None:
+    def create_monsters(cls, num: int, depth: int) -> None:
         """Populate the Level at given depth with appropriate monsters.
 
         :param num: total number of Monsters per Level
         :param depth: depth of current Level
-        :param kwargs: additional attributes to be set for each Monster
         """
         level = mrogue.map.Dungeon.current_level
         for i in range(num + depth):
@@ -54,10 +54,29 @@ class MonsterManager:
             template = random.choices(
                 mrogue.monster_data.templates[group]['subtypes'],
                 mrogue.monster_data.templates[group]['occurrences'][depth])[0]
-            m = Monster(template, (level.objects_on_map, level.units))
-            if kwargs:
-                for key, val in kwargs.items():
-                    setattr(m, key, val)
+            Monster(template, (level.objects_on_map, level.units))
+
+    @classmethod
+    def spawn_monster(cls, depth: int, **kwargs) -> None:
+        """Add a single monster out of Player's sight
+
+        :param depth: depth of current Level
+        :param kwargs: additional attributes to be set for this Monster
+        """
+        level = mrogue.map.Dungeon.current_level
+        group = random.choice(cls.selection_for_level[depth])
+        template = random.choices(
+            mrogue.monster_data.templates[group]['subtypes'],
+            mrogue.monster_data.templates[group]['occurrences'][depth])[0]
+        m = Monster(template, (level.objects_on_map, level.units))
+        while True:
+            pos = Point(*random.choice(level.floor))
+            if not level.fov[pos]:
+                break
+        setattr(m, 'pos', pos)
+        if kwargs:
+            for key, val in kwargs.items():
+                setattr(m, key, val)
 
     @classmethod
     def handle_monsters(cls, target: mrogue.unit.Unit) -> bool:
@@ -138,7 +157,7 @@ class Monster(mrogue.unit.Unit):
         :param target: description
         """
         if self.is_in_range(target.pos):
-            # if self.senses_or_reacts_in_some_way_to(target)
+            # TODO: if self.senses_or_reacts_in_some_way_to(target)
             if mrogue.utils.adjacent(self.pos, target.pos):
                 self.path = None
                 self.attack(target)

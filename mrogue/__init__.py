@@ -23,7 +23,7 @@ from os import path
 __author__ = 'Kamil Nienałtowski'
 __copyright__ = 'Copyright (C) 2018-2021 Kamil Nienałtowski'
 __license__ = 'GPL-3.0-or-later'
-__version__ = 'v0.6.11'
+__version__ = 'v0.6.12'
 
 if getattr(sys, 'frozen', False):
     work_dir = path.dirname(sys.executable)

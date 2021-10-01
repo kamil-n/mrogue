@@ -16,10 +16,11 @@ enchantment_levels = {
     1: 'blessed'
 }
 
+# color list at https://libtcod.github.io/docs/html2/color.html or via tcod.__all__
 enchantment_colors = {
-    -1: tcod.crimson,
+    -1: tcod.lighter_crimson,
     0: tcod.white,
-    1: tcod.sea
+    1: tcod.lighter_sea
 }
 
 materials = {
