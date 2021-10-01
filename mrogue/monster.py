@@ -12,6 +12,7 @@ import mrogue.monster_data
 import mrogue.player
 import mrogue.unit
 import mrogue.utils
+from mrogue import Point
 
 
 class MonsterManager:
@@ -147,11 +148,11 @@ class Monster(mrogue.unit.Unit):
             self.wander()
         self.ticks_left = int(self.speed * 100)
 
-    def is_in_range(self, target_position: tuple[int, int]) -> bool:
-        return abs(self.pos[0] - target_position[0]) <= self.sight_range and \
-            abs(self.pos[1] - target_position[1]) <= self.sight_range
+    def is_in_range(self, target_position: Point) -> bool:
+        return abs(self.pos.x - target_position.x) <= self.sight_range and \
+            abs(self.pos.y - target_position.y) <= self.sight_range
 
-    def approach(self, goal: tuple[int, int]) -> None:
+    def approach(self, goal: Point) -> None:
         """Move towards goal, calculate a new path if necessary
 
         :param goal: target cell
@@ -166,9 +167,9 @@ class Monster(mrogue.unit.Unit):
         if mrogue.map.Dungeon.unit_at(self.path[-1]):
             self.wander(goal)
             return
-        mrogue.map.Dungeon.movement(self, self.path.pop())
+        mrogue.map.Dungeon.movement(self, Point(*self.path.pop()))
 
-    def wander(self, towards: tuple[int, int] = None):
+    def wander(self, towards: Point = None):
         """Roam to an adjacent location (if any available) or in target's general direction
 
         :param towards: if supplied, will prefer a new location that is closest to that target
@@ -177,7 +178,7 @@ class Monster(mrogue.unit.Unit):
         if len(free_spots) > 0:
             to = None
             if towards:
-                pairs = [(abs(towards[0] - x), abs(towards[1] - y), (x, y)) for x, y in free_spots]
+                pairs = [(abs(towards.x - x), abs(towards.y - y), Point(x, y)) for x, y in free_spots]
                 if pairs:
                     to = min(pairs, key=lambda v: v[0] * v[0] + v[1] * v[1])[2]
             else:

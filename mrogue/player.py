@@ -120,7 +120,7 @@ class Player(mrogue.unit.Unit):
 
         :param level: the new Level of the Dungeon map
         """
-        self.pos = tuple(level.pos)
+        self.pos = level.pos
         self.dijkstra_map = Dijkstra(level.walkable)
         self.dijkstra_map.set_goal(*self.pos)
         if self not in level.units:
@@ -138,7 +138,7 @@ class Player(mrogue.unit.Unit):
                 else:
                     safe_cap = items[0].name[0].upper() + items[0].name[1:]
                     mrogue.message.Messenger.add(f'{safe_cap} is lying here.')
-            tile = mrogue.map.Dungeon.current_level.tiles[self.pos[0]][self.pos[1]]
+            tile = mrogue.map.Dungeon.current_level.tiles[self.pos]
             if tile == mrogue.map.tiles['stairs_down']:
                 mrogue.message.Messenger.add('There are stairs leading down here.')
             elif tile == mrogue.map.tiles['stairs_up']:

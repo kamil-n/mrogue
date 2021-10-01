@@ -50,6 +50,7 @@ class Rogue:
         mrogue.timers.Timer.update()
         while True:
             if mrogue.monster.MonsterManager().handle_monsters(self.player):
+                # stop doing the updates if next Unit in queue is the player
                 break
         self.dungeon.look_around()
         return self.player.check_pulse(self.dungeon, self.messenger)
@@ -94,7 +95,7 @@ class Rogue:
                 return True
         # number keys|arrows|numpad keys
         elif key[0] in mrogue.io.directions:
-            if self.dungeon.movement(self.player, mrogue.io.direction_from(key[0], *self.player.pos)):
+            if self.dungeon.movement(self.player, mrogue.io.direction_from(key[0], self.player.pos)):
                 return True
         # 'M'
         elif mrogue.io.key_is(key, tcod.event.K_m, tcod.event.KMOD_SHIFT):
@@ -107,7 +108,7 @@ class Rogue:
             return True
         # other
         else:
-            self.messenger.add(f"Unknown command: {'mod+' if key[1] else ''}{chr(key[0]) if key[0] < 256 else '<?>'}")
+            self.messenger.add(f'Unknown command.')
         return False
 
     def mainloop(self) -> None:

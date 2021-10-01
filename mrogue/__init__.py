@@ -16,18 +16,23 @@ Modules:
     * utils - several smaller functions (i.e. random number generators, text utils
 """
 import sys
+from collections import namedtuple
 from os import path
-from mrogue.io import Glyph
+
 
 __author__ = 'Kamil Nienałtowski'
 __copyright__ = 'Copyright (C) 2018-2021 Kamil Nienałtowski'
 __license__ = 'GPL-3.0-or-later'
-__version__ = 'v0.6.10'
+__version__ = 'v0.6.11'
 
 if getattr(sys, 'frozen', False):
     work_dir = path.dirname(sys.executable)
 else:
     work_dir = path.dirname(path.dirname(__file__))
+
+Point = namedtuple('Point', ('x', 'y'))
+
+from mrogue.io import Glyph
 
 
 class Entity(io.Glyph):

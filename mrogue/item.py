@@ -20,6 +20,7 @@ import mrogue.message
 import mrogue.player
 import mrogue.unit
 import mrogue.utils
+from mrogue import Point
 
 
 class Item(mrogue.Entity):
@@ -69,7 +70,7 @@ class Item(mrogue.Entity):
     def __str__(self):
         return f"{self.icon} '{self.name}' ({self.amount})"  # " [{self.color}]"
 
-    def dropped(self, coordinates: tuple[int, int]) -> None:
+    def dropped(self, coordinates: Point) -> None:
         """Assign a position on the map and add this item to current level's objects group
 
         :param coordinates: a pair of (x, y) coordinates
@@ -136,7 +137,7 @@ class Wearable(Item):
             self.armor_class_modifier = ac_mod + quality + enchantment_level * 2
 
     def __init__(self, template, groups, randomize=False):
-        """Copies most init data  from the template but can nradomize the quality and enchantment level."""
+        """Copies most init data  from the template but can randomize the quality and enchantment level."""
         super().__init__(
             self,
             template['name'],
@@ -221,11 +222,11 @@ class Consumable(Stackable):
     Object attributes:
         * subtype - currently either scroll or potion
         * effect - a string representing the action to perform on use
-        * uses - how many times Consumable can be used before reducting the amount
+        * uses - how many times Consumable can be used before reducing the amount
     Methods:
         * used() - apply the effect on use
         * identified() - identifies each copy of this item
-        * identify_all() - loops through dungeon and inventory item groups to identfy all copies
+        * identify_all() - loops through dungeon and inventory item groups to identify all copies
     """
 
     def __init__(self, template, amount, groups):
@@ -380,7 +381,7 @@ class ItemManager:
             summary = prefix + name + suffix
             color = tcod.white
             if it in mrogue.player.Player.get().equipped:
-                color = tcod.gray
+                color = tcod.light_grey
             elif it.status_identified and hasattr(it, 'enchantment_level'):
                 color = mrogue.item_data.enchantment_colors[it.enchantment_level]
             window.print(1, 1 + i + offset, f'{string.ascii_letters[i+scroll]}) ')
@@ -485,7 +486,7 @@ class ItemManager:
                         return result if result is not None else True
 
     @staticmethod
-    def get_item_on_map(coordinates: tuple[int, int]) -> list[Item]:
+    def get_item_on_map(coordinates: Point) -> list[Item]:
         """Get all the Items at the coordinates on the map of current level
 
         :param coordinates: x, y coordinates on the map

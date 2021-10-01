@@ -49,16 +49,15 @@ KEY = tcod.event.KeyDown
 MOD = tcod.event.Modifier
 
 
-def direction_from(key: KEY, x: int, y: int) -> tuple[int, int]:
+def direction_from(key: KEY, pos: mrogue.Point) -> mrogue.Point:
     """Calculate new (x, y) position from a key and previous position
 
     :param key: a tcod.event key code
-    :param x: current x coordinate
-    :param y: current y coordinate
+    :param pos: current coordinates
     :return: a set of new x, y coordinates
     """
     placement = np.nonzero(directions == key)
-    return x + placement[2][0]-1, y + placement[1][0]-1
+    return mrogue.Point(pos.x + placement[2][0]-1, pos.y + placement[1][0]-1)
 
 
 def key_is(key: tuple[KEY, MOD], target_key: KEY, target_mod: MOD = tcod.event.KMOD_NONE) -> bool:

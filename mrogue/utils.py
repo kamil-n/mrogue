@@ -2,9 +2,10 @@
 """ A collection of small functions used in the whole project"""
 import random
 import string
+from mrogue import Point
 
 
-def adjacent(fr: tuple[int, int], to: tuple[int, int], distance: int = 1) -> bool:
+def adjacent(fr: Point, to: Point, distance: int = 1) -> bool:
     """Check if target is right next to source cell
 
     :param fr: source cell coordinates
@@ -12,7 +13,7 @@ def adjacent(fr: tuple[int, int], to: tuple[int, int], distance: int = 1) -> boo
     :param distance: optional, can check longer distances than immediate vicinity
     :return: True if target is next to source, False otherwise
     """
-    return abs(fr[0] - to[0]) <= distance and abs(fr[1] - to[1]) <= distance
+    return abs(fr.x - to.x) <= distance and abs(fr.y - to.y) <= distance
 
 
 def find_in(where: list or tuple, attribute: str, like: object,
@@ -42,7 +43,7 @@ def find_in(where: list or tuple, attribute: str, like: object,
 def roll(dice_string: str, critical: bool = False) -> int:
     """Roll the dice. Dice string must be in the format "<how_many>d<sided-dice>[+<modifier>]"
 
-    :param dice_string: what to roll: string formated as <num>d<sided>[+/-<mod>]
+    :param dice_string: what to roll: string formatted as <num>d<sided>[+/-<mod>]
     :param critical: according to DnD rules, if critical success, roll the dice twice
     :return: a random number but no less than 1
     """
