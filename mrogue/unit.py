@@ -123,7 +123,7 @@ class Unit(mrogue.Entity):
         return f"{self.icon} '{self.name}'"  # " [{self.color}]"
 
     def update(self) -> None:
-        pass
+        self.moved = False
 
     def burden_update(self) -> None:
         pass

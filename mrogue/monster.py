@@ -6,6 +6,7 @@ Classes:
     * Monster - a type of Unit that chases and attacks the player
 """
 import random
+import tcod
 import mrogue.item
 import mrogue.map
 import mrogue.monster_data
@@ -82,29 +83,32 @@ class MonsterManager:
     def handle_monsters(cls, target: mrogue.unit.Unit) -> bool:
         """Treat target as hostile and make every Monster act against it
 
+        This method will follow monster acting order based on individual monster speed.
+        Each monster has a certain number of ticks that must be reduced to 0 to be able to act.
+        Monsters with the same value of ticks_left can act at the same time.
+        Each time a group of monsters acts, ticks_left of each monster is reduced by ticks_passed.
+        ticks_passed is the minimum value of ticks needed for the next monster in queue to act.
+        All units, including player, are on that acting order list. When player's turn comes,
+        control is given to player and after their action acting order list is resumed.
+
         :param target: the Unit to chase and attack
         :return: True if the Unit to take action was the player, nothing if it was a Monster
         """
         if cls.order:
-            for monster in cls.order:
-                monster.ticks_left = monster.ticks_left - cls.ticks_passed
+            for unit in cls.order:
+                unit.ticks_left -= cls.ticks_passed
             cls.order = None
         if not cls.order:
-            cls.ticks_passed = min(m.ticks_left for m in mrogue.map.Dungeon.current_level.units)
             cls.order = sorted(mrogue.map.Dungeon.current_level.units, key=lambda m: m.ticks_left)
+            cls.ticks_passed = cls.order[0].ticks_left
         player = mrogue.player.Player.get()
         while cls.order and cls.order[0].ticks_left == cls.ticks_passed:
-            monster = cls.order.pop(0)
-            if not monster.player and player.current_HP > 0:
-                monster.act(target)
+            unit = cls.order.pop(0)
+            unit.update()
+            if not unit.player and player.current_HP > 0:
+                unit.act(target)
             else:
-                for monster in mrogue.map.Dungeon.current_level.units:
-                    monster.update()
-                if player.speed != 0.0:
-                    player.ticks_left = int(
-                        player.speed * 100)
-                else:
-                    player.ticks_left = 100.0
+                player.ticks_left = int(player.speed * 100) if player.speed != 0.0 else 100
                 return True
 
     @classmethod
@@ -156,15 +160,19 @@ class Monster(mrogue.unit.Unit):
 
         :param target: description
         """
-        if self.is_in_range(target.pos):
-            # TODO: if self.senses_or_reacts_in_some_way_to(target)
-            if mrogue.utils.adjacent(self.pos, target.pos):
-                self.path = None
-                self.attack(target)
-            else:
-                self.approach(target.pos)
+        if mrogue.utils.adjacent(self.pos, target.pos):
+            self.path = None
+            self.attack(target)
         else:
-            self.wander()
+            monster_los = None
+            if self.is_in_range(target.pos):
+                monster_los = tcod.map.compute_fov(mrogue.map.Dungeon.current_level.transparent,
+                                          self.pos, self.sight_range, algorithm=tcod.FOV_BASIC)
+            if monster_los is not None and monster_los[target.pos] or self.sight_range == 100:
+                self.approach(target.pos)
+            else:
+                if random.random() > 0.5:
+                    self.wander()
         self.ticks_left = int(self.speed * 100)
 
     def is_in_range(self, target_position: Point) -> bool:

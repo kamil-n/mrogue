@@ -121,7 +121,6 @@ class Rogue:
                 self.draw_dungeon()
                 key = mrogue.io.wait()
                 self.messenger.clear()
-                self.player.moved = False
                 if self.handle_input(key):
                     break
 

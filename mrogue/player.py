@@ -128,7 +128,6 @@ class Player(mrogue.unit.Unit):
 
     def update(self) -> None:
         """Add ambient information after movement"""
-        super().update()
         self.regenerate_health()
         if self.moved:
             items = mrogue.item.ItemManager.get_item_on_map(self.pos)
@@ -143,6 +142,7 @@ class Player(mrogue.unit.Unit):
                 mrogue.message.Messenger.add('There are stairs leading down here.')
             elif tile == mrogue.map.tiles['stairs_up']:
                 mrogue.message.Messenger.add('There are stairs leading up here.')
+        super().update()
 
     def burden_update(self) -> None:
         """Adjust speed and display load information based on total weight of possessions"""
