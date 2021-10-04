@@ -27,20 +27,20 @@ from mrogue import Point
 tiles = {
     'wall': mrogue.io.Tile(
         walkable=False, transparent=False,
-        lit=(0x2588, (192, 192, 192, 128), (32, 32, 32, 128)),
-        dim=(0x2588, (64, 64, 64, 128), (0, 0, 0, 128))),
+        lit=(0x2588, (192, 192, 192, 255), (32, 32, 32, 255)),
+        dim=(0x2588, (64, 64, 64, 255), (0, 0, 0, 255))),
     'floor': mrogue.io.Tile(
         walkable=True, transparent=True,
-        lit=(0xB7, (192, 192, 192, 128), (32, 32, 32, 128)),
-        dim=(0xB7, (64, 64, 64, 64), (0, 0, 0, 128))),
+        lit=(0xB7, (192, 192, 192, 255), (32, 32, 32, 255)),
+        dim=(0xB7, (64, 64, 64, 255), (0, 0, 0, 255))),
     'stairs_down': mrogue.io.Tile(
         walkable=True, transparent=True,
-        lit=(0x2265, (192, 192, 0, 128), (32, 32, 32, 128)),
-        dim=(0x2265, (64, 64, 0, 64), (0, 0, 0, 128))),
+        lit=(0x2265, (192, 192, 0, 255), (32, 32, 32, 255)),
+        dim=(0x2265, (64, 64, 0, 255), (0, 0, 0, 255))),
     'stairs_up': mrogue.io.Tile(
         walkable=True, transparent=False,
-        lit=(0x2264, (192, 192, 0, 128), (32, 32, 32, 128)),
-        dim=(0x2264, (64, 64, 0, 64), (0, 0, 0, 128)))
+        lit=(0x2264, (192, 192, 0, 255), (32, 32, 32, 255)),
+        dim=(0x2264, (64, 64, 0, 255), (0, 0, 0, 255)))
 }
 compare = {
     'wall': np.asarray(tiles['wall'], dtype=mrogue.io.tile_dt),
@@ -141,12 +141,15 @@ class Level:
             self.tunnel(*node2[1], *partition_center)
 
         # TODO:  check if this can be done in a more elegant way
+        dim = 0.2
         for x in range(self.mapDim.x):
             for y in range(self.mapDim.y):
-                random_grey = random.randint(64, 128)
+                random_grey = random.randint(96, 128)
                 one_shade_of_grey = tcod.Color(random_grey, random_grey, random_grey)
-                self.tiles[x, y]['lit'][1][:3] = one_shade_of_grey
-                self.tiles[x, y]['dim'][1][:3] = one_shade_of_grey * 0.3
+                self.tiles[x, y]['lit'][1][:3] = one_shade_of_grey  # fg
+                self.tiles[x, y]['lit'][2][:3] = one_shade_of_grey * 0.2  # bg
+                self.tiles[x, y]['dim'][1][:3] = one_shade_of_grey * dim  # fg
+                self.tiles[x, y]['dim'][2][:3] = one_shade_of_grey * dim * 0.2  # bg
 
         # place stairs last so they won't be overwritten
         if stairs_up:
@@ -418,9 +421,9 @@ class Dungeon:
         player = mrogue.player.Player.get()
         level = Dungeon.current_level
         if 'debug' in argv:
-            self.screen.tiles_rgb[:, 0:39] = level.tiles['lit']
+            self.screen.rgba[:, 0:39] = level.tiles['lit']
         else:
-            self.screen.tiles_rgb[:, 0:39] = np.select(
+            self.screen.rgba[:, 0:39] = np.select(
                 (player.fov, level.explored),
                 (level.tiles['lit'], level.tiles['dim']),
                 nothing)

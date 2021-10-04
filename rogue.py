@@ -31,8 +31,8 @@ class Rogue:
 
     def __init__(self):
         """Initialize the libTCOD terminal and some singletons and managers."""
-        font = tcod.tileset.load_tilesheet(
-            path.join(mrogue.work_dir, 'terminal10x16_gs_ro.png'), 16, 16, tcod.tileset.CHARMAP_CP437)
+        fonts = ['terminal10x16_gs_ro.png', 'Cooz_curses_14x16.png', 'Bmac_smooth_16x24.png', 'Kyzsmooth.png']
+        font = tcod.tileset.load_tilesheet(path.join(mrogue.work_dir, fonts[2]), 16, 16, tcod.tileset.CHARMAP_CP437)
         mrogue.io.Screen(100, 40, font)
         self.dungeon = mrogue.map.Dungeon()
         self.items = mrogue.item.ItemManager()
