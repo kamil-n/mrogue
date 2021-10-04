@@ -75,8 +75,8 @@ class Player(mrogue.unit.Unit):
         self.health_regen_cooldown = 0
         self.crit_immunity = 0.0
         self.status_bar = tcod.console.Console(mrogue.io.Screen.get().width, 1, 'F')
-        self.add_item(mrogue.item.Wearable(mrogue.item_data.templates[4], None))  # stick
-        self.add_item(mrogue.item.Wearable(mrogue.item_data.templates[10], None))  # tunic
+        self.add_item(mrogue.item.Item(mrogue.item_data.templates[4], 1, None))  # stick
+        self.add_item(mrogue.item.Item(mrogue.item_data.templates[10], 1, None))  # tunic
         for freebie in list(self.inventory):
             self.equip(freebie, quiet=True)
         self.add(mrogue.map.Dungeon.current_level.objects_on_map, mrogue.map.Dungeon.current_level.units)

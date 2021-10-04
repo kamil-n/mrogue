@@ -47,10 +47,25 @@ class Item(mrogue.Entity):
         * picked() - state change when item is put into some kind of inventory
         * identified() - state change when this Item instance is identified
     """
+    _subclass_registry = {}
 
-    def __init__(self, sub, name, base_weight, base_value, icon):
+    def __init_subclass__(cls, subtype, *args, **kwargs):
+        super().__init_subclass__(*args, **kwargs)
+        cls._subclass_registry[subtype] = cls
+
+    def __new__(cls, template, *args, **kwargs):
+        subtype = None
+        if template['type'] in ('weapon', 'armor'):
+            subtype = 'Wearable'
+        elif template['type'] in ('scroll', 'potion'):
+            subtype = 'Consumable'
+        subclass = cls._subclass_registry[subtype]
+        obj = object.__new__(subclass)
+        obj.template = template
+        return obj
+
+    def __init__(self, name, base_weight, base_value, icon):
         super().__init__()
-        self.type = sub.__class__
         self.pos = None
         self.base_weight = base_weight
         self.base_value = base_value
@@ -65,8 +80,11 @@ class Item(mrogue.Entity):
         self.interface_name = name  # TEMP
         self.identified_name = name  # TEMP
 
+    def __getnewargs__(self):
+        return self.template,
+
     def __repr__(self):
-        return f"Item('{self.name}', {self.type}, '{self.icon:x}')"  # ", {self.color})"
+        return f"Item('{self.name}', {self.__class__}, '{self.icon:x}')"  # ", {self.color})"
 
     def __str__(self):
         return f"{chr(self.icon)} '{self.name}' ({self.amount})"  # " [{self.color}]"
@@ -92,7 +110,7 @@ class Item(mrogue.Entity):
         self.value = self.identified_value
 
 
-class Wearable(Item):
+class Wearable(Item, subtype='Wearable'):
     """An item that can be held or worn. Encapsulates two types of functional types: weapons and armor.
 
     Extends:
@@ -137,10 +155,9 @@ class Wearable(Item):
             self.base_armor_class = ac_mod
             self.armor_class_modifier = ac_mod + quality + enchantment_level * 2
 
-    def __init__(self, template, groups, randomize=False):
+    def __init__(self, template, _, groups, randomize=False):
         """Copies most init data  from the template but can randomize the quality and enchantment level."""
         super().__init__(
-            self,
             template['name'],
             template['base_weight'],
             template['base_value'],
@@ -178,7 +195,7 @@ class Wearable(Item):
         return f"Wearable('{self.name}', {self.subtype}, 0x{self.icon:x})"  # ", {self.color})"
 
 
-class Stackable(Item):
+class Stackable(Item, subtype='Stackable'):
     """Adds count on top of the Item class
 
     Extends:
@@ -190,7 +207,7 @@ class Stackable(Item):
     """
 
     def __init__(self, template, amount, groups):
-        super().__init__(self, template['name'], template['base_weight'], template['base_value'], template['icon'])
+        super().__init__(template['name'], template['base_weight'], template['base_value'], template['icon'])
         self.amount = amount
         self.weight = self.base_weight * self.amount
         self.value = self.base_value * self.amount
@@ -215,7 +232,7 @@ class Stackable(Item):
             self.kill()
 
 
-class Consumable(Stackable):
+class Consumable(Stackable, subtype='Consumable'):
     """Class description.
 
     Extends:
@@ -230,7 +247,7 @@ class Consumable(Stackable):
         * identify_all() - loops through dungeon and inventory item groups to identify all copies
     """
 
-    def __init__(self, template, amount, groups):
+    def __init__(self, template, amount, groups, _):
         """Sets appropriate color and name based on subtype (scroll or potion)"""
         super().__init__(template, amount, groups)
         self.subtype = template['type']
@@ -277,7 +294,7 @@ class Consumable(Stackable):
             if isinstance(i, Consumable) and not i.status_identified and i.effect == self.effect:
                 i.identified()
         for i in mrogue.player.Player.get().inventory:
-            if i.type == Consumable and not i.status_identified and i.effect == self.effect:
+            if i.subtype in ('scroll', 'potion') and not i.status_identified and i.effect == self.effect:
                 i.identified()
 
 
@@ -326,10 +343,7 @@ class ItemManager:
             target = choice(list(filter(lambda x: keyword[0] in (x.get('keywords') or []), mrogue.item_data.templates)))
         else:
             target = choice(mrogue.item_data.templates)
-        if target['type'] in ('weapon', 'armor'):
-            return Wearable(target, groups, True)
-        elif target['type'] in ('scroll', 'potion'):
-            return Consumable(target, 1, groups)
+        return Item(target, 1, groups, True)
 
     @staticmethod
     def try_equip(item: Wearable) -> bool:
@@ -369,11 +383,11 @@ class ItemManager:
             if it in mrogue.player.Player.get().equipped:
                 prefix = '(E) '
             suffix = ''
-            if it.type == Wearable and it.subtype == 'weapon':
+            if it.subtype == 'weapon':
                 suffix = ' ({:+d}/{})'.format(
                     it.props.to_hit_modifier if it.status_identified else it.props.base_to_hit,
                     it.props.damage if it.status_identified else it.props.base_damage)
-            elif it.type == Wearable and it.subtype == 'armor':
+            elif it.subtype == 'armor':
                 suffix = f' ({it.props.armor_class_modifier if it.status_identified else it.props.base_armor_class:+d})'
             name = it.interface_name
             # if full name would be too wide, cut off after 40 characters
@@ -469,11 +483,11 @@ class ItemManager:
                     window.draw_rect(1, highlight_line, width - 2, 1, 0, bg=tcod.blue)
                     window.blit(self.screen, 4, 4)
                 context_actions = []
-                if i.type == Consumable:
+                if i.subtype in ('scroll', 'potion'):
                     context_actions.append(('a', 'Use item', player.use))
                 elif i in player.equipped:
                     context_actions.append(('a', 'Unequip item', player.unequip))
-                elif i.type == Wearable:
+                elif i.subtype in ('weapon', 'armor'):
                     context_actions.append(('a', 'Equip item', self.try_equip))
                 if i not in player.equipped:
                     context_actions.append(('b', 'Drop item', player.drop_item))
@@ -512,13 +526,13 @@ class ItemManager:
                 item = mrogue.utils.find_in(mrogue.player.Player.get().equipped, 'slot', slot)
                 if item:
                     summary = f"{item.interface_name:22.22}{'+' if len(item.interface_name) > 22 else ' '}("
-                    if item.type == Wearable and item.subtype == 'weapon':
+                    if item.subtype == 'weapon':
                         summary += '{:+d}/{})'.format(
                             item.props.to_hit_modifier if item.status_identified else
                             item.props.base_to_hit,
                             item.props.damage if item.status_identified else
                             item.props.base_damage)
-                    elif item.type == Wearable and item.subtype == 'armor':
+                    elif item.subtype == 'armor':
                         summary += '{:+d})'.format(item.props.armor_class_modifier)
                     window.print(12, i, chr(item.icon), item.color)
                     window.print(14, i, summary,

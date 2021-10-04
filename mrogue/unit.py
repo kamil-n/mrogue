@@ -148,11 +148,11 @@ class Unit(mrogue.Entity):
                 self.unequip(i)
         item.add(self.equipped)
         item.remove(self.inventory)
-        if item.type == mrogue.item.Wearable and item.subtype == 'weapon':
+        if item.subtype == 'weapon':
             self.to_hit = self.proficiency + self.ability_bonus + item.props.to_hit_modifier
             num, sides, mod = mrogue.utils.decompile_dmg_dice(item.props.damage)
             self.damage_dice = mrogue.utils.compile_dmg_dice(num, sides, mod + self.ability_bonus)
-        elif item.type == mrogue.item.Wearable and item.subtype == 'armor':
+        elif item.subtype == 'armor':
             bonus_ac_equipped = sum([i.props.armor_class_modifier for i in self.equipped if i.subtype == 'armor'])
             self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
             self.damage_reduction = self.armor_class / 100
@@ -184,10 +184,10 @@ class Unit(mrogue.Entity):
             return False
         item.add(self.inventory)
         item.remove(self.equipped)
-        if item.type == mrogue.item.Wearable and item.subtype == 'weapon':
+        if item.subtype == 'weapon':
             self.to_hit = self.proficiency + self.ability_bonus
             self.damage_dice = self.default_damage_dice
-        elif item.type == mrogue.item.Wearable and item.subtype == 'armor':
+        elif item.subtype == 'armor':
             bonus_ac_equipped = sum([i.props.armor_class_modifier for i in self.equipped if i.subtype == 'armor'])
             self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
             self.damage_reduction = self.armor_class / 100

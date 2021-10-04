@@ -1,4 +1,4 @@
-- [x] show '%' if there are multiple items on the floor
+- [ ] modify automove to ignore items that are not in front
 - [x] clean-up code and do some refactoring (ongoing)
 - [ ] add more monsters and items
 - [ ] player character stats
