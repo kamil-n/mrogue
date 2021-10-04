@@ -66,7 +66,7 @@ class Player(mrogue.unit.Unit):
         """Equip the player with a weapon and a piece of armor."""
         super().__init__('you', (chr(0x263A), 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, '1d2', 0, 20)
         self.player = True
-        self.dijkstra_map = Dijkstra(mrogue.map.Dungeon.current_level.walkable)
+        self.dijkstra_map = Dijkstra(mrogue.map.Dungeon.current_level.tiles['walkable'])
         self.dijkstra_map.set_goal(*self.pos)
         self.load_status = 'light'
         self.load_thresholds = tuple(threshold + self.abilities['str'].mod for threshold in self.load_thresholds)
@@ -121,7 +121,7 @@ class Player(mrogue.unit.Unit):
         :param level: the new Level of the Dungeon map
         """
         self.pos = level.pos
-        self.dijkstra_map = Dijkstra(level.walkable)
+        self.dijkstra_map = Dijkstra(level.tiles['walkable'])
         self.dijkstra_map.set_goal(*self.pos)
         if self not in level.units:
             self.add(level.objects_on_map, level.units)
@@ -138,9 +138,9 @@ class Player(mrogue.unit.Unit):
                     safe_cap = items[0].name[0].upper() + items[0].name[1:]
                     mrogue.message.Messenger.add(f'{safe_cap} is lying here.')
             tile = mrogue.map.Dungeon.current_level.tiles[self.pos]
-            if tile == mrogue.map.tiles['stairs_down']:
+            if tile == mrogue.map.compare['stairs_down']:
                 mrogue.message.Messenger.add('There are stairs leading down here.')
-            elif tile == mrogue.map.tiles['stairs_up']:
+            elif tile == mrogue.map.compare['stairs_up']:
                 mrogue.message.Messenger.add('There are stairs leading up here.')
         super().update()
 

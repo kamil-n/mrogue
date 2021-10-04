@@ -1,5 +1,4 @@
-- [x] clean-up code up to this point (ongoing)
-  - enumerate
+- [x] clean-up code and do some refactoring (ongoing)
 - [ ] add more monsters and items
 - [ ] player character stats
   - [x] 3 base stats: STR, DEX, CON

@@ -5,6 +5,7 @@ Globals:
     * directions - a 3D array for easy keypress to direction mapping
     * ignore_keys - a list of keyboard buttons that should be ignored as keys
     * ignore_mods - a list of keyboard buttons that should be ignored as modifiers
+    * tile_dt - data format for numpy arrays
 Functions:
     * direction_from() - calculates new coordinates from current coordinates and a keypress
     * key_is() - compares a pressed key against a target (expected) key
@@ -12,9 +13,11 @@ Functions:
     * wait() - freezes everything until a specific key (or any key) is pressed
     * help_screen() - prints key bindings on the screen
 Classes:
+    * Tile - a tuple-like structure to hold tile data for the map
     * Glyph - a base class for any entity that shall be printed on screen (item or unit)
     * Screen - a singleton keeping the main window=screen and the context information
 """
+from typing import NamedTuple, Tuple
 import tcod.event
 import numpy as np
 import mrogue
@@ -148,6 +151,21 @@ def help_screen() -> None:
     window.blit(Screen.get(), 12, 12, bg_alpha=0.95)
     Screen.get().present()
     wait(tcod.event.K_ESCAPE)
+
+
+tile_dt = np.dtype([
+        ('walkable', bool),
+        ('transparent', bool),
+        ('lit', tcod.console.rgba_graphic),
+        ('dim', tcod.console.rgba_graphic)
+    ])
+
+
+class Tile(NamedTuple):
+    walkable: bool
+    transparent: bool
+    lit: Tuple[int, Tuple[int, int, int, int], Tuple[int, int, int, int]]
+    dim: Tuple[int, Tuple[int, int, int, int], Tuple[int, int, int, int]]
 
 
 class Glyph:

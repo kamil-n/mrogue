@@ -3,8 +3,7 @@
 
 Globals:
     * tiles - dictionary of all the elements that the map is made of
-Functions:
-    * random_gray() - selects a random shade of gray
+    * compare - casting those tiles to numpy arrays for array values comparison that works
 Classes:
     * Level - represents one floor of the dungeon
     * Dungeon - a collection of Levels
@@ -26,51 +25,66 @@ import mrogue.utils
 from mrogue import Point
 
 tiles = {
-           'wall': chr(0x2588),
-           'floor': chr(0xB7),
-           'stairs_down': chr(0x2265),
-           'stairs_up': chr(0x2264)}
+    'wall': mrogue.io.Tile(
+        walkable=False, transparent=False,
+        lit=(0x2588, (192, 192, 192, 128), (32, 32, 32, 128)),
+        dim=(0x2588, (64, 64, 64, 128), (0, 0, 0, 128))),
+    'floor': mrogue.io.Tile(
+        walkable=True, transparent=True,
+        lit=(0xB7, (192, 192, 192, 128), (32, 32, 32, 128)),
+        dim=(0xB7, (64, 64, 64, 64), (0, 0, 0, 128))),
+    'stairs_down': mrogue.io.Tile(
+        walkable=True, transparent=True,
+        lit=(0x2265, (192, 192, 0, 128), (32, 32, 32, 128)),
+        dim=(0x2265, (64, 64, 0, 64), (0, 0, 0, 128))),
+    'stairs_up': mrogue.io.Tile(
+        walkable=True, transparent=False,
+        lit=(0x2264, (192, 192, 0, 128), (32, 32, 32, 128)),
+        dim=(0x2264, (64, 64, 0, 64), (0, 0, 0, 128)))
+}
+compare = {
+    'wall': np.asarray(tiles['wall'], dtype=mrogue.io.tile_dt),
+    'floor': np.asarray(tiles['floor'], dtype=mrogue.io.tile_dt),
+    'stairs_down': np.asarray(tiles['stairs_down'], dtype=mrogue.io.tile_dt),
+    'stairs_up': np.asarray(tiles['stairs_up'], dtype=mrogue.io.tile_dt)
+}
 
 
-def random_gray(lo: int, hi: int) -> tcod.Color:
-    """Create a random shade of gray for the dungeon tile"""
-    val = random.randint(lo, hi)
-    return tcod.Color(val, val, val)
-
-
-class Level(tcod.map.Map):
+class Level:
     """Creates a stores a single floor of the dungeon that fits on the screen.
 
-    Extends:
-        * tcod.map.Map
     Object attributes:
         * mapDim - width and height of the available space to dig in
         * objects_on_map - list of all the Entities that are tied to a particular Level
         * units - list of all the Units that walk on a particular Level
-        * colors - mapping of tile colors
-        * explored - remembers the explored tiles
+        * pos - position (coordinates) where Player should appear initially
+        * tiles - numpy array keeping all structural information: walkability, transparency, tile type
+        * explored - remembers the explored tiles per level
+        * floor - a list of coordinates for empty tiles (rooms only)
     Methods:
-        * _dig_tunnel() - connects two points by making a broken line
-        * _dig() - changes solid tiles (walls) to empty space
+        * create_level() - creates rooms and corridors, places stairs
+        * tunnel() - connects two points by making a broken line
     """
 
-    def __init__(self, dimensions: Point, first: bool = False):
-        """Creates a level using the BSP algorithm."""
+    def __init__(self, dimensions: Point):
+        """Creates an empty level using the BSP algorithm."""
         self.mapDim = dimensions
         self.objects_on_map = []
         self.units = []
-        super().__init__(self.mapDim.x, self.mapDim.y, 'F')
+        self.pos = None
+        self.floor = None
 
         # first, everything is solid
-        self.tiles = np.full((self.mapDim.x, self.mapDim.y), tiles['wall'], order='F')
+        self.tiles = np.empty(self.mapDim, mrogue.io.tile_dt, 'F')
+        self.tiles[:] = tiles['wall']
+        self.explored = np.zeros(self.mapDim, bool, 'F')
 
-        # some tricks are needed to pick a random shade of gray for each tile
-        temp = [[random_gray(64, 128) for _ in range(self.mapDim.y)] for _ in range(self.mapDim.x)]
-        self.colors = np.empty((self.mapDim.x, self.mapDim.y), object, order='F')
-        self.colors[...] = temp
+    def create_level(self,  first: bool = False) -> None:
+        """
+        Fill the level with rooms and structures.
 
-        self.explored = np.zeros((self.mapDim.x, self.mapDim.y), bool, order='F')
-
+        :param first: True if this is the first level created at start
+        """
         # binary space partitioning
         bsp = tcod.bsp.BSP(0, 0, self.mapDim.x, self.mapDim.y)
         bsp.split_recursive(4, 11, 8, 1.0, 1.0)
@@ -89,12 +103,10 @@ class Level(tcod.map.Map):
                 right = min(node_center.x + w + 1, self.mapDim.x - 1)
                 bottom = min(node_center.y + h + 1, self.mapDim.y - 1)
                 self.tiles[left:right, top:bottom] = tiles['floor']
-        floor_mask = (self.tiles == '·')
-        self.walkable[:] = floor_mask
-        self.transparent[:] = floor_mask
-        self.floor = np.argwhere(self.tiles == tiles['floor'])
+        self.floor = np.argwhere(self.tiles['walkable'])
 
         # select coordinates for stairs before corridors so they would be placed only in rooms
+        stairs_up = None
         if not first:
             stairs_up = Point(*random.choice(self.floor))
             self.pos = stairs_up
@@ -125,30 +137,30 @@ class Level(tcod.map.Map):
                 while (node1[1].x < partition_center.x) == (node2[1].x < partition_center.x):
                     node2 = dist_pairs.pop()
             # connect node centers to their respective partition's center
-            self._dig_tunnel(*node1[1], *partition_center)
-            self._dig_tunnel(*node2[1], *partition_center)
+            self.tunnel(*node1[1], *partition_center)
+            self.tunnel(*node2[1], *partition_center)
+
+        # TODO:  check if this can be done in a more elegant way
+        for x in range(self.mapDim.x):
+            for y in range(self.mapDim.y):
+                random_grey = random.randint(64, 128)
+                one_shade_of_grey = tcod.Color(random_grey, random_grey, random_grey)
+                self.tiles[x, y]['lit'][1][:3] = one_shade_of_grey
+                self.tiles[x, y]['dim'][1][:3] = one_shade_of_grey * 0.3
 
         # place stairs last so they won't be overwritten
-        if not first:
-            self._dig(stairs_up.x, stairs_up.y, tiles['stairs_up'], tcod.yellow, False)
-        self._dig(stairs_down.x, stairs_down.y, tiles['stairs_down'], tcod.yellow)
-        # experimenting with noise map:
-        # noise = tcod.noise.Noise(dimensions=2, algorithm=tcod.noise.Algorithm.WAVELET, seed=42)
-        # samples = noise[tcod.noise.grid(shape=(self.mapDim.y, self.mapDim.x), scale=0.1, origin=(0, 0))]
-        # samples = (samples + 1.0) * 0.5
-        # threshold = 0.4
-        # self.tiles = np.select([samples < threshold, samples >= threshold], [tiles['wall'], tiles['floor']])
-        # self.transparent[:] = np.select([samples < threshold, samples >= threshold], [False, True])
-        # self.walkable[:] = np.select([samples < threshold, samples >= threshold], [False, True])
+        if stairs_up:
+            self.tiles[stairs_up] = tiles['stairs_up']
+        self.tiles[stairs_down] = tiles['stairs_down']
 
-    def _dig_tunnel(self, x1: int, y1: int, x2: int, y2: int) -> None:
+    def tunnel(self, x1: int, y1: int, x2: int, y2: int) -> None:
         """Connect two points, doing one turn after random amount of steps"""
         dx = 0 if x1 == x2 else int(abs(x2 - x1) / (x2 - x1))
         dy = 0 if y1 == y2 else int(abs(y2 - y1) / (y2 - y1))
         horizontal = random.random() > 0.5
         distance = 0
         broken = 100
-        self._dig(x1, y1)
+        self.tiles[x1, y1] = tiles['floor']
         while x1 != x2 or y1 != y2:
             if y1 == y2 or (horizontal and x1 != x2):
                 x1 += dx
@@ -156,36 +168,13 @@ class Level(tcod.map.Map):
                 y1 += dy
             distance += 1
             # turn only after leaving the initial room
-            if self.tiles[x1, y1] == tiles['wall']:
+            if self.tiles[x1, y1] == compare['wall']:
                 broken = distance
-            self._dig(x1, y1)
+            self.tiles[x1, y1] = tiles['floor']
             # don't turn right away
             if random.random() > 0.7 and distance - broken > 1:
                 horizontal = not horizontal
-        self._dig(x2, y2)
-
-    def _dig(self, x: int, y: int,
-             tile: str = tiles['floor'],
-             color: tcod.Color = None,
-             transparent: bool = True,
-             walkable: bool = True) -> None:
-        """Change solid tile (wall) into space
-
-        :param x: x coordinate of the tile
-        :param y: y coordinate of the tile
-        :param tile: what to set instead of the wall
-        :param color: color of the new space
-        :param transparent: if it doesn't break line of sight
-        :param walkable: if it doesn't break movement
-        """
-        self.tiles[x, y] = tile
-        if not color:
-            # random shade of gray
-            r = random.randint(64, 128)
-            color = tcod.Color(r, r, r)
-        self.colors[x, y] = color
-        self.transparent[x, y] = transparent
-        self.walkable[x, y] = walkable
+        self.tiles[x2, y2] = tiles['floor']
 
 
 class Dungeon:
@@ -225,7 +214,8 @@ class Dungeon:
         """Creates initial Level at the game start"""
         self.screen = mrogue.io.Screen.get()
         Dungeon.mapDim = Point(self.screen.width, self.screen.height - 1)
-        Dungeon.current_level = Level(Dungeon.mapDim, True)
+        Dungeon.current_level = Level(Dungeon.mapDim)
+        Dungeon.current_level.create_level(first=True)
         Dungeon._levels.append(Dungeon.current_level)
 
     def new_level(self, num_objects: int) -> None:
@@ -235,33 +225,24 @@ class Dungeon:
         """
         Dungeon.current_level.pos = mrogue.player.Player.get().pos
         Dungeon.current_level = Level(self.mapDim)
+        Dungeon.current_level.create_level()
         mrogue.item.ItemManager.create_loot(num_objects)  # , Dungeon._depth // 4)
         mrogue.monster.MonsterManager.create_monsters(num_objects, Dungeon._depth)
         Dungeon._levels.append(Dungeon.current_level)
 
-    def level_from_string(self, level_string: str) -> tcod.map.Map:
+    def level_from_string(self, level_string: str) -> Level:
         """Creates a level from binary file as a string
 
         :param level_string: read from a zipped binary file
-        :return: level as base tcod.map.Map, not Level
+        :return: Level instance
         """
-        tcod_map = tcod.map.Map(self.mapDim.x, self.mapDim.y, 'F')
-        tcod_map.objects_on_map = []
-        tcod_map.units = []
-        tcod_map.tiles = np.full((self.mapDim.x, self.mapDim.y), tiles['wall'], order='F')
-        temp = [[random_gray(64, 128) for _ in range(self.mapDim.y)] for _ in range(self.mapDim.x)]
-        tcod_map.colors = np.empty((self.mapDim.x, self.mapDim.y), object, order='F')
-        tcod_map.colors[...] = temp
-        tcod_map.explored = np.zeros((self.mapDim.x, self.mapDim.y), bool, order='F')
+        level = Level(self.mapDim)
         level_array = level_string.split()
         i = 0
         while i < self.mapDim.y:
-            tcod_map.tiles[:, i] = [ch for ch in level_array[i]]
+            level.tiles[:, i] = [ch for ch in level_array[i]]
             i += 1
-        floor_mask = (tcod_map.tiles == '·')
-        tcod_map.walkable[:] = floor_mask
-        tcod_map.transparent[:] = floor_mask
-        return tcod_map
+        return level
 
     def descend(self, pos: Point, num_objects: int) -> bool:
         """Switch current level for the one below it, creating a new one if necessary
@@ -270,7 +251,7 @@ class Dungeon:
         :param num_objects: how many monsters and items to create
         :return: False if there are no stairs, True if level was switched
         """
-        if Dungeon.current_level.tiles[pos] == tiles['stairs_down']:
+        if Dungeon.current_level.tiles[pos] == compare['stairs_down']:
             Dungeon._depth += 1
             mrogue.monster.MonsterManager.stop_monsters()
             # if next level exists already
@@ -284,7 +265,7 @@ class Dungeon:
                         level_string = str(zlib.decompress(f.read()), 'utf-8')
                     Dungeon.current_level = self.level_from_string(level_string)
                     Dungeon.current_level.pos = Point(48, 35)
-                    Dungeon.current_level.walkable[48, 35] = Dungeon.current_level.transparent[48, 35] = True
+                    Dungeon.current_level.tiles[48, 35] = tiles['stairs_up']
                     mrogue.monster.MonsterManager.create_monsters(num_objects, Dungeon._depth)
                     Dungeon._levels.append(Dungeon.current_level)
                 else:
@@ -305,7 +286,7 @@ class Dungeon:
         :param pos: check if there are stairs at this position
         :return: False if there are no stairs, True if level was switched
         """
-        if cls.current_level.tiles[pos] == tiles['stairs_up']:
+        if cls.current_level.tiles[pos] == compare['stairs_up']:
             cls._depth -= 1
             mrogue.monster.MonsterManager.stop_monsters()
             cls.current_level = cls._levels[cls._depth]
@@ -338,7 +319,7 @@ class Dungeon:
         # if target is farther that 1 space
         if not mrogue.utils.adjacent(unit.pos, check):
             return False
-        if not cls.current_level.walkable[check]:
+        if not cls.current_level.tiles[check]['walkable']:
             if not unit.player:
                 mrogue.message.Messenger.add(f'{unit.name} runs into the wall.')
             else:
@@ -368,11 +349,11 @@ class Dungeon:
         def get_front(position: Point, delta: Point) -> np.array:
             """Get just the front strip of where player is facing for more reliable environment tracking"""
             if delta.y == 1:
-                return Dungeon.current_level.walkable[position.x + delta.x - 1, position.y - 1:position.y + 2]
+                return Dungeon.current_level.tiles[position.x + delta.x - 1, position.y - 1:position.y + 2]['walkable']
             elif delta.x == 1:
-                return Dungeon.current_level.walkable[position.x - 1:position.x + 2, position.y + delta.y - 1]
+                return Dungeon.current_level.tiles[position.x - 1:position.x + 2, position.y + delta.y - 1]['walkable']
             else:
-                return Dungeon.current_level.walkable[position.x + delta.x - 1, position.y + delta.y - 1]
+                return Dungeon.current_level.tiles[position.x + delta.x - 1, position.y + delta.y - 1]['walkable']
 
         def scan(current_pos: Point, delta_pos: Point, original_geometry: np.array = None) -> bool:
             """Check if the map layout changed or if there is a Unit or Item """
@@ -381,7 +362,7 @@ class Dungeon:
                 if not np.array_equal(geometry, new_geometry):
                     return True
             for unit in Dungeon.current_level.units:
-                if not unit.player and mrogue.utils.adjacent(current_pos, unit.pos, 2):
+                if not unit.player and mrogue.utils.adjacent(current_pos, unit.pos, 3):
                     return True
             for obj in Dungeon.current_level.objects_on_map:
                 if issubclass(type(obj), mrogue.item.Item) and mrogue.utils.adjacent(current_pos, obj.pos):
@@ -410,7 +391,7 @@ class Dungeon:
             render_func()
             mrogue.message.Messenger.clear()
             pos = Point(pos.x + dx, pos.y + dy)
-            if not Dungeon.current_level.walkable[pos]:
+            if not Dungeon.current_level.tiles[pos]['walkable']:
                 break
             self.movement(mrogue.player.Player.get(), pos)
         return True
@@ -418,9 +399,9 @@ class Dungeon:
     @classmethod
     def look_around(cls):
         """Mark dungeon tiles in range as visited using a field of view algorithm"""
-        radius = mrogue.player.Player.get().sight_range
-        pos = mrogue.player.Player.get().pos
-        cls.current_level.compute_fov(*pos, radius, algorithm=tcod.FOV_BASIC)
+        player = mrogue.player.Player.get()
+        player.fov = tcod.map.compute_fov(cls.current_level.tiles['transparent'], player.pos, player.sight_range)
+        cls.current_level.explored |= player.fov
 
     @classmethod
     def unit_at(cls, where: Point) -> mrogue.unit.Unit or None:
@@ -431,32 +412,27 @@ class Dungeon:
         return None
 
     def draw_map(self):
-        """Loop through all cells on the map and render them either visited (darker) or visible, then render Entities"""
+        """Directly transplant tiles to tcod.Console's memory, then render Entities"""
+        nothing = np.asarray((0, (0, 0, 0, 0), (0, 0, 0, 0)), dtype=tcod.console.rgba_graphic)
         self.screen.clear()
+        player = mrogue.player.Player.get()
         level = Dungeon.current_level
-        # TODO: get rid of nested loops
         if 'debug' in argv:
-            for x in range(0, self.mapDim.x):
-                for y in range(1, self.mapDim.y):
-                    self.screen.print(x, y, level.tiles[x][y],  level.colors[x][y] * 1.00)
+            self.screen.tiles_rgb[:, 0:39] = level.tiles['lit']
         else:
-            for x in range(0, self.mapDim.x):
-                for y in range(1, self.mapDim.y):
-                    if level.fov[x][y]:
-                        level.explored[x][y] = True
-                        self.screen.print(x, y, level.tiles[x][y], level.colors[x][y] * 1.00)
-                    elif level.explored[x][y]:
-                        self.screen.print(x, y, level.tiles[x][y], level.colors[x][y] * 0.35)
+            self.screen.tiles_rgb[:, 0:39] = np.select(
+                (player.fov, level.explored),
+                (level.tiles['lit'], level.tiles['dim']),
+                nothing)
         priority = []
         for thing in level.objects_on_map:
-            if level.fov[thing.pos] or 'debug' in argv:
+            if player.fov[thing.pos] or 'debug' in argv:
                 if thing.layer < 2:
                     priority.append(thing)
                 else:
                     self.screen.print(*thing.pos, thing.icon, thing.color)
         for thing in priority:
             self.screen.print(*thing.pos, thing.icon, thing.color)
-        player = mrogue.player.Player.get()
         self.screen.print(*player.pos, player.icon, player.color)
 
     @classmethod
@@ -470,7 +446,5 @@ class Dungeon:
         results = [Point(x-1, y), Point(x, y+1), Point(x+1, y), Point(x, y-1),
                    Point(x-1, y-1), Point(x+1, y-1), Point(x-1, y+1), Point(x+1, y+1)]
         results = list(filter(lambda p: 0 < p.x <= cls.mapDim.x and 0 < p.y <= cls.mapDim.y, results))
-        results = list(filter(lambda p: cls.current_level.walkable[p], results))
-        # double filter is twice faster than the following:
-        # results = [Point(*p) for p in np.argwhere(cls.current_level.walkable[x-1:x+2, y-1:y+2]) + [x, y]]
+        results = list(filter(lambda p: cls.current_level.tiles[p]['walkable'], results))
         return results

@@ -72,7 +72,7 @@ class MonsterManager:
         m = Monster(template, (level.objects_on_map, level.units))
         while True:
             pos = Point(*random.choice(level.floor))
-            if not level.fov[pos]:
+            if not mrogue.player.Player.get().fov[pos]:
                 break
         setattr(m, 'pos', pos)
         if kwargs:
@@ -164,11 +164,11 @@ class Monster(mrogue.unit.Unit):
             self.path = None
             self.attack(target)
         else:
-            monster_los = None
+            monster_fov = None
             if self.is_in_range(target.pos):
-                monster_los = tcod.map.compute_fov(mrogue.map.Dungeon.current_level.transparent,
-                                          self.pos, self.sight_range, algorithm=tcod.FOV_BASIC)
-            if monster_los is not None and monster_los[target.pos] or self.sight_range == 100:
+                monster_fov = tcod.map.compute_fov(
+                    mrogue.map.Dungeon.current_level.tiles['transparent'], self.pos, self.sight_range)
+            if monster_fov is not None and monster_fov[target.pos] or self.sight_range == 100:
                 self.approach(target.pos)
             else:
                 if random.random() > 0.5:
