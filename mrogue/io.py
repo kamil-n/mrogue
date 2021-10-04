@@ -176,22 +176,25 @@ class Glyph:
         * color - should preferably be a named color from tcod.constants, or a (r,g,b) tuple
     """
 
-    def __init__(self):
-        self.icon = 0
-        self.color = tcod.white
-        self.background = tcod.black
-        self.alpha = 128
+    def __init__(self, default: Tuple[int, Tuple[int, int, int, int], Tuple[int, int, int, int]] =
+                 (0, (*tcod.white, 255), (*tcod.black, 255))):
+        self.icon = default[0]
+        self.color = default[1][:3]
+        self.fg_alpha = default[1][3]
+        self.background = default[2][:3]
+        self.bg_alpha = default[2][3]
 
     @property
     def tile(self):
-        return self.icon, (*self.color, self.alpha), (*self.background, self.alpha)
+        return self.icon, (*self.color, self.fg_alpha), (*self.background, self.bg_alpha)
 
     @tile.setter
-    def tile(self, tile_tuple):
+    def tile(self, tile_tuple: Tuple[int, Tuple[int, int, int, int], Tuple[int, int, int, int]]):
         self.icon = tile_tuple[0]
         self.color = tile_tuple[1][:3]
+        self.fg_alpha = tile_tuple[1][3]
         self.background = tile_tuple[2][:3]
-        self.alpha = tile_tuple[1][3]
+        self.bg_alpha = tile_tuple[2][3]
 
 
 class Screen(tcod.Console):

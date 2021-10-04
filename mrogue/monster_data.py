@@ -12,7 +12,7 @@ templates = {
             {
                 'name': 'young rat',
                 'color': 'desaturated_flame',
-                'icon': 'r',
+                'icon': 0x72,
                 'ability_scores': [3, 14, 10],
                 'hit_dice': '1d2',
                 'dmg_dice_unarmed': '1d1-2',
@@ -24,7 +24,7 @@ templates = {
             {
                 'name': 'rat',
                 'color': 'dark_grey',
-                'icon': 'r',
+                'icon': 0x72,
                 'ability_scores': [4, 14, 10],
                 'hit_dice': '1d3',
                 'dmg_dice_unarmed': '1d2-2',
@@ -36,7 +36,7 @@ templates = {
             {
                 'name': 'dire rat',
                 'color': 'grey',
-                'icon': 'r',
+                'icon': 0x72,
                 'ability_scores': [6, 14, 12],
                 'hit_dice': '1d3',
                 'dmg_dice_unarmed': '1d3-2',
@@ -48,7 +48,7 @@ templates = {
             {
                 'name': 'rat matriarch',
                 'color': 'lighter_grey',
-                'icon': 'R',
+                'icon': 0x52,
                 'ability_scores': [8, 14, 14],
                 'hit_dice': '1d4',
                 'dmg_dice_unarmed': '1d3-1',
@@ -72,7 +72,7 @@ templates = {
             {
                 'name': 'kobold outcast',
                 'color': 'dark_flame',
-                'icon': 'k',
+                'icon': 0x6B,
                 'ability_scores': [8, 14, 10],
                 'hit_dice': '1d4',
                 'dmg_dice_unarmed': '1d2+1',
@@ -84,7 +84,7 @@ templates = {
             {
                 'name': 'kobold guard',
                 'color': 'darker_flame',
-                'icon': 'k',
+                'icon': 0x6B,
                 'ability_scores': [9, 14, 12],
                 'hit_dice': '1d4',
                 'dmg_dice_unarmed': '1d3+1',
@@ -97,7 +97,7 @@ templates = {
             {
                 'name': 'kobold warrior',
                 'color': 'darkest_flame',
-                'icon': 'k',
+                'icon': 0x6B,
                 'ability_scores': [9, 14, 12],
                 'hit_dice': '1d5',
                 'dmg_dice_unarmed': '1d3+2',
@@ -126,7 +126,7 @@ templates = {
             {
                 'name': 'goblin wanderer',
                 'color': 'darker_sea',
-                'icon': 'g',
+                'icon': 0x67,
                 'ability_scores': [8, 12, 8],
                 'hit_dice': '1d6',
                 'dmg_dice_unarmed': '1d3+1',
@@ -138,7 +138,7 @@ templates = {
             {
                 'name': 'goblin guard',
                 'color': 'darker_sea',
-                'icon': 'g',
+                'icon': 0x67,
                 'ability_scores': [9, 12, 12],
                 'hit_dice': '1d5',
                 'dmg_dice_unarmed': '1d2+2',
@@ -151,7 +151,7 @@ templates = {
             {
                 'name': 'goblin warrior',
                 'color': 'darker_sea',
-                'icon': 'g',
+                'icon': 0x67,
                 'ability_scores': [9, 12, 14],
                 'hit_dice': '1d5',
                 'dmg_dice_unarmed': '1d4+1',
@@ -164,7 +164,7 @@ templates = {
             {
                 'name': 'goblin champion',
                 'color': 'darker_sea',
-                'icon': 'g',
+                'icon': 0x67,
                 'ability_scores': [10, 12, 14],
                 'hit_dice': '1d6',
                 'dmg_dice_unarmed': '1d4+1',
@@ -192,7 +192,7 @@ templates = {
             {
                 'name': 'hobgoblin warrior',
                 'color': 'darker_crimson',
-                'icon': 'g',
+                'icon': 0x67,
                 'ability_scores': [10, 12, 10],
                 'hit_dice': '1d8',
                 'dmg_dice_unarmed': '1d6',
@@ -205,7 +205,7 @@ templates = {
             {
                 'name': 'hobgoblin officer',
                 'color': 'darker_crimson',
-                'icon': 'g',
+                'icon': 0x67,
                 'ability_scores': [12, 12, 12],
                 'hit_dice': '1d7',
                 'dmg_dice_unarmed': '1d5-1',
@@ -218,7 +218,7 @@ templates = {
             {
                 'name': 'orc warrior',
                 'color': 'darker_amber',
-                'icon': 'g',
+                'icon': 0x67,
                 'ability_scores': [12, 12, 14],
                 'hit_dice': '1d7',
                 'dmg_dice_unarmed': '1d6',
@@ -231,7 +231,7 @@ templates = {
             {
                 'name': 'orc officer',
                 'color': 'darker_amber',
-                'icon': 'g',
+                'icon': 0x67,
                 'ability_scores': [14, 12, 16],
                 'hit_dice': '1d6',
                 'dmg_dice_unarmed': '1d5',
@@ -244,7 +244,7 @@ templates = {
             {
                 'name': 'orc chieftain',
                 'color': 'darker_amber',
-                'icon': 'G',
+                'icon': 0x47,
                 'ability_scores': [14, 14, 18],
                 'hit_dice': '1d6',
                 'dmg_dice_unarmed': '1d6',
@@ -274,7 +274,7 @@ templates = {
             {
                 'name': 'canine skeleton',
                 'color': 'lightest_orange',
-                'icon': 's',
+                'icon': 0x73,
                 'ability_scores': [6, 12, 10],
                 'hit_dice': '1d5',
                 'dmg_dice_unarmed': '1d3+2',
@@ -286,7 +286,7 @@ templates = {
             {
                 'name': 'goblinoid skeleton',
                 'color': 'lightest_lime',
-                'icon': 's',
+                'icon': 0x73,
                 'ability_scores': [7, 12, 10],
                 'hit_dice': '1d6',
                 'dmg_dice_unarmed': '1d4+2',
@@ -298,7 +298,7 @@ templates = {
             {
                 'name': 'humanoid skeleton',
                 'color': 'lightest_grey',
-                'icon': 's',
+                'icon': 0x73,
                 'ability_scores': [10, 12, 10],
                 'hit_dice': '1d7',
                 'dmg_dice_unarmed': '1d4+1',
@@ -310,7 +310,7 @@ templates = {
             {
                 'name': 'orc skeleton',
                 'color': 'lightest_red',
-                'icon': 's',
+                'icon': 0x73,
                 'ability_scores': [12, 12, 10],
                 'hit_dice': '1d8',
                 'dmg_dice_unarmed': '1d4+1',
@@ -322,7 +322,7 @@ templates = {
             {
                 'name': 'monstrous skeleton',
                 'color': 'light_yellow',
-                'icon': 's',
+                'icon': 0x73,
                 'ability_scores': [12, 14, 12],
                 'hit_dice': '1d8',
                 'dmg_dice_unarmed': '1d6',
@@ -334,7 +334,7 @@ templates = {
             {
                 'name': 'skeletal golem',
                 'color': 'white',
-                'icon': 'S',
+                'icon': 0x53,
                 'ability_scores': [14, 10, 20],
                 'hit_dice': '1d5',
                 'dmg_dice_unarmed': '1d6',

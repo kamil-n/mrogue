@@ -56,7 +56,8 @@ class Item(mrogue.Entity):
         self.base_value = base_value
         self.identified_value = base_value
         self.value = base_value
-        self.icon = chr(icon) if isinstance(icon, int) else icon
+        self.icon = icon
+        self.background = tcod.blue * 0.3
         self.layer = 2
         self.status_identified = False
         self.name = name
@@ -385,7 +386,7 @@ class ItemManager:
             elif it.status_identified and hasattr(it, 'enchantment_level'):
                 color = mrogue.item_data.enchantment_colors[it.enchantment_level]
             window.print(1, 1 + i + offset, f'{string.ascii_letters[i+scroll]}) ')
-            window.print(4, 1 + i + offset, it.icon, it.color)
+            window.print(4, 1 + i + offset, chr(it.icon), it.color)
             window.print(6, 1 + i + offset, summary, color)
             if show_details:
                 details = f'{it.slot:>6} {it.weight * it.amount:6.2f}  {it.value * it.amount:>6.2f}'
@@ -519,7 +520,7 @@ class ItemManager:
                             item.props.base_damage)
                     elif item.type == Wearable and item.subtype == 'armor':
                         summary += '{:+d})'.format(item.props.armor_class_modifier)
-                    window.print(12, i, item.icon, item.color)
+                    window.print(12, i, chr(item.icon), item.color)
                     window.print(14, i, summary,
                                  mrogue.item_data.enchantment_colors[item.enchantment_level])
                 i += 1

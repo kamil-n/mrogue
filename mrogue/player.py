@@ -64,7 +64,8 @@ class Player(mrogue.unit.Unit):
 
     def __init__(self):
         """Equip the player with a weapon and a piece of armor."""
-        super().__init__('you', (chr(0x263A), 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, '1d2', 0, 20)
+        super().__init__('you', (0x263A, 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, '1d2', 0, 20)
+        self.background = tcod.green * 0.3
         self.player = True
         self.dijkstra_map = Dijkstra(mrogue.map.Dungeon.current_level.tiles['walkable'])
         self.dijkstra_map.set_goal(*self.pos)
@@ -74,7 +75,7 @@ class Player(mrogue.unit.Unit):
         self.health_regen_cooldown = 0
         self.crit_immunity = 0.0
         self.status_bar = tcod.console.Console(mrogue.io.Screen.get().width, 1, 'F')
-        self.add_item(mrogue.item.Wearable(mrogue.item_data.templates[5], None))  # mace
+        self.add_item(mrogue.item.Wearable(mrogue.item_data.templates[4], None))  # stick
         self.add_item(mrogue.item.Wearable(mrogue.item_data.templates[10], None))  # tunic
         for freebie in list(self.inventory):
             self.equip(freebie, quiet=True)

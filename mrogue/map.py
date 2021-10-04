@@ -433,10 +433,10 @@ class Dungeon:
                 if thing.layer < 2:
                     priority.append(thing)
                 else:
-                    self.screen.print(*thing.pos, thing.icon, thing.color)
+                    self.screen.rgba[thing.pos] = thing.tile
         for thing in priority:
-            self.screen.print(*thing.pos, thing.icon, thing.color)
-        self.screen.print(*player.pos, player.icon, player.color)
+            self.screen.rgba[thing.pos] = thing.tile
+        self.screen.rgba[player.pos] = player.tile
 
     @classmethod
     def neighbors(cls, of: Point) -> list[Point]:
