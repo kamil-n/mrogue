@@ -117,10 +117,10 @@ class Unit(mrogue.Entity):
         self.moved = False
 
     def __repr__(self):
-        return f"Unit('{self.name}','{self.icon}')"  # ", {self.color})"
+        return f"Unit('{self.name}',0x{self.icon:x})"  # ", {self.color})"
 
     def __str__(self):
-        return f"{self.icon} '{self.name}'"  # " [{self.color}]"
+        return f"{chr(self.icon)} '{self.name}'"  # " [{self.color}]"
 
     def update(self) -> None:
         self.moved = False

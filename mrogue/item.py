@@ -66,10 +66,10 @@ class Item(mrogue.Entity):
         self.identified_name = name  # TEMP
 
     def __repr__(self):
-        return f"Item('{self.name}', {self.type}, '{self.icon}')"  # ", {self.color})"
+        return f"Item('{self.name}', {self.type}, '{self.icon:x}')"  # ", {self.color})"
 
     def __str__(self):
-        return f"{self.icon} '{self.name}' ({self.amount})"  # " [{self.color}]"
+        return f"{chr(self.icon)} '{self.name}' ({self.amount})"  # " [{self.color}]"
 
     def dropped(self, coordinates: Point) -> None:
         """Assign a position on the map and add this item to current level's objects group
@@ -175,7 +175,7 @@ class Wearable(Item):
         self.add(groups)
 
     def __repr__(self):
-        return f"Wearable('{self.name}', {self.subtype}, '{self.icon}')"  # ", {self.color})"
+        return f"Wearable('{self.name}', {self.subtype}, 0x{self.icon:x})"  # ", {self.color})"
 
 
 class Stackable(Item):
@@ -250,7 +250,7 @@ class Consumable(Stackable):
             self.identified()
 
     def __repr__(self):
-        return f"Consumable('{self.name}', {self.subtype}, '{self.icon}')"  # ", {self.color})"
+        return f"Consumable('{self.name}', {self.subtype}, 0x{self.icon:x})"  # ", {self.color})"
 
     def used(self, target: mrogue.unit.Unit) -> str:
         """Apply the related effect and fetch it's feedback message

@@ -420,21 +420,20 @@ class Dungeon:
         self.screen.clear()
         player = mrogue.player.Player.get()
         level = Dungeon.current_level
+        display_items = list(filter(lambda i: isinstance(i, mrogue.item.Item), level.objects_on_map))
+        display_monsters = list(filter(lambda m: isinstance(m, mrogue.monster.Monster), level.objects_on_map))
         if 'debug' in argv:
             self.screen.rgba[:, 0:39] = level.tiles['lit']
         else:
+            display_items = list(filter(lambda i: player.fov[i.pos], display_items))
+            display_monsters = list(filter(lambda m: player.fov[m.pos], display_monsters))
             self.screen.rgba[:, 0:39] = np.select(
                 (player.fov, level.explored),
                 (level.tiles['lit'], level.tiles['dim']),
                 nothing)
-        priority = []
-        for thing in level.objects_on_map:
-            if player.fov[thing.pos] or 'debug' in argv:
-                if thing.layer < 2:
-                    priority.append(thing)
-                else:
-                    self.screen.rgba[thing.pos] = thing.tile
-        for thing in priority:
+        for thing in display_items:
+            self.screen.rgba[thing.pos] = thing.tile
+        for thing in display_monsters:
             self.screen.rgba[thing.pos] = thing.tile
         self.screen.rgba[player.pos] = player.tile
 
