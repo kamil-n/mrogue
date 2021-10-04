@@ -10,6 +10,7 @@ Classes:
 """
 import random
 import numpy as np
+from collections import defaultdict
 from os import path
 from sys import argv
 from typing import Callable
@@ -417,6 +418,7 @@ class Dungeon:
     def draw_map(self):
         """Directly transplant tiles to tcod.Console's memory, then render Entities"""
         nothing = np.asarray((0, (0, 0, 0, 0), (0, 0, 0, 0)), dtype=tcod.console.rgba_graphic)
+        item_heap = (0x25, (*tcod.gray, 255), (*tcod.blue * 0.3, 255))
         self.screen.clear()
         player = mrogue.player.Player.get()
         level = Dungeon.current_level
@@ -431,10 +433,13 @@ class Dungeon:
                 (player.fov, level.explored),
                 (level.tiles['lit'], level.tiles['dim']),
                 nothing)
-        for thing in display_items:
-            self.screen.rgba[thing.pos] = thing.tile
-        for thing in display_monsters:
-            self.screen.rgba[thing.pos] = thing.tile
+        items_dict = defaultdict(list)
+        for i in display_items:
+            items_dict[i.pos].append(i)
+        for pos, item_list in items_dict.items():
+            self.screen.rgba[pos] = item_list[0].tile if len(item_list) == 1 else item_heap
+        for monster in display_monsters:
+            self.screen.rgba[monster.pos] = monster.tile
         self.screen.rgba[player.pos] = player.tile
 
     @classmethod

@@ -1,4 +1,4 @@
-- [ ] show '%' if there are multiple items on the floor
+- [x] show '%' if there are multiple items on the floor
 - [x] clean-up code and do some refactoring (ongoing)
 - [ ] add more monsters and items
 - [ ] player character stats
