@@ -21,7 +21,7 @@ class MonsterManager:
 
     Class attributes:
         * order - Monsters ordered by their ticks left until taking action
-        * ticks_passed - tracks the passage of time
+        * acting_initiative - tracks the passage of time
         * selection_for_level - a list of available Monster templates appropriate for each Level of the Dungeon
     Methods:
         * create_monsters() - prepares a list of Monsters with varying difficulty level
@@ -31,7 +31,7 @@ class MonsterManager:
     """
 
     order = None
-    ticks_passed = 0
+    acting_initiative = 0
     selection_for_level = []
 
     def __init__(self):
@@ -80,36 +80,33 @@ class MonsterManager:
                 setattr(m, key, val)
 
     @classmethod
-    def handle_monsters(cls, target: mrogue.unit.Unit) -> bool:
+    def handle_monsters(cls, target: mrogue.unit.Unit) -> None:
         """Treat target as hostile and make every Monster act against it
 
         This method will follow monster acting order based on individual monster speed.
-        Each monster has a certain number of ticks that must be reduced to 0 to be able to act.
-        Monsters with the same value of ticks_left can act at the same time.
-        Each time a group of monsters acts, ticks_left of each monster is reduced by ticks_passed.
-        ticks_passed is the minimum value of ticks needed for the next monster in queue to act.
+        Each monster has a certain number of ticks that must be reduced to 0 to be able
+        to act (initiative). Monsters with the same initiative can act at the same time.
+        Each time a group of monsters acts, initiative of each unit is reduced by acting_initiative.
+        acting_initiative is the minimum value of ticks needed for the next monster in queue to act.
         All units, including player, are on that acting order list. When player's turn comes,
-        control is given to player and after their action acting order list is resumed.
+        control is given to player and after their action acting order is resumed.
 
         :param target: the Unit to chase and attack
-        :return: True if the Unit to take action was the player, nothing if it was a Monster
         """
-        if cls.order:
-            for unit in cls.order:
-                unit.ticks_left -= cls.ticks_passed
-            cls.order = None
-        if not cls.order:
-            cls.order = sorted(mrogue.map.Dungeon.current_level.units, key=lambda m: m.ticks_left)
-            cls.ticks_passed = cls.order[0].ticks_left
         player = mrogue.player.Player.get()
-        while cls.order and cls.order[0].ticks_left == cls.ticks_passed:
-            unit = cls.order.pop(0)
-            unit.update()
-            if not unit.player and player.current_HP > 0:
-                unit.act(target)
-            else:
-                player.ticks_left = int(player.speed * 100) if player.speed != 0.0 else 100
-                return True
+        while True:
+            if cls.order:
+                for unit in cls.order:
+                    unit.initiative -= cls.acting_initiative
+            cls.order = sorted(mrogue.map.Dungeon.current_level.units, key=lambda m: m.initiative)
+            cls.acting_initiative = cls.order[0].initiative
+            while cls.order[0].initiative == cls.acting_initiative:
+                unit = cls.order.pop(0)
+                unit.update()
+                if not unit.player and player.current_HP > 0:
+                    unit.act(target)
+                else:
+                    return
 
     @classmethod
     def stop_monsters(cls) -> None:
@@ -173,7 +170,6 @@ class Monster(mrogue.unit.Unit):
             else:
                 if random.random() > 0.5:
                     self.wander()
-        self.ticks_left = int(self.speed * 100)
 
     def is_in_range(self, target_position: Point) -> bool:
         return abs(self.pos.x - target_position.x) <= self.sight_range and \

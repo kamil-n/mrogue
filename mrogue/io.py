@@ -179,6 +179,19 @@ class Glyph:
     def __init__(self):
         self.icon = 0
         self.color = tcod.white
+        self.background = tcod.black
+        self.alpha = 128
+
+    @property
+    def tile(self):
+        return self.icon, (*self.color, self.alpha), (*self.background, self.alpha)
+
+    @tile.setter
+    def tile(self, tile_tuple):
+        self.icon = tile_tuple[0]
+        self.color = tile_tuple[1][:3]
+        self.background = tile_tuple[2][:3]
+        self.alpha = tile_tuple[1][3]
 
 
 class Screen(tcod.Console):

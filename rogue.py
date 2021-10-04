@@ -48,10 +48,7 @@ class Rogue:
         """
         self.turn += 1
         mrogue.timers.Timer.update()
-        while True:
-            if mrogue.monster.MonsterManager().handle_monsters(self.player):
-                # stop doing the updates if next Unit in queue is the player
-                break
+        mrogue.monster.MonsterManager().handle_monsters(self.player)
         self.dungeon.look_around()
         return self.player.check_pulse(self.dungeon, self.messenger)
 

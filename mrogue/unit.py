@@ -51,7 +51,7 @@ class Unit(mrogue.Entity):
         * abilities - currently 3 abilities used in combat/exploration
         * load_thresholds - breakpoints for calculating encumbrance from Items
         * speed - a modifier to amount of ticks between turns
-        * ticks_left - how soon an Entity can take it's turn
+        * initiative - how soon an Entity can take it's turn
         * keywords - helper attributes for determining additional mechanics
         * proficiency - global bonus to ability checks
         * ability_bonus - either Strength or Dexterity bonus to be added to attack rolls
@@ -100,7 +100,7 @@ class Unit(mrogue.Entity):
         }
         self.load_thresholds = (5.0, 30.0, 50.0)
         self.speed = speed
-        self.ticks_left = int(speed * 100)
+        self.initiative = int(speed * 100)
         self.keywords = keywords
         self.proficiency = proficiency
         self.ability_bonus = self.abilities['dex'].mod if 'finesse' in keywords else self.abilities['str'].mod
@@ -124,6 +124,7 @@ class Unit(mrogue.Entity):
 
     def update(self) -> None:
         self.moved = False
+        self.initiative = int(self.speed * 100) if self.speed != 0.0 else 100
 
     def burden_update(self) -> None:
         pass
