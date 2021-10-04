@@ -48,7 +48,8 @@ class Rogue:
         """
         self.turn += 1
         mrogue.timers.Timer.update()
-        mrogue.monster.MonsterManager().handle_monsters(self.player)
+        if self.turn > 1:  # so that the player has first move
+            mrogue.monster.MonsterManager().handle_monsters(self.player)
         self.dungeon.look_around()
         return self.player.check_pulse(self.dungeon, self.messenger)
 
