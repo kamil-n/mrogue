@@ -119,3 +119,10 @@ def print_result(func):
         print(f'{func.__name__}: {value}')
         return value
     return decorator
+
+
+def circular(sequence):
+    """Pick next item from the sequence indefinitely"""
+    while sequence:
+        for element in sequence:
+            yield element

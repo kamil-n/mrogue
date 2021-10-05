@@ -12,15 +12,19 @@ Functions:
     * mod_is() - checks if a modifier is pressed
     * wait() - freezes everything until a specific key (or any key) is pressed
     * help_screen() - prints key bindings on the screen
+    * select_action() - prints lines of available actions and performs the selected one
 Classes:
     * Tile - a tuple-like structure to hold tile data for the map
     * Glyph - a base class for any entity that shall be printed on screen (item or unit)
     * Screen - a singleton keeping the main window=screen and the context information
 """
-from typing import NamedTuple, Tuple
-import tcod.event
+import string
+from typing import NamedTuple, Tuple, TYPE_CHECKING, Callable
 import numpy as np
+import tcod.event
 import mrogue
+if TYPE_CHECKING:
+    from mrogue.item import Item
 
 directions = np.asarray([
     [
@@ -151,6 +155,28 @@ def help_screen() -> None:
     window.blit(Screen.get(), 12, 12, bg_alpha=0.95)
     Screen.get().present()
     wait(tcod.event.K_ESCAPE)
+
+
+def select_action(options: list[tuple[str, object, Callable]]) -> tuple[bool, bool or None]:
+    """Present a small sub-window with a range of available options to perform on an object
+
+    :param options: a list of options as tuples: (action description, Item)
+    :return: (False, _) if callback wasn't executed, (True, Callback result) otherwise
+    """
+    w, h = 23, len(options) + 2
+    dialog = tcod.console.Console(w, h, 'F')
+    dialog.draw_frame(0, 0, w, h, 'Select an action:')
+    for row, option in enumerate(options):
+        dialog.print(2, row + 1, f'{string.ascii_letters[row]}) {option[0]}')
+        dialog.blit(Screen.get(), 4 + 10, 4 + 1)
+        Screen.get().present()
+    while True:
+        selection = mrogue.io.wait()
+        if mrogue.io.key_is(selection, tcod.event.K_ESCAPE):
+            return False, None
+        elif selection[0] in range(97, 97 + len(options)):
+            selected = selection[0] - 97
+            return True, options[selected][2](options[selected][1])
 
 
 tile_dt = np.dtype([

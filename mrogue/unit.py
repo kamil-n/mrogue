@@ -91,7 +91,7 @@ class Unit(mrogue.Entity):
         self.pos = mrogue.map.Dungeon.find_spot()
         self.icon = icon[0]
         self.color = vars(tcod.constants)[icon[1]]
-        self.layer = 1
+        # self.layer = 1
         self.sight_range = sight_range
         self.abilities = {
             'str': AbilityScore('Strength', abi_scores[0]),
@@ -117,7 +117,7 @@ class Unit(mrogue.Entity):
         self.moved = False
 
     def __repr__(self):
-        return f"Unit('{self.name}',0x{self.icon:x})"  # ", {self.color})"
+        return f"Unit('{self.name}', 0x{self.icon:x})"  # ", {self.color})"
 
     def __str__(self):
         return f"{chr(self.icon)} '{self.name}'"  # " [{self.color}]"
