@@ -76,8 +76,7 @@ class Rogue:
                 return True
         # ','
         elif mrogue.io.key_is(key, tcod.event.K_COMMA):
-            if self.player.pickup_item(
-                    self.items.get_item_on_map(self.player.pos)):
+            if self.player.pickup_item(self.items):
                 return True
         # '>'
         elif mrogue.io.key_is(key, tcod.event.K_PERIOD, tcod.event.KMOD_SHIFT):

@@ -6,7 +6,10 @@ Globals:
 Classes:
     * Player - customized Unit just for the player character
 """
+from __future__ import annotations
+from copy import copy
 import sys
+from typing import TYPE_CHECKING
 import tcod.console
 from tcod.path import Dijkstra
 import mrogue.io
@@ -17,6 +20,10 @@ import mrogue.message
 import mrogue.monster
 import mrogue.unit
 import mrogue.utils
+if TYPE_CHECKING:
+    from mrogue.item import Wearable, ItemManager
+    from mrogue.map import Dungeon, Level
+    from mrogue.message import Messenger
 
 load_statuses = {
     'light': (0.8, tcod.green),
@@ -49,6 +56,7 @@ class Player(mrogue.unit.Unit):
         * burden_update() - applies encumbrance effects
         * in_slot() - what Item is held in a specific slot
         * check_pulse() - ends the game if Player's health points go below 0
+        * pickup_item() - if there are multiple items, present the Item selection menu
     """
 
     _instance = None
@@ -116,7 +124,7 @@ class Player(mrogue.unit.Unit):
         else:
             self.dijkstra_map.set_goal(*self.pos)
 
-    def change_level(self, level) -> None:
+    def change_level(self, level: Level) -> None:
         """Reset the pathfinding map when changing Levels
 
         :param level: the new Level of the Dungeon map
@@ -162,7 +170,7 @@ class Player(mrogue.unit.Unit):
     def in_slot(self, slot: str):
         return mrogue.utils.find_in(self.equipped, 'slot', slot)
 
-    def check_pulse(self, dungeon, messenger) -> bool:
+    def check_pulse(self, dungeon: Dungeon, messenger: Messenger) -> bool:
         """Show the game over screen if hit points go below
 
         :param dungeon: for refreshing the map view one last time
@@ -172,7 +180,7 @@ class Player(mrogue.unit.Unit):
         if self.current_HP < 1 and 'debug' not in sys.argv:
             window = tcod.Console(20, 4, 'F')
             window.draw_frame(0, 0, 20, 4, 'Game over.', False)
-            window.print(6, 2, 'YOU DIED', tcod.red)
+            window.print_box(0, 2, 20, 1, 'YOU DIED', tcod.red, alignment=tcod.CENTER)
             dungeon.draw_map()
             self.show_stats()
             messenger.show()
@@ -182,7 +190,7 @@ class Player(mrogue.unit.Unit):
             return True
         return False
 
-    def equip(self, item, **kwargs) -> None:
+    def equip(self, item: Wearable, **kwargs) -> None:
         """Check if Item being equipped is blessed to increase critical hit immunity by 25%
 
         :param item: Item to be worn
@@ -191,7 +199,7 @@ class Player(mrogue.unit.Unit):
         if item.enchantment_level > 0:
             self.crit_immunity += 0.25
 
-    def unequip(self, item, **kwargs) -> bool:
+    def unequip(self, item: Wearable, **kwargs) -> bool:
         """Check if Item being removed is blessed to decrease critical hit immunity by 25%
 
         :param item: Item to be removed
@@ -201,3 +209,44 @@ class Player(mrogue.unit.Unit):
                 self.crit_immunity -= 0.25
             return True
         return False
+
+    def pickup_item(self, item_manager: ItemManager) -> bool:
+        """Pick an Item up if it's a single item, present pick-up choice list otherwise
+
+        :param item_manager: ItemManager object for access to instance methods
+        :return: True if Item(s) were picked up, False if there were no Items
+        """
+        item_list = item_manager.get_item_on_map(self.pos)
+        if not item_list:
+            msg = 'There are no items here.'
+            mrogue.message.Messenger.add(msg)
+            return False
+        if len(item_list) > 1:
+            chosen = item_manager.show_pickup_choice(item_list)
+            if not chosen:
+                return False
+            if len(chosen) > 1:
+                for item in chosen:
+                    if issubclass(type(item), mrogue.item.Stackable):
+                        existing_item = mrogue.utils.find_in(self.inventory, 'name', item.name)
+                        if existing_item:
+                            existing_item.amount += 1
+                        else:
+                            new_item = copy(item)
+                            new_item.amount = 1
+                            new_item.add(self.inventory)
+                        if item.amount > 1:
+                            item.amount -= 1
+                        else:
+                            item.picked()
+                    else:
+                        item.add(self.inventory)
+                        item.picked()
+                    msg = f'{self.name.capitalize()} picked up {item.name}.'
+                    mrogue.message.Messenger.add(msg)
+                self.burden_update()
+                return True
+            else:
+                return super().pickup_item(chosen)
+        else:
+            return super().pickup_item(item_list)

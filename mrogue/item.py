@@ -47,6 +47,7 @@ class Item(mrogue.Entity):
         * identified() - state change when this Item instance is identified
     """
     _subclass_registry = {}
+    max_name = 39
 
     def __init_subclass__(cls, subtype, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
@@ -125,10 +126,9 @@ class Item(mrogue.Entity):
             color = tcod.light_grey
         elif not self.status_identified:
             prefix = '(?) '
-        # if full name would be too wide, cut off after 40 characters
         name = self.name
-        if len(prefix + name + suffix) > 39:
-            name = name[:39 - len(prefix) - len(suffix) - 1] + '+'
+        if len(prefix + name + suffix) > Item.max_name:
+            name = name[:Item.max_name - len(prefix) - len(suffix) - 1] + '+'
         return prefix + name + suffix, color
 
 
@@ -187,8 +187,8 @@ class Wearable(Item, subtype='Wearable'):
         if randomize:
             r_key, r_val = choice(list(mrogue.item_data.materials[template['type']].items()))
             self.material = r_val
-            self.quality = mrogue.utils.roll_gaussian(1, 5, 1.15) - 3
-            self.enchantment_level = mrogue.utils.roll_gaussian(1, 3, 0.5) - 2
+            self.quality = mrogue.utils.roll_gaussian(1, 5, 0.7) - 3
+            self.enchantment_level = mrogue.utils.roll_gaussian(1, 3, 0.35) - 2
             self.name = r_key + ' ' + self.name
         else:
             self.material = mrogue.item_data.materials[template['type']][template['material']]
@@ -327,10 +327,12 @@ class ItemManager:
         * create_loot() - drops required number of items on current level's floor
         * random_item() - creates a random item of either required type or any type from the template list
         * try_equip() - equips the Item by the Entity if possible
-        * print_list() - prints the attached Item list on the screen
-        * show_inventory() - prints the inventory (backpack) menu
         * get_item_on_map() - fetches the list of any items lying on an indicated level map coordinates
+        * print_list() - prints the passed Item list on the screen
+        * print_inventory_ui() - prints the frame, header and some static labels
+        * show_inventory() - prints the inventory (backpack) menu
         * show_equipment() - prints the equipped items menu
+        * show_pickup_choice() - prints the list of items on the ground
     """
 
     def __init__(self):
@@ -411,7 +413,7 @@ class ItemManager:
             window.print(4, i, chr(it.icon), it.color)
             window.print(6, i, *it.interface_name)
             if show_details:
-                window.print(45, i, f'{it.slot:>6} {it.weight * it.amount:6.2f}  {it.value * it.amount:>6.2f}')
+                window.print(Item.max_name+6, i, f'{it.slot:>6} {it.weight*it.amount:6.2f} {it.value*it.amount:>7.2f}')
         if limit + scroll < len(inventory):
             window.print(0, limit-1, chr(0x2193), tcod.black, tcod.white)
         return window
@@ -430,11 +432,11 @@ class ItemManager:
         window.draw_frame(0, 0, window.width, window.height, decoration='╔═╗║ ║╚═╝')
         window.print_box(0, 0, window.width, 1, ' Inventory ', alignment=tcod.CENTER)
         window.print(2, 1, 'Select an item or Esc to close:')
-        window.print(50, 1, '[/] Sort', tcod.yellow)
+        window.print(Item.max_name + 11, 1, '[/] Sort', tcod.yellow)
         window.print(6, 2, 'Name', tcod.lighter_gray)
-        window.print(48, 2, 'Slot     Wt     Val', tcod.lighter_gray)
+        window.print(Item.max_name + 9, 2, 'Slot     Wt     Val', tcod.lighter_gray)
         window.print(selected_sort, 2, chr(0x2193), tcod.yellow)
-        window.print(46, window.height - 2, f'Total: {weight:6.2f} {value:7.2f}', tcod.lighter_gray)
+        window.print(Item.max_name + 7, window.height - 2, f'Total: {weight:6.2f} {value:7.2f}', tcod.lighter_gray)
 
     def show_inventory(self) -> bool:
         """Print the list of Items in the 'inventory' (backpack) group
@@ -443,12 +445,16 @@ class ItemManager:
         """
         player = mrogue.player.Player.get()
         # allow to sort the list by one of four attributes
-        sorts = mrogue.utils.circular([('slot', 47), ('weight', 56), ('value', 62), ('name', 5)])
+        sorts = mrogue.utils.circular([
+            ('slot', Item.max_name + 8),
+            ('weight', Item.max_name + 17),
+            ('value', Item.max_name + 24),
+            ('name', 5)])
         sort = next(sorts)
         raw_inventory = player.inventory + player.equipped
         total_items = len(raw_inventory)
         item_limit, scroll = 14, 0
-        window_height, window_width = 5 + min(total_items, item_limit), 69
+        window_height, window_width = 5 + min(total_items, item_limit), Item.max_name + 30
         total_weight, total_value = sum([i.weight for i in raw_inventory]), sum([i.value for i in raw_inventory])
         inventory_window = tcod.Console(window_width, window_height, 'F')
         while True:
@@ -491,33 +497,12 @@ class ItemManager:
                 if effect[0]:
                     return effect[1] if effect[1] is not None else True
 
-    @staticmethod
-    def print_slot(window: tcod.Console, slot: str, line: int) -> None:
-        """
-        Print a single line with a slot name and related item, if equipped
-
-        :param window: window to print on
-        :param slot: which slot to present
-        :param line: which row in parent window should be printed on
-        """
-        window.print(2, line + 3, f'{chr(97 + line)}) {slot.capitalize():>5}:')
-        item = mrogue.utils.find_in(mrogue.player.Player.get().equipped, 'slot', slot)
-        if item:
-            summary = f"{item.name:22.22}{'+' if len(item.name) > 22 else ' '}("
-            if item.subtype == 'weapon':
-                summary += f'{item.props.to_hit_modifier if item.status_identified else item.props.base_to_hit:+d}/'\
-                           f'{item.props.damage if item.status_identified else item.props.base_damage})'
-            elif item.subtype == 'armor':
-                summary += '{:+d})'.format(item.props.armor_class_modifier)
-            window.print(12, line + 3, chr(item.icon), item.color)
-            window.print(14, line + 3, summary, mrogue.item_data.enchantment_colors[item.enchantment_level])
-
     def show_equipment(self) -> bool:
         """Print the list of Items in the 'equipped' group
 
         :return: False if no inventory action was taken, True otherwise (would finish player's turn)
         """
-        width, height = 49, 8
+        width, height = Item.max_name + 12, 8
         slots = ('hand', 'head', 'chest', 'feet')
         window = tcod.Console(width, height, 'F')
         while True:
@@ -527,7 +512,12 @@ class ItemManager:
             window.print_box(0, 0, width, 1, ' Equipment ', alignment=tcod.CENTER)
             window.print(2, 1, 'Select a slot to manage or Esc to close:')
             for line, slot in enumerate(slots):
-                self.print_slot(window, slot, line)
+                window.print(2, line + 3, f'{chr(97 + line)}) {slot.capitalize():>5}:')
+                item = mrogue.utils.find_in(mrogue.player.Player.get().equipped, 'slot', slot)
+                if item:
+                    name, _ = item.interface_name
+                    window.print(12, line+3, chr(item.icon), item.color)
+                    window.print(14, line+3, f'{name[4:]}', mrogue.item_data.enchantment_colors[item.enchantment_level])
             window.blit(self.screen, 4, 4)
             self.screen.present()
             # wait for input
@@ -551,7 +541,7 @@ class ItemManager:
                     window.blit(self.screen, 4, 4)
                     total_items = len(items)
                     limit, scroll = 10, 0
-                    selection = tcod.Console(48, 2 + min(limit, total_items), 'F')
+                    selection = tcod.Console(Item.max_name + 9, 2 + min(limit, total_items), 'F')
                     selection.draw_frame(0, 0, selection.width, selection.height, 'Select item to equip:')
                     while True:
                         self.print_list(items, scroll, selection.width - 2, selection.height - 2).blit(selection, 1, 1)
@@ -567,3 +557,31 @@ class ItemManager:
                         elif selected[0] in range(97, 97 + total_items):
                             mrogue.player.Player.get().equip(items[selected[0] - 97])
                             return True
+
+    def show_pickup_choice(self, items: list[Item]) -> Item or bool:
+        total = len(items)
+        w, limit, scroll = Item.max_name + 9, 6, 0
+        h = 3 + min(limit, total)
+        char = string.ascii_letters[total-1]
+        window = tcod.Console(w, h, 'F')
+        while True:
+            window.clear()
+            window.draw_frame(0, 0, w, h, decoration='╔═╗║ ║╚═╝')
+            window.print_box(0, 0, w, 1, ' Pick up: ', alignment=tcod.CENTER)
+            window.print_box(0, 1, w, 1, f'[a-{char}] single item, [,] - all:', tcod.light_gray, alignment=tcod.CENTER)
+            self.print_list(items, scroll, w - 2, h - 3).blit(window, 1, 2)
+            window.blit(self.screen, self.screen.width - w - 1, self.screen.height - h - 1)
+            self.screen.present()
+            key = mrogue.io.wait()
+            if key[1] & mrogue.io.ignore_mods == mrogue.io.ignore_mods:
+                key = (key[0], key[1] - mrogue.io.ignore_mods)
+            if mrogue.io.key_is(key, tcod.event.K_ESCAPE):
+                return False
+            elif mrogue.io.key_is(key, tcod.event.K_COMMA):
+                return items
+            elif key[0] in range(97, 97 + total):
+                return [items[key[0]-97]]
+            elif mrogue.io.key_is(key, tcod.event.K_DOWN):
+                scroll += 1 if limit + scroll < total else 0
+            elif mrogue.io.key_is(key, tcod.event.K_UP):
+                scroll -= 1 if scroll > 0 else 0

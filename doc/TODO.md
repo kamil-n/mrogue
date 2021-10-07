@@ -1,7 +1,8 @@
 - [ ] modify automove to ignore items that are not in front
 - [ ] rework item spawning (loot tables?)
 - [ ] change how map is generated
-- [ ] item pickup interface
+- [ ] tweak damage dumbers
+- [x] item pickup interface
 - [x] clean-up code and do some refactoring (ongoing)
 - [ ] add more monsters and items
 - [ ] player character stats

@@ -19,12 +19,11 @@ Classes:
     * Screen - a singleton keeping the main window=screen and the context information
 """
 import string
-from typing import NamedTuple, Tuple, TYPE_CHECKING, Callable
+from typing import NamedTuple, Tuple, Callable
 import numpy as np
 import tcod.event
 import mrogue
-if TYPE_CHECKING:
-    from mrogue.item import Item
+
 
 directions = np.asarray([
     [
