@@ -39,9 +39,9 @@ class Monster(mrogue.unit.Unit):
                          template['keywords'],
                          template['speed'],
                          template['proficiency'],
-                         template['dmg_dice_unarmed'],
+                         template['dmg_range_unarmed'],
                          template['ac_bonus'],
-                         mrogue.utils.roll(template['hit_dice']))
+                         mrogue.utils.roll(*template['hp_range']))
         self.background = tcod.red * 0.3
         self.path = None
         if 'weapon' in template and random.randint(0, 1):

@@ -1,9 +1,10 @@
+- [ ] delay player HP regeneration
 - [ ] modify automove to ignore items that are not in front
 - [ ] rework item spawning (loot tables?)
 - [ ] change how map is generated
-- [ ] tweak damage numbers
-- [x] clean-up code and do some refactoring (done for now)
+- [x] tweak damage numbers
 - [ ] add more monsters and items
+- [ ] introduce weapon/damage types and resistance
 - [ ] player character stats
   - [x] 3 base stats: STR, DEX, CON
   - [ ] 3 remaining stats: INT, WIS, CHA (beginning with just saving throws perhaps)

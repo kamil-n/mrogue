@@ -16,7 +16,7 @@ enchantment_levels = {
     1: 'blessed'
 }
 
-# color list at https://libtcod.github.io/docs/html2/color.html or via tcod.__all__
+# color list at https://libtcod.github.io/docs/html2/color.html or via tcod.constants
 enchantment_colors = {
     -1: tcod.lighter_crimson,
     0: tcod.white,
@@ -88,7 +88,7 @@ templates = [
     'keywords': ['light'],
     'speed_modifier': 0.5,
     'to_hit_modifier': 0,
-    'damage_string': '1d4'
+    'damage_range': (1, 2)
   },
   {
     'type': 'weapon',
@@ -103,7 +103,7 @@ templates = [
     'keywords': ['light'],
     'speed_modifier': 0.5,
     'to_hit_modifier': 0,
-    'damage_string': '1d4'
+    'damage_range': (1, 3)
   },
   {
     'type': 'weapon',
@@ -118,7 +118,7 @@ templates = [
     'keywords': ['light'],
     'speed_modifier': 1.0,
     'to_hit_modifier': 0,
-    'damage_string': '1d6'
+    'damage_range': (1, 4)
   },
   {
     'type': 'weapon',
@@ -133,7 +133,7 @@ templates = [
     'keywords': ['versatile'],
     'speed_modifier': 1.2,
     'to_hit_modifier': 0,
-    'damage_string': '1d8'
+    'damage_range': (1, 5)
   },
   {
     'type': 'weapon',
@@ -148,7 +148,7 @@ templates = [
     'keywords': [],
     'speed_modifier': 1.0,
     'to_hit_modifier': 0,
-    'damage_string': '1d6'
+    'damage_range': (2, 3)
   },
   {
     'type': 'weapon',
@@ -163,7 +163,7 @@ templates = [
     'keywords': [],
     'speed_modifier': 1.2,
     'to_hit_modifier': 0,
-    'damage_string': '1d8'
+    'damage_range': (2, 4)
   },
   {
     'type': 'weapon',
@@ -178,7 +178,7 @@ templates = [
     'keywords': [],
     'speed_modifier': 1.0,
     'to_hit_modifier': 0,
-    'damage_string': '1d6'
+    'damage_range': (2, 5)
   },
   {
     'type': 'weapon',
@@ -193,7 +193,7 @@ templates = [
     'keywords': ['versatile'],
     'speed_modifier': 1.5,
     'to_hit_modifier': 0,
-    'damage_string': '1d8'
+    'damage_range': (3, 6)
   },
   {
     'type': 'armor',
@@ -299,7 +299,7 @@ templates = [
     'base_weight': 0.1,
     'base_value': 50.0,
     'icon': 0xBF,
-    'effect': 'heal 1d8+1',
+    'effect': 'heal 4 8',
     'number_of_uses': 1
   },
   {

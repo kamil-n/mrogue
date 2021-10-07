@@ -114,7 +114,7 @@ class Item(mrogue.Entity):
             if hasattr(self, 'enchantment_level'):
                 color = mrogue.item_data.enchantment_colors[self.enchantment_level]
             if self.subtype == 'weapon':
-                suffix = f' ({self.props.to_hit_modifier:+d}/{self.props.damage})'
+                suffix = f' ({self.props.damage[0]}-{self.props.damage[1]}/{self.props.to_hit_modifier:+d})'
             elif self.subtype == 'armor':
                 suffix = f' ({self.props.armor_class_modifier:+d})'
         if self.amount > 1:
@@ -155,13 +155,12 @@ class Wearable(Item, subtype='Wearable'):
             * damage - damage dice after adding enchantment modifiers
         """
 
-        def __init__(self, quality, enchantment_level, speed_modifier, base_to_hit, damage_string):
+        def __init__(self, quality, enchantment_level, speed_modifier, base_to_hit, damage_range):
             self.speed_modifier = speed_modifier
             self.base_to_hit = base_to_hit
             self.to_hit_modifier = self.base_to_hit + quality + enchantment_level
-            num, sides, mod = mrogue.utils.decompile_dmg_dice(damage_string)
-            self.base_damage = mrogue.utils.compile_dmg_dice(num, sides, mod)
-            self.damage = mrogue.utils.compile_dmg_dice(num, sides, mod + enchantment_level)
+            self.base_damage = damage_range
+            self.damage = (damage_range[0] + enchantment_level, damage_range[1] + enchantment_level)
 
     class Armor:
         """Hold all the stats related to armor class.
@@ -205,7 +204,7 @@ class Wearable(Item, subtype='Wearable'):
         self.subtype = template['type']
         if self.subtype == 'weapon':
             self.props = Wearable.Weapon(self.quality, self.enchantment_level, template['speed_modifier'],
-                                         template['to_hit_modifier'], template['damage_string'])
+                                         template['to_hit_modifier'], template['damage_range'])
         elif self.subtype == 'armor':
             self.props = Wearable.Armor(self.quality, self.enchantment_level, template['armor_class_modifier'])
         self.add(groups)

@@ -82,7 +82,7 @@ class Unit(mrogue.Entity):
     """
 
     def __init__(self, name, icon, sight_range, abi_scores, keywords, speed, proficiency,
-                 damage_dice, ac_bonus, base_hp_from_dice):
+                 damage_range, ac_bonus, base_hp_from_dice):
         super().__init__()
         self.player = False
         self.inventory = []
@@ -105,8 +105,7 @@ class Unit(mrogue.Entity):
         self.proficiency = proficiency
         self.ability_bonus = self.abilities['dex'].mod if 'finesse' in keywords else self.abilities['str'].mod
         self.to_hit = self.proficiency + self.ability_bonus
-        num, sides, mod = mrogue.utils.decompile_dmg_dice(damage_dice)
-        self.default_damage_dice = mrogue.utils.compile_dmg_dice(num, sides, mod + self.ability_bonus)
+        self.default_damage_dice = (damage_range[0] + self.ability_bonus, damage_range[1] + self.ability_bonus)
         self.damage_dice = self.default_damage_dice
         self.base_armor_class = 10 + self.abilities['dex'].mod
         self.ac_bonus = ac_bonus
@@ -150,8 +149,7 @@ class Unit(mrogue.Entity):
         item.remove(self.inventory)
         if item.subtype == 'weapon':
             self.to_hit = self.proficiency + self.ability_bonus + item.props.to_hit_modifier
-            num, sides, mod = mrogue.utils.decompile_dmg_dice(item.props.damage)
-            self.damage_dice = mrogue.utils.compile_dmg_dice(num, sides, mod + self.ability_bonus)
+            self.damage_dice = (item.props.damage[0] + self.ability_bonus, item.props.damage[1] + self.ability_bonus)
         elif item.subtype == 'armor':
             bonus_ac_equipped = sum([i.props.armor_class_modifier for i in self.equipped if i.subtype == 'armor'])
             self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
@@ -257,12 +255,12 @@ class Unit(mrogue.Entity):
         :param target: the other Unit
         """
         msg = self.name.capitalize() + ' '
-        attack_roll = mrogue.utils.roll('1d20')
+        attack_roll = mrogue.utils.roll(1, 20)
         critical_hit = attack_roll == 20
         if target.player and critical_hit:
             critical_hit = random.random() > target.crit_immunity
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
-            damage_roll = mrogue.utils.roll(self.damage_dice, critical_hit)
+            damage_roll = mrogue.utils.roll(*self.damage_dice, critical_hit)
             msg += f"{'critically ' if critical_hit else ''}hit{'' if self.player else 's'}"
             mrogue.message.Messenger.add('{} {}.'.format(msg, target.name))
             target.take_damage(damage_roll)

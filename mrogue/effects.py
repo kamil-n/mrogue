@@ -33,7 +33,7 @@ class Effect:
         :return: a feedback message to be displayed to the player
         """
         feedback = ''
-        keyword = self.source.effect.split()[0]
+        keyword, *args = self.source.effect.split()
 
         # identify all items in the inventory
         if keyword == 'identify':
@@ -50,19 +50,16 @@ class Effect:
 
         # heal a random amount of health points
         elif keyword == 'heal':
-            self.target.heal(mrogue.utils.roll(self.source.effect.split()[1]))
+            self.target.heal(mrogue.utils.roll(int(args[0]), int(args[1])))
             feedback = 'Some of your wounds are healed.'
 
         # grant additional armor for a duration
         elif keyword == 'ac_bonus':
-            arg = int(self.source.effect.split()[1])
-            duration = int(self.source.effect.split()[2])
-
             def lower_ac():
-                self.target.armor_class -= arg
+                self.target.armor_class -= int(args[0])
                 mrogue.message.Messenger.add('Your skin turns back to normal.')
 
-            mrogue.timers.Timer(duration, lower_ac)
-            self.target.armor_class += arg
+            mrogue.timers.Timer(int(args[1]), lower_ac)
+            self.target.armor_class += int(args[0])
             feedback = 'Your skin turns into scales.'
         return feedback

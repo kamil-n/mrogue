@@ -43,18 +43,25 @@ def find_in(where: list or tuple, attribute: str, like: object,
     return results or None
 
 
-def roll(dice_string: str, critical: bool = False) -> int:
-    """Roll the dice. Dice string must be in the format "<how_many>d<sided-dice>[+<modifier>]"
+def print_result(func):
+    """A decorator to print return value from a function/method"""
+    def decorator(*args, **kwargs):
+        value = func(*args, **kwargs)
+        print(f'{func.__name__}{args}: {value}')
+        return value
+    return decorator
 
-    :param dice_string: what to roll: string formatted as <num>d<sided>[+/-<mod>]
-    :param critical: according to DnD rules, if critical success, roll the dice twice
+
+def roll(left: int, right: int, critical: bool = False) -> int:
+    """Return a random number in the requested range
+
+    :param left: min possible value
+    :param right: max possible value
+    :param critical: add half the value
     :return: a random number but no less than 1
     """
-    num_dice, sides, mod = decompile_dmg_dice(dice_string)
-    if critical:
-        num_dice *= 2
-    roll_result = sum([random.randint(1, sides) for _ in range(num_dice)]) + mod
-    return 1 if roll_result < 1 else roll_result
+    roll_result = random.randint(max(0, left), max(0, right))
+    return roll_result + (roll_result // 2 if critical else 0)
 
 
 def roll_gaussian(left: int, right: int, deviation: float = 1.0) -> int:
@@ -68,40 +75,6 @@ def roll_gaussian(left: int, right: int, deviation: float = 1.0) -> int:
     return min(right, max(left, round(random.gauss((right - left) // 2 + 1, deviation))))
 
 
-def decompile_dmg_dice(dice_string: str) -> tuple[int, int, int]:
-    """Transform dice string into a tuple of integers for each component
-
-    :param dice_string: string formatted as <x>d<y>[+/-<z>]
-    :return: a tuple containing the components as integers
-    """
-    separator_index = dice_string.index('d')
-    num_dice = int(dice_string[:separator_index])
-    sides = dice_string[separator_index + 1:]
-    modifier = 0
-    modifier_index = -1
-    if '-' in sides:
-        modifier_index = sides.index('-')
-    elif '+' in sides:
-        modifier_index = sides.index('+')
-    if not modifier_index == -1:
-        modifier = int(sides[modifier_index:])
-        sides = int(sides[:modifier_index])
-    else:
-        sides = int(sides)
-    return num_dice, sides, modifier
-
-
-def compile_dmg_dice(num_dice: int, sides: int, modifier: int) -> str:
-    """Make a dice string out of a tuple of integers
-
-    :param num_dice: number of dice
-    :param sides: type of dice (how many sides)
-    :param modifier: flat modifier to be added or subtracted from the roll
-    :return: a string in the format of <num_dice>d<sides>[+/-<modifier>]
-    """
-    return f'{num_dice}d{sides}' + (f'{modifier:+d}' if modifier else '')
-
-
 def random_scroll_name() -> str:
     """Create one to three words made of random letters
 
@@ -113,15 +86,6 @@ def random_scroll_name() -> str:
             name += random.choice(string.ascii_uppercase)
         name += ' '
     return name.rstrip()
-
-
-def print_result(func):
-    """A decorator to print return value from a function/method"""
-    def decorator(*args, **kwargs):
-        value = func(*args, **kwargs)
-        print(f'{func.__name__}: {value}')
-        return value
-    return decorator
 
 
 def circular(sequence):

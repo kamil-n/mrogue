@@ -68,7 +68,7 @@ class Player(mrogue.unit.Unit):
 
     def __init__(self):
         """Equip the player with a weapon and a piece of armor."""
-        super().__init__('you', (0x263A, 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, '1d2', 0, 20)
+        super().__init__('you', (0x263A, 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, (1, 2), 0, 20)
         self.background = tcod.green * 0.3
         self.player = True
         self.dijkstra_map = Dijkstra(mrogue.map.Dungeon.current_level.tiles['walkable'])
@@ -92,7 +92,7 @@ class Player(mrogue.unit.Unit):
         r, g, b = tcod.color_lerp(tcod.red, tcod.green, self.current_HP / self.max_HP)
         self.status_bar.print(3, 0, f'{self.current_HP:2d}/{self.max_HP}', (r, g, b))
         self.status_bar.print(11, 0, 'AC:%2d' % self.armor_class)
-        self.status_bar.print(19, 0, f'Atk:{self.to_hit:+d}/{self.damage_dice}')
+        self.status_bar.print(19, 0, f'Atk: {self.damage_dice[0]}-{self.damage_dice[1]}/{self.to_hit:+d}')
         self.status_bar.print(32, 0, f'Load: {self.load_status}', load_statuses[self.load_status][1])
         self.status_bar.print(47, 0, f'Depth: {mrogue.map.Dungeon.depth()}')
         self.status_bar.print(66, 0, 'Press Q to quit, H for help.')
