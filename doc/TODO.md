@@ -1,8 +1,7 @@
-- [ ] delay player HP regeneration
+- [x] delay player HP regeneration
 - [ ] modify automove to ignore items that are not in front
 - [ ] rework item spawning (loot tables?)
 - [ ] change how map is generated
-- [x] tweak damage numbers
 - [ ] add more monsters and items
 - [ ] introduce weapon/damage types and resistance
 - [ ] player character stats

@@ -105,7 +105,7 @@ class Unit(mrogue.Entity):
         self.proficiency = proficiency
         self.ability_bonus = self.abilities['dex'].mod if 'finesse' in keywords else self.abilities['str'].mod
         self.to_hit = self.proficiency + self.ability_bonus
-        self.default_damage_dice = (damage_range[0] + self.ability_bonus, damage_range[1] + self.ability_bonus)
+        self.default_damage_dice = damage_range
         self.damage_dice = self.default_damage_dice
         self.base_armor_class = 10 + self.abilities['dex'].mod
         self.ac_bonus = ac_bonus
@@ -149,7 +149,7 @@ class Unit(mrogue.Entity):
         item.remove(self.inventory)
         if item.subtype == 'weapon':
             self.to_hit = self.proficiency + self.ability_bonus + item.props.to_hit_modifier
-            self.damage_dice = (item.props.damage[0] + self.ability_bonus, item.props.damage[1] + self.ability_bonus)
+            self.damage_dice = (item.props.damage[0] + self.abilities['str'].mod, item.props.damage[1] + self.abilities['str'].mod)
         elif item.subtype == 'armor':
             bonus_ac_equipped = sum([i.props.armor_class_modifier for i in self.equipped if i.subtype == 'armor'])
             self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
