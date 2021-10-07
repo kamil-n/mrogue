@@ -13,12 +13,10 @@ import string
 import tcod
 import tcod.constants
 import tcod.event
-import mrogue.io
 import mrogue.item_data
 import mrogue.map
 import mrogue.message
 import mrogue.player
-import mrogue.unit
 import mrogue.utils
 from mrogue import Point
 
@@ -289,7 +287,7 @@ class Consumable(Stackable, subtype='Consumable'):
     def __repr__(self):
         return f"Consumable('{self.name}', {self.subtype}, 0x{self.icon:x})"  # ", {self.color})"
 
-    def used(self, target: mrogue.unit.Unit) -> str:
+    def used(self, target) -> str:
         """Apply the related effect and fetch it's feedback message
 
         :param target: a unit to apply the effect to

@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """ A collection of small functions used in the whole project"""
+from __future__ import annotations
 import random
 import string
-from mrogue import Point
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from mrogue import Point
 
 
 def adjacent(fr: Point, to: Point, distance: int = 1) -> bool:

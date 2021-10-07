@@ -12,11 +12,7 @@ import sys
 from typing import TYPE_CHECKING
 import tcod.console
 from tcod.path import Dijkstra
-import mrogue.io
-import mrogue.item
 import mrogue.item_data
-import mrogue.map
-import mrogue.message
 import mrogue.monster
 import mrogue.unit
 import mrogue.utils
