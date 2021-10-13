@@ -64,17 +64,6 @@ def roll(left: int, right: int, critical: bool = False) -> int:
     return roll_result + (roll_result // 2 if critical else 0)
 
 
-def roll_gaussian(left: int, right: int, deviation: float = 1.0) -> int:
-    """Random number with more even distribution
-
-    :param left: minimum number to pick
-    :param right: maximum number to pick
-    :param deviation: the standard deviation for the gaussian distribution
-    :return: the random number but weighted according to gaussian distribution
-    """
-    return min(right, max(left, round(random.gauss((right - left) // 2 + 1, deviation))))
-
-
 def random_scroll_name() -> str:
     """Create one to three words made of random letters
 

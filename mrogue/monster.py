@@ -7,7 +7,7 @@ Classes:
 """
 import random
 import tcod
-import mrogue.item
+import mrogue.item.manager
 import mrogue.map
 import mrogue.monster_data
 import mrogue.player
@@ -45,7 +45,7 @@ class Monster(mrogue.unit.Unit):
         self.background = tcod.red * 0.3
         self.path = None
         if 'weapon' in template and random.randint(0, 1):
-            mrogue.item.ItemManager.random_item(template['weapon'], self.inventory)
+            mrogue.item.manager.ItemManager.random_item(template['weapon'], self.inventory)
         for group in groups:
             group.append(self)
 

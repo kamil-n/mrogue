@@ -4,7 +4,7 @@
 from os import path
 import tcod
 import tcod.event
-import mrogue.item
+import mrogue.item.manager
 import mrogue.map
 import mrogue.message
 import mrogue.monster
@@ -35,7 +35,7 @@ class Rogue:
         font = tcod.tileset.load_tilesheet(path.join(mrogue.work_dir, fonts[2]), 16, 16, tcod.tileset.CHARMAP_CP437)
         mrogue.io.Screen(100, 40, font)
         self.dungeon = mrogue.map.Dungeon()
-        self.items = mrogue.item.ItemManager()
+        self.items = mrogue.item.manager.ItemManager()
         mrogue.monster.MonsterManager().create_monsters(self.num_objects, self.dungeon.depth())
         self.messenger = mrogue.message.Messenger()
         self.player = mrogue.player.Player()

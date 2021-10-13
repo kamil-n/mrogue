@@ -12,13 +12,12 @@ import sys
 from typing import TYPE_CHECKING
 import tcod.console
 from tcod.path import Dijkstra
-import mrogue.item_data
+import mrogue.item
 import mrogue.monster
-import mrogue.timers
 import mrogue.unit
 import mrogue.utils
 if TYPE_CHECKING:
-    from mrogue.item import Wearable, ItemManager
+    from mrogue.item.item import Wearable
     from mrogue.map import Dungeon, Level
     from mrogue.message import Messenger
 
@@ -72,7 +71,6 @@ class Player(mrogue.unit.Unit):
         super().__init__('you', (0x263A, 'lighter_red'), 10, (10, 10, 10), [], 1.0, 2, (1, 2), 0, 20)
         self.background = tcod.green * 0.3
         self.player = True
-        self.default_damage_dice = (1 + self.abilities['str'].mod, 2 + self.abilities['str'].mod)
         self.dijkstra_map = Dijkstra(mrogue.map.Dungeon.current_level.tiles['walkable'])
         self.dijkstra_map.set_goal(*self.pos)
         self.load_status = 'light'
@@ -81,8 +79,8 @@ class Player(mrogue.unit.Unit):
         self.health_regen_cooldown = 0
         self.crit_immunity = 0.0
         self.status_bar = tcod.console.Console(mrogue.io.Screen.get().width, 1, 'F')
-        self.add_item(mrogue.item.Item(mrogue.item_data.templates[4], 1, None))  # stick
-        self.add_item(mrogue.item.Item(mrogue.item_data.templates[10], 1, None))  # tunic
+        self.add_item(mrogue.item.manager.ItemManager.blueprints['stick'].create())
+        self.add_item(mrogue.item.manager.ItemManager.blueprints['tunic'].create())
         for freebie in list(self.inventory):
             self.equip(freebie, quiet=True)
         self.add(mrogue.map.Dungeon.current_level.objects_on_map, mrogue.map.Dungeon.current_level.units)
@@ -97,22 +95,19 @@ class Player(mrogue.unit.Unit):
         self.status_bar.print(19, 0, f'Atk: {self.damage_dice[0]}-{self.damage_dice[1]}/{self.to_hit:+d}')
         self.status_bar.print(32, 0, f'Load: {self.load_status}', load_statuses[self.load_status][1])
         self.status_bar.print(47, 0, f'Depth: {mrogue.map.Dungeon.depth()}')
-        self.status_bar.print(66, 0, 'Press Q to quit, H for help.')
+        self.status_bar.print(72, 0, 'Press Q to quit, H for help.')
         self.status_bar.blit(mrogue.io.Screen.get())
 
-    def heal_callable(self):
-        self.heal(1)
-        mrogue.message.Messenger.add('You regenerate some health.')
-        mrogue.monster.MonsterManager.spawn_monster(mrogue.map.Dungeon.depth(), sight_range=100)
-
     def regenerate_health(self) -> None:
-        """Add 1 HP every 30 turns and spawn a random Monster that will hunt the player"""
+        """Add 1 HP every 35 turns and spawn a random Monster that will hunt the player"""
         self.health_regen_cooldown -= 1
         if self.health_regen_cooldown > 0:
             return
         if self.current_HP < self.max_HP:
-            self.health_regen_cooldown = 30
-            mrogue.timers.Timer(self.health_regen_cooldown, self.heal_callable)
+            self.health_regen_cooldown = 35
+            self.heal(1)
+            mrogue.message.Messenger.add('You regenerate some health.')
+            mrogue.monster.MonsterManager.spawn_monster(mrogue.map.Dungeon.depth(), sight_range=100)
 
     def move(self, success: bool = True) -> None:
         """Recalculate pathfinding map on each successful step"""
@@ -140,7 +135,7 @@ class Player(mrogue.unit.Unit):
         """Add ambient information after movement"""
         self.regenerate_health()
         if self.moved:
-            items = mrogue.item.ItemManager.get_item_on_map(self.pos)
+            items = mrogue.item.manager.ItemManager.get_item_on_map(self.pos)
             if items:
                 if len(items) > 1:
                     mrogue.message.Messenger.add('{} items are lying here.'.format(len(items)))
@@ -166,7 +161,7 @@ class Player(mrogue.unit.Unit):
             self.load_status = 'heavy'
         else:
             self.load_status = 'immobile'
-        self.speed = load_statuses[self.load_status][0] - self.abilities['dex'].mod / 100
+        self.speed = (load_statuses[self.load_status][0] - self.abilities['dex'].mod / 100) * self.speed_bonus
 
     def in_slot(self, slot: str):
         return mrogue.utils.find_in(self.equipped, 'slot', slot)
@@ -196,9 +191,11 @@ class Player(mrogue.unit.Unit):
 
         :param item: Item to be worn
         """
+        if not isinstance(item, mrogue.item.item.Wearable):
+            return
         super().equip(item, **kwargs)
-        if item.enchantment_level > 0:
-            self.crit_immunity += 0.25
+        if item.enchantment_level > 1:
+            self.crit_immunity += 0.16
 
     def unequip(self, item: Wearable, **kwargs) -> bool:
         """Check if Item being removed is blessed to decrease critical hit immunity by 25%
@@ -206,12 +203,12 @@ class Player(mrogue.unit.Unit):
         :param item: Item to be removed
         """
         if super().unequip(item, **kwargs):
-            if item.enchantment_level > 0:
-                self.crit_immunity -= 0.25
+            if item.enchantment_level > 1:
+                self.crit_immunity -= 0.16
             return True
         return False
 
-    def pickup_item(self, item_manager: ItemManager) -> bool:
+    def pickup_item(self, item_manager: mrogue.item.manager.ItemManager) -> bool:
         """Pick an Item up if it's a single item, present pick-up choice list otherwise
 
         :param item_manager: ItemManager object for access to instance methods
@@ -228,7 +225,7 @@ class Player(mrogue.unit.Unit):
                 return False
             if len(chosen) > 1:
                 for item in chosen:
-                    if issubclass(type(item), mrogue.item.Stackable):
+                    if issubclass(type(item), mrogue.item.item.Stackable):
                         existing_item = mrogue.utils.find_in(self.inventory, 'name', item.name)
                         if existing_item:
                             existing_item.amount += 1

@@ -5,14 +5,17 @@ Classes:
     * AbilityScore - Ability score as defined by Dungeon & Dragons rules
     * Unit - A mobile Entity
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import random
 from copy import copy
 from sys import argv
 import tcod.constants
-import mrogue.item
 import mrogue.map
 import mrogue.message
 import mrogue.utils
+if TYPE_CHECKING:
+    import mrogue.item
 
 
 class AbilityScore:
@@ -99,6 +102,7 @@ class Unit(mrogue.Entity):
             'con': AbilityScore('Constitution', abi_scores[2])
         }
         self.load_thresholds = (5.0, 30.0, 50.0)
+        self.speed_bonus = 1.0
         self.speed = speed
         self.initiative = int(speed * 100)
         self.keywords = keywords
@@ -128,7 +132,7 @@ class Unit(mrogue.Entity):
     def burden_update(self) -> None:
         pass
 
-    def add_item(self, item) -> None:
+    def add_item(self, item: mrogue.item.item.Item) -> None:
         """Add an item to Unit's inventory and recalculate encumbrance
 
         :param item: Item to be added
@@ -136,31 +140,7 @@ class Unit(mrogue.Entity):
         item.add(self.inventory)
         self.burden_update()
 
-    def equip(self, item, quiet: bool = False) -> None:
-        """Switch groups and apply bonuses from wearing the Item
-
-        :param item: Item to be worn
-        :param quiet: should feedback messages be suppressed?
-        """
-        for i in self.equipped:
-            if item.slot == i.slot:
-                self.unequip(i)
-        item.add(self.equipped)
-        item.remove(self.inventory)
-        if item.subtype == 'weapon':
-            self.to_hit = self.proficiency + self.ability_bonus + item.props.to_hit_modifier
-            self.damage_dice = (item.props.damage[0] + self.abilities['str'].mod, item.props.damage[1] + self.abilities['str'].mod)
-        elif item.subtype == 'armor':
-            bonus_ac_equipped = sum([i.props.armor_class_modifier for i in self.equipped if i.subtype == 'armor'])
-            self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
-            self.damage_reduction = self.armor_class / 100
-        msg = f'{self.name.capitalize()} equipped {item.name}.'
-        if self.player:
-            item.identified()
-        if not quiet:
-            mrogue.message.Messenger.add(msg)
-
-    def use(self, item) -> None:
+    def use(self, item: mrogue.item.item.Consumable) -> None:
         """Apply Item effects and display message to player
 
         :param item: Item to be used
@@ -169,7 +149,50 @@ class Unit(mrogue.Entity):
         self.burden_update()
         mrogue.message.Messenger.add(effect)
 
-    def unequip(self, item, quiet: bool = False, force: bool = False) -> bool:
+    def recalculate_stats_from_items(self):
+        # weapon
+        self.to_hit = self.proficiency + self.ability_bonus
+        self.damage_dice = self.default_damage_dice
+        item = mrogue.utils.find_in(self.equipped, 'subtype', 'weapon')
+        if item:
+            self.to_hit += item.props.to_hit_modifier
+            self.damage_dice = (item.props.damage[0] + self.abilities['str'].mod,
+                                item.props.damage[1] + self.abilities['str'].mod)
+        # armor
+        bonus_ac_equipped = sum([i.props.armor_class_modifier for i in self.equipped if i.subtype == 'armor'])
+        self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
+        self.damage_reduction = self.armor_class / 100
+
+    def equip(self, item: mrogue.item.item.Wearable, quiet: bool = False) -> bool:
+        """Switch groups and apply bonuses from wearing the Item
+
+        :param item: Item to be worn
+        :param quiet: should feedback messages be suppressed?
+        """
+        slot = [item.slot]
+        if item.slot == 'both':
+            slot = ['main', 'both', 'off']
+        elif item.slot == 'main':
+            slot = ['main', 'both']
+        elif item.slot == 'off':
+            slot = ['both', 'off']
+        for i in self.equipped:
+            if i.slot in slot:
+                if i.enchantment_level < -1:
+                    mrogue.message.Messenger.add('You can\'t replace cursed items.')
+                    return False
+                self.unequip(i)
+        item.add(self.equipped)
+        item.remove(self.inventory)
+        self.recalculate_stats_from_items()
+        msg = f'{self.name.capitalize()} equipped {item.name}.'
+        if self.player:
+            item.identified()
+        if not quiet:
+            mrogue.message.Messenger.add(msg)
+        return True
+
+    def unequip(self, item: mrogue.item.item.Wearable, quiet: bool = False, force: bool = False) -> bool:
         """Switch the Item between lists and recalculate related stats
 
         :param item: Item to be removed
@@ -177,24 +200,18 @@ class Unit(mrogue.Entity):
         :param force: if curse check should be ignored
         :return: False if Item can't be removed, True after successful removal
         """
-        if item.enchantment_level < 0 and not force:
+        if item.enchantment_level < -1 and not force:
             mrogue.message.Messenger.add('Cursed items can\'t be unequipped.')
             return False
         item.add(self.inventory)
         item.remove(self.equipped)
-        if item.subtype == 'weapon':
-            self.to_hit = self.proficiency + self.ability_bonus
-            self.damage_dice = self.default_damage_dice
-        elif item.subtype == 'armor':
-            bonus_ac_equipped = sum([i.props.armor_class_modifier for i in self.equipped if i.subtype == 'armor'])
-            self.armor_class = 10 + self.abilities['dex'].mod + self.ac_bonus + bonus_ac_equipped
-            self.damage_reduction = self.armor_class / 100
+        self.recalculate_stats_from_items()
         msg = f'{self.name.capitalize()} unequipped {item.name}.'
         if not quiet:
             mrogue.message.Messenger.add(msg)
         return True
 
-    def drop_item(self, item, quiet: bool = False) -> None:
+    def drop_item(self, item: mrogue.item.item.Item, quiet: bool = False) -> None:
         """Switch an Item between groups and recalculate encumbrance,
 
         :param item: Item to be removed from inventory
@@ -213,7 +230,7 @@ class Unit(mrogue.Entity):
         if not quiet:
             mrogue.message.Messenger.add(msg)
 
-    def pickup_item(self, item_list: list) -> bool:
+    def pickup_item(self, item_list: list[mrogue.item.item.Item]) -> bool:
         """Transfer the top item from the heap to Unit's inventory
 
         :param item_list: all Items laying at the spot
@@ -221,7 +238,7 @@ class Unit(mrogue.Entity):
         """
         if item_list:
             item = item_list.pop(0)
-            if issubclass(type(item),  mrogue.item.Stackable):
+            if issubclass(type(item), mrogue.item.item.Stackable):
                 # in case of Stackables, pick just a singular amount
                 existing_item = mrogue.utils.find_in(self.inventory, 'name', item.name)
                 if existing_item:
@@ -249,7 +266,7 @@ class Unit(mrogue.Entity):
     def move(self, success: bool = True) -> None:
         self.moved = success
 
-    def attack(self, target) -> None:
+    def attack(self, target: mrogue.unit.Unit) -> None:
         """Attempt an attack against another Unit
 
         :param target: the other Unit

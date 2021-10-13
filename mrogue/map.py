@@ -17,7 +17,7 @@ from typing import Callable
 import tcod.bsp
 import tcod.map
 import mrogue.io
-import mrogue.item
+import mrogue.item.item
 import mrogue.message
 import mrogue.monster
 import mrogue.player
@@ -98,12 +98,11 @@ class Level:
 
         # place rooms
         for node_center in vector:
-            if random.random() <= .7:
-                w, h = random.randint(3, 5), random.randint(2, 3)
-                left, top = max(node_center.x - w, 1), max(node_center.y - h, 2)
-                right = min(node_center.x + w + 1, self.mapDim.x - 1)
-                bottom = min(node_center.y + h + 1, self.mapDim.y - 1)
-                self.tiles[left:right, top:bottom] = tiles['floor']
+            w, h = random.randint(3, 5), random.randint(2, 3)
+            left, top = max(node_center.x - w, 1), max(node_center.y - h, 2)
+            right = min(node_center.x + w + 1, self.mapDim.x - 1)
+            bottom = min(node_center.y + h + 1, self.mapDim.y - 1)
+            self.tiles[left:right, top:bottom] = tiles['floor']
         self.floor = np.argwhere(self.tiles['walkable'])
 
         # select coordinates for stairs before corridors so they would be placed only in rooms
@@ -230,7 +229,7 @@ class Dungeon:
         Dungeon.current_level.pos = mrogue.player.Player.get().pos
         Dungeon.current_level = Level(self.mapDim)
         Dungeon.current_level.create_level()
-        mrogue.item.ItemManager.create_loot(num_objects)  # , Dungeon._depth // 4)
+        mrogue.item.manager.ItemManager.create_loot(num_objects)  # , Dungeon._depth // 4)
         mrogue.monster.MonsterManager.create_monsters(num_objects, Dungeon._depth)
         Dungeon._levels.append(Dungeon.current_level)
 
@@ -369,7 +368,7 @@ class Dungeon:
                 if not unit.player and mrogue.utils.adjacent(current_pos, unit.pos, 3):
                     return True
             for obj in Dungeon.current_level.objects_on_map:
-                if issubclass(type(obj), mrogue.item.Item) and mrogue.utils.adjacent(current_pos, obj.pos):
+                if issubclass(type(obj), mrogue.item.item.Item) and mrogue.utils.adjacent(current_pos, obj.pos):
                     return True
             return False
 
@@ -422,12 +421,12 @@ class Dungeon:
         self.screen.clear()
         player = mrogue.player.Player.get()
         level = Dungeon.current_level
-        display_items = list(filter(lambda i: isinstance(i, mrogue.item.Item), level.objects_on_map))
+        display_items = list(filter(lambda item: isinstance(item, mrogue.item.item.Item), level.objects_on_map))
         display_monsters = list(filter(lambda m: isinstance(m, mrogue.monster.Monster), level.objects_on_map))
         if 'debug' in argv:
             self.screen.rgba[:, 0:39] = level.tiles['lit']
         else:
-            display_items = list(filter(lambda i: player.fov[i.pos], display_items))
+            display_items = list(filter(lambda item: player.fov[item.pos], display_items))
             display_monsters = list(filter(lambda m: player.fov[m.pos], display_monsters))
             self.screen.rgba[:, 0:39] = np.select(
                 (player.fov, level.explored),

@@ -1,21 +1,24 @@
-- [x] delay player HP regeneration
 - [ ] modify automove to ignore items that are not in front
-- [ ] rework item spawning (loot tables?)
+- [x] rework item spawning (loot tables?)
 - [ ] change how map is generated
-- [ ] add more monsters and items
-- [ ] introduce weapon/damage types and resistance
+- [x] add more items
+- [ ] add more monsters
 - [ ] player character stats
   - [x] 3 base stats: STR, DEX, CON
   - [ ] 3 remaining stats: INT, WIS, CHA (beginning with just saving throws perhaps)
-  -[ ] miscellaneous other characteristics
+  - [ ] miscellaneous other characteristics
     - [ ] race (stat bonuses)
     - [ ] class (hit dice, proficiencies)
   - [ ] stats screen
 - [ ] experience
   - [ ] defeated enemies grant xp
   - [ ] on gained xp breakpoints increase stats
+- [ ] introduce weapon/damage types and resistance
 - ranged combat...
 - magic combat...
-- more objects on map...
+- more objects on map
+  - doors
+  - traps
+  - chests
 - skills...
 - character customization...
