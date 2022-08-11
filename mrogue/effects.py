@@ -101,6 +101,8 @@ class Effect:
             items = self.target.inventory + self.target.equipped
             items = list(filter(lambda x: isinstance(x, mrogue.item.item.Wearable), items))
             item = select_item_from_list(items, 'enchant')
+            if not item:
+                return 'You have wasted an enchantment spell.'
             if item.enchantment_level < 2:
                 name = item.name
                 item.upgrade_enchantment(int(args[0]))
@@ -117,6 +119,8 @@ class Effect:
             items = self.target.inventory + self.target.equipped
             items = list(filter(lambda x: isinstance(x, mrogue.item.item.Wearable) and x.subtype == 'armor', items))
             item = select_item_from_list(items, 'fortify')
+            if not item:
+                return 'You have wasted a fortify spell.'
             name = item.name
             item.upgrade_armor(int(args[0]))
             item.identified()
