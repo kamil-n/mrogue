@@ -3,7 +3,7 @@ A generic roguelike template in Python.
 
 ### Description
 This is an exercise in coding a turn-based game with text representation.
-A Python port of libTCOD by @author is used. Besides that only Numpy is required.
+A Python port of libTCOD by [HexDecimal](https://github.com/HexDecimal) is used. Besides that only Numpy is required.
 
 ##### Goal
 The aim of this project is two-fold: to learn and apply Python techniques, and to create a Minimum Viable Product for a
@@ -21,7 +21,7 @@ actions all at once immediately after. Player can use items to fight monsters an
 Available keyboard shortcuts are listed in the game's interface - displayed by pressing Shift+H.
 
 ### Instructions
-`git clone git@bitbucket.org:springdancer/rogue.git`
+`git clone git@github.com:kamil-n/mrogue.git`
 
 `cd rogue`
 
@@ -38,7 +38,7 @@ Release builds should also be available.
 ### License
 *This program uses HexDecimal's "python-tcod" licensed under Simplified 2-clause FreeBSD license.*
 
-Copyright (C) 2018-2021 Kamil Nienałtowski
+Copyright (C) 2018-2022 Kamil Nienałtowski
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
