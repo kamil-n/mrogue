@@ -1,7 +1,5 @@
 - [ ] modify automove to ignore items that are not in front
-- [x] rework item spawning (loot tables?)
-- [ ] change how map is generated
-- [x] add more items
+- [x] change how map is generated
 - [ ] add more monsters
 - [ ] player character stats
   - [x] 3 base stats: STR, DEX, CON

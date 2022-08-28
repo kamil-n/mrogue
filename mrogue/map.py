@@ -52,7 +52,7 @@ compare = {
 
 
 class Level:
-    """Creates a stores a single floor of the dungeon that fits on the screen.
+    """Creates and stores a single floor of the dungeon that fits on the screen.
 
     Object attributes:
         * mapDim - width and height of the available space to dig in
@@ -67,8 +67,45 @@ class Level:
         * tunnel() - connects two points by making a broken line
     """
 
+    class Room:
+        rooms_list = []
+
+        def __init__(self, col, row, x, y, w, h):
+            self.col, self.row = col, row
+            self.x, self.y = col + x, row + y
+            self.width, self.height = w, h
+            self.is_connected = False
+            self.connected = []
+            Level.Room.rooms_list.append(self)
+
+        def get_neighbors(self):
+            rooms_in_row = [r for r in Level.Room.rooms_list if r.row == self.row]
+            rooms_in_col = [r for r in Level.Room.rooms_list if r.col == self.col]
+            row_index = rooms_in_row.index(self)
+            col_index = rooms_in_col.index(self)
+            neighbors = []
+            for i in (row_index - 1, row_index + 1):
+                if i > -1 and i < len(rooms_in_row):
+                    neighbors.append(rooms_in_row[i])
+            for i in (col_index - 1, col_index + 1):
+                if i > -1 and i < len(rooms_in_col):
+                    neighbors.append(rooms_in_col[i])
+            return neighbors
+
+        def connect(self, other, level):
+            self.is_connected = other.is_connected = True
+            self.connected.append(other)
+            other.connected.append(self)
+            level.tunnel(
+                self.x + self.width // 2, self.y + self.height // 2,
+                other.x + other.width // 2, other.y + other.height // 2
+            )
+
+        def get_connected_neighbors(self):
+            return list(filter(lambda x: x.is_connected, self.get_neighbors()))
+
     def __init__(self, dimensions: Point):
-        """Creates an empty level using the BSP algorithm."""
+        """Creates an empty level using one of the algorithms."""
         self.mapDim = dimensions
         self.objects_on_map = []
         self.units = []
@@ -80,12 +117,74 @@ class Level:
         self.tiles[:] = tiles['wall']
         self.explored = np.zeros(self.mapDim, bool, 'F')
 
-    def create_level(self,  first: bool = False) -> None:
+    def create_level(self, first: bool = False) -> None:
         """
         Fill the level with rooms and structures.
 
         :param first: True if this is the first level created at start
         """
+        # create layout using one of the methods
+        methods = [self.create_level_grid, self.create_level_bsp]
+        self.floor = random.choice(methods)()
+
+        dim = 0.2
+        for x in range(self.mapDim.x):
+            for y in range(self.mapDim.y):
+                random_grey = random.randint(96, 128)
+                one_shade_of_grey = tcod.Color(random_grey, random_grey, random_grey)
+                self.tiles[x, y]['lit'][1][:3] = one_shade_of_grey  # fg
+                self.tiles[x, y]['lit'][2][:3] = one_shade_of_grey * 0.2  # bg
+                self.tiles[x, y]['dim'][1][:3] = one_shade_of_grey * dim  # fg
+                self.tiles[x, y]['dim'][2][:3] = one_shade_of_grey * dim * 0.2  # bg
+
+        # select coordinates for stairs and place them
+        if not first:
+            self.tiles[self.stairs_up_pos] = tiles['stairs_up']
+            self.pos = self.stairs_up_pos
+        self.tiles[self.stairs_down_pos] = tiles['stairs_down']
+
+    def create_level_grid(self) -> list[tuple]:
+        self.Room.rooms_list = []
+        max_cell_width, max_cell_height = 18, 8
+        for j in range(2, self.mapDim.y, max_cell_height + 1):
+            for i in range(1, self.mapDim.x, max_cell_width + 1):
+                if (i + max_cell_width + 1 < self.mapDim.x) and (j + max_cell_height + 1 < self.mapDim.y):
+                    top, bottom = j, j + max_cell_height
+                    left, right = i, i + max_cell_width
+                    x, y = random.randint(0, max_cell_width // 2), random.randint(0, max_cell_height // 2)
+                    width, height = random.randint(3, max_cell_width - x), random.randint(3, max_cell_height - y)
+                    self.tiles[left+x:left+x+width, top+y:top+y+height] = tiles['floor']
+                    self.Room(left, top, x, y, width, height)
+
+        room = random.choice(self.Room.rooms_list)
+        room.is_connected = True
+        self.stairs_up_pos = Point(
+            mrogue.utils.roll(room.x + 1, room.x + room.width - 1),
+            mrogue.utils.roll(room.y + 1, room.y + room.height - 1)
+        )
+
+        unconnected_neighbors = list(filter(lambda x: not x.is_connected, room.get_neighbors()))
+        while any(unconnected_neighbors):
+            new_room = random.choice(unconnected_neighbors)
+            room.connect(new_room, self)
+            room = new_room
+            unconnected_neighbors = list(filter(lambda x: not x.is_connected, room.get_neighbors()))
+
+        unconnected_rooms = list(filter(lambda x: not x.is_connected, self.Room.rooms_list))
+        while any(unconnected_rooms):
+            room = random.choice(unconnected_rooms)
+            if not any(cn := room.get_connected_neighbors()):
+                continue
+            room.connect(random.choice(cn), self)
+            unconnected_rooms = list(filter(lambda x: not x.is_connected, self.Room.rooms_list))
+        self.stairs_down_pos = Point(
+            mrogue.utils.roll(room.x + 1, room.x + room.width - 1),
+            mrogue.utils.roll(room.y + 1, room.y + room.height - 1)
+        )
+
+        return np.argwhere(self.tiles['walkable'])
+
+    def create_level_bsp(self) -> list[tuple]:
         # binary space partitioning
         bsp = tcod.bsp.BSP(0, 0, self.mapDim.x, self.mapDim.y)
         bsp.split_recursive(4, 11, 8, 1.0, 1.0)
@@ -103,14 +202,11 @@ class Level:
             right = min(node_center.x + w + 1, self.mapDim.x - 1)
             bottom = min(node_center.y + h + 1, self.mapDim.y - 1)
             self.tiles[left:right, top:bottom] = tiles['floor']
-        self.floor = np.argwhere(self.tiles['walkable'])
+        floor = np.argwhere(self.tiles['walkable'])
 
-        # select coordinates for stairs before corridors so they would be placed only in rooms
-        stairs_up = None
-        if not first:
-            stairs_up = Point(*random.choice(self.floor))
-            self.pos = stairs_up
-        stairs_down = Point(*random.choice(self.floor))
+        # place stairs before digging tunnels
+        self.stairs_up_pos = Point(*random.choice(floor))
+        self.stairs_down_pos = Point(*random.choice(floor))
 
         # dig tunnels from opposite nodes to partition line center
         for node in bsp.inverted_level_order():
@@ -139,22 +235,7 @@ class Level:
             # connect node centers to their respective partition's center
             self.tunnel(*node1[1], *partition_center)
             self.tunnel(*node2[1], *partition_center)
-
-        # TODO:  check if this can be done in a more elegant way
-        dim = 0.2
-        for x in range(self.mapDim.x):
-            for y in range(self.mapDim.y):
-                random_grey = random.randint(96, 128)
-                one_shade_of_grey = tcod.Color(random_grey, random_grey, random_grey)
-                self.tiles[x, y]['lit'][1][:3] = one_shade_of_grey  # fg
-                self.tiles[x, y]['lit'][2][:3] = one_shade_of_grey * 0.2  # bg
-                self.tiles[x, y]['dim'][1][:3] = one_shade_of_grey * dim  # fg
-                self.tiles[x, y]['dim'][2][:3] = one_shade_of_grey * dim * 0.2  # bg
-
-        # place stairs last so they won't be overwritten
-        if stairs_up:
-            self.tiles[stairs_up] = tiles['stairs_up']
-        self.tiles[stairs_down] = tiles['stairs_down']
+        return floor
 
     def tunnel(self, x1: int, y1: int, x2: int, y2: int) -> None:
         """Connect two points, doing one turn after random amount of steps"""
@@ -381,10 +462,10 @@ class Dungeon:
         if scan(pos, Point(0, 0)):  # delta unused in this case
             # attempt normal movement if there are enemies or items in range
             return self.movement(mrogue.player.Player.get(), Point(pos.x + dx, pos.y + dy))
-        geometry = get_front(pos, Point(dx+1, dy+1))
+        geometry = get_front(pos, Point(dx + 1, dy + 1))
         while True:
             # compare new geometry to starting conditions geometry
-            if scan(pos, Point(dx+1, dy+1), geometry):
+            if scan(pos, Point(dx + 1, dy + 1), geometry):
                 # if the layout changes or there are Entities, stop automatic movement
                 break
             # stop movement if Player dies
@@ -449,8 +530,8 @@ class Dungeon:
         :return: a list of all reachable tiles around the center
         """
         x, y = of
-        results = [Point(x-1, y), Point(x, y+1), Point(x+1, y), Point(x, y-1),
-                   Point(x-1, y-1), Point(x+1, y-1), Point(x-1, y+1), Point(x+1, y+1)]
+        results = [Point(x - 1, y), Point(x, y + 1), Point(x + 1, y), Point(x, y - 1),
+                   Point(x - 1, y - 1), Point(x + 1, y - 1), Point(x - 1, y + 1), Point(x + 1, y + 1)]
         results = list(filter(lambda p: 0 < p.x <= cls.mapDim.x and 0 < p.y <= cls.mapDim.y, results))
         results = list(filter(lambda p: cls.current_level.tiles[p]['walkable'], results))
         return results
