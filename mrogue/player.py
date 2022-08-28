@@ -14,6 +14,7 @@ import tcod.console
 from tcod.path import Dijkstra
 import mrogue.item
 import mrogue.monster
+import mrogue.timers
 import mrogue.unit
 import mrogue.utils
 if TYPE_CHECKING:
@@ -98,16 +99,19 @@ class Player(mrogue.unit.Unit):
         self.status_bar.print(72, 0, 'Press Q to quit, H for help.')
         self.status_bar.blit(mrogue.io.Screen.get())
 
+    def heal_callable(self):
+        self.heal(1)
+        mrogue.message.Messenger.add('You regenerate some health.')
+        mrogue.monster.MonsterManager.spawn_monster(mrogue.map.Dungeon.depth(), sight_range=100)
+
     def regenerate_health(self) -> None:
-        """Add 1 HP every 35 turns and spawn a random Monster that will hunt the player"""
+        """Add 1 HP every 30 turns and spawn a random Monster that will hunt the player"""
         self.health_regen_cooldown -= 1
         if self.health_regen_cooldown > 0:
             return
         if self.current_HP < self.max_HP:
-            self.health_regen_cooldown = 35
-            self.heal(1)
-            mrogue.message.Messenger.add('You regenerate some health.')
-            mrogue.monster.MonsterManager.spawn_monster(mrogue.map.Dungeon.depth(), sight_range=100)
+            self.health_regen_cooldown = 30
+            mrogue.timers.Timer(self.health_regen_cooldown, self.heal_callable)
 
     def move(self, success: bool = True) -> None:
         """Recalculate pathfinding map on each successful step"""
