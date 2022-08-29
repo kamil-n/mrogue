@@ -1,5 +1,7 @@
 - [ ] modify automove to ignore items that are not in front
-- [x] change how map is generated
+- [ ] dual wield
+  - [ ] support dual wield in current inventory and combat routines
+  - [ ] introduce penalties
 - [ ] add more monsters
 - [ ] player character stats
   - [x] 3 base stats: STR, DEX, CON

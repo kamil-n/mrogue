@@ -176,7 +176,7 @@ class Unit(mrogue.Entity):
             slot = ['main', 'both']
         elif item.slot == 'off':
             slot = ['both', 'off']
-        for i in self.equipped:
+        for i in self.equipped.copy():
             if i.slot in slot:
                 if i.enchantment_level < -1:
                     mrogue.message.Messenger.add('You can\'t replace cursed items.')
