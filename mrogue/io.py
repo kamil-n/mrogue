@@ -18,6 +18,7 @@ Classes:
     * Glyph - a base class for any entity that shall be printed on screen (item or unit)
     * Screen - a singleton keeping the main window=screen and the context information
 """
+from os import path
 import string
 from typing import NamedTuple, Tuple, Callable
 import numpy as np
@@ -136,19 +137,22 @@ def help_screen() -> None:
         '1/ 2 \\3',
         'Shift + direction = autorun.',
         'Other keys:',
-        'e - open equipment screen. Press slot hotkeys to unequip items.',
-        'i - open inventory screen. Press hotkeys to manage items.',
+        'e  - open equipment screen. Press slot hotkeys to unequip items.',
+        'i  - open inventory screen. Press hotkeys to manage items.',
         ', (comma) - pick up items',
-        '> - descend to next level while standing on this icon.',
-        '< - ascend back to previous level while standing on this icon.',
-        'M - show message history.',
-        'H - show this help screen.',
-        'Q - close game when on main screen',
+        '>  - descend to next level while standing on this icon.',
+        '<  - ascend back to previous level while standing on this icon.',
+        'M  - show message history.',
+        'H  - show this help screen.',
+        'Q  - close game when on main screen',
+        '^R - cycle tileset (font)',
         '',
         'Esc - close pop-up windows like this one.'
     ]
-    window = tcod.Console(65, len(help_contents) + 2, 'F')
-    window.draw_frame(0, 0, 65, len(help_contents) + 2, f'Welcome to MRogue {mrogue.__version__}!', False)
+    width = 2 + max([len(line) for line in help_contents])
+    height = 2 + len(help_contents)
+    window = tcod.Console(width, height, 'F')
+    window.draw_frame(0, 0, width, height, f'Welcome to MRogue {mrogue.__version__}!', False)
     for i in range(len(help_contents)):
         window.print(1, i + 1, help_contents[i])
     window.blit(Screen.get(), 12, 12, bg_alpha=0.95)
@@ -247,6 +251,7 @@ class Screen(tcod.Console):
         Screen._context = tcod.context.new(
             columns=width, rows=height, tileset=font,
             renderer=tcod.RENDERER_SDL2, title=f'MRogue {mrogue.__version__}')
+        Screen.cols, Screen.rows = width, height
 
     @classmethod
     def get(cls):
@@ -255,3 +260,10 @@ class Screen(tcod.Console):
     @classmethod
     def present(cls, *args, **kwargs):
         cls._context.present(Screen._instance, *args, **kwargs)
+
+    @classmethod
+    def change_font(cls, font):
+        new_font = tcod.tileset.load_tilesheet(path.join(mrogue.work_dir, 'data', font[0]), 16, 16, tcod.tileset.CHARMAP_CP437)
+        cls._context.change_tileset(new_font)
+        cls._context.sdl_window.size = cls.cols * font[1][0], cls.rows * font[1][1]
+        # cls._instance = cls._context.new_console(order='F')

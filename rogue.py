@@ -10,6 +10,7 @@ import mrogue.message
 import mrogue.monster
 import mrogue.player
 import mrogue.timers
+import mrogue.utils
 
 
 class Rogue:
@@ -31,8 +32,13 @@ class Rogue:
 
     def __init__(self):
         """Initialize the libTCOD terminal and some singletons and managers."""
-        fonts = ['terminal10x16_gs_ro.png', 'Cooz_curses_14x16.png', 'Bmac_smooth_16x24.png', 'Kyzsmooth.png']
-        font = tcod.tileset.load_tilesheet(path.join(mrogue.work_dir, 'data', fonts[2]), 16, 16, tcod.tileset.CHARMAP_CP437)
+        self.fonts = mrogue.utils.circular([
+            ('terminal10x16_gs_ro.png', (10, 16)),
+            ('Cooz_curses_14x16.png', (14, 16)),
+            ('Bmac_smooth_16x24.png', (16, 24)),
+            # ('Kyzsmooth.png', (24, 36))
+        ])
+        font = tcod.tileset.load_tilesheet(path.join(mrogue.work_dir, 'data', next(self.fonts)[0]), 16, 16, tcod.tileset.CHARMAP_CP437)
         mrogue.io.Screen(100, 40, font)
         self.dungeon = mrogue.map.Dungeon()
         self.items = mrogue.item.manager.ItemManager()
@@ -103,6 +109,10 @@ class Rogue:
         # 'Q'
         elif mrogue.io.key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
             return True
+        # Ctrl + R
+        elif mrogue.io.key_is(key, tcod.event.K_r, tcod.event.KMOD_CTRL):
+            mrogue.io.Screen.change_font(new_font := next(self.fonts))
+            self.messenger.add(f'Changed font to {new_font[0]}.')
         # other
         else:
             self.messenger.add(f'Unknown command.')
