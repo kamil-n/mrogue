@@ -34,9 +34,14 @@ class Rogue:
         """Initialize the libTCOD terminal and some singletons and managers."""
         self.fonts = mrogue.utils.circular([
             ('terminal10x16_gs_ro.png', (10, 16)),
+            ('Bedstead-20-df.png', (12, 20)),
             ('Cooz_curses_14x16.png', (14, 16)),
             ('Bmac_smooth_16x24.png', (16, 24)),
-            # ('Kyzsmooth.png', (24, 36))
+            ('Cheepicus_12x12.png', (12, 12)),
+            ('16x16_sb_ascii.png', (16, 16)),
+            ('Haowan_Curses_1440x450.png', (18, 18)),
+            ('Nagidal24x24shade.png', (24, 24)),
+            ('Curses_square_24.png', (24, 24)),
         ])
         font = tcod.tileset.load_tilesheet(path.join(mrogue.work_dir, 'data', next(self.fonts)[0]), 16, 16, tcod.tileset.CHARMAP_CP437)
         mrogue.io.Screen(100, 40, font)
