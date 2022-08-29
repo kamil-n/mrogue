@@ -345,7 +345,7 @@ class Dungeon:
             else:
                 if Dungeon._depth == 8:
                     import zlib
-                    with open(path.join(mrogue.work_dir, 'level8.dat'), 'rb') as f:
+                    with open(path.join(mrogue.work_dir, 'data', 'level8.dat'), 'rb') as f:
                         level_string = str(zlib.decompress(f.read()), 'utf-8')
                     Dungeon.current_level = self.level_from_string(level_string)
                     Dungeon.current_level.pos = Point(48, 35)
