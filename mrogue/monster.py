@@ -6,7 +6,9 @@ Classes:
     * Monster - a type of Unit that chases and attacks the player
 """
 import random
+
 import tcod
+
 import mrogue.item.manager
 import mrogue.map
 import mrogue.monster_data
@@ -32,20 +34,24 @@ class Monster(mrogue.unit.Unit):
 
     def __init__(self, template, groups):
         """Will create a Monster and a random Weapon if the template indicates so and coin toss allows it"""
-        super().__init__(template['name'],
-                         (template['icon'], template['color']),
-                         10,
-                         template['ability_scores'],
-                         template['keywords'],
-                         template['speed'],
-                         template['proficiency'],
-                         template['dmg_range_unarmed'],
-                         template['ac_bonus'],
-                         mrogue.utils.roll(*template['hp_range']))
+        super().__init__(
+            template["name"],
+            (template["icon"], template["color"]),
+            10,
+            template["ability_scores"],
+            template["keywords"],
+            template["speed"],
+            template["proficiency"],
+            template["dmg_range_unarmed"],
+            template["ac_bonus"],
+            mrogue.utils.roll(*template["hp_range"]),
+        )
         self.background = tcod.red * 0.3
         self.path = None
-        if 'weapon' in template and random.randint(0, 1):
-            mrogue.item.manager.ItemManager.random_item(template['weapon'], self.inventory)
+        if "weapon" in template and random.randint(0, 1):
+            mrogue.item.manager.ItemManager.random_item(
+                template["weapon"], self.inventory
+            )
         for group in groups:
             group.append(self)
 
@@ -64,16 +70,25 @@ class Monster(mrogue.unit.Unit):
             monster_fov = None
             if self.is_in_range(target.pos):
                 monster_fov = tcod.map.compute_fov(
-                    mrogue.map.Dungeon.current_level.tiles['transparent'], self.pos, self.sight_range)
-            if monster_fov is not None and monster_fov[target.pos] or self.sight_range == 100:
+                    mrogue.map.Dungeon.current_level.tiles["transparent"],
+                    self.pos,
+                    self.sight_range,
+                )
+            if (
+                monster_fov is not None
+                and monster_fov[target.pos]
+                or self.sight_range == 100
+            ):
                 self.approach(target.pos)
             else:
                 if random.random() > 0.5:
                     self.wander()
 
     def is_in_range(self, target_position: Point) -> bool:
-        return abs(self.pos.x - target_position.x) <= self.sight_range and \
-            abs(self.pos.y - target_position.y) <= self.sight_range
+        return (
+            abs(self.pos.x - target_position.x) <= self.sight_range
+            and abs(self.pos.y - target_position.y) <= self.sight_range
+        )
 
     def approach(self, goal: Point) -> None:
         """Move towards goal, calculate a new path if necessary
@@ -97,11 +112,19 @@ class Monster(mrogue.unit.Unit):
 
         :param towards: if supplied, will prefer a new location that is closest to that target
         """
-        free_spots = list(filter(lambda p: not mrogue.map.Dungeon.unit_at(p), mrogue.map.Dungeon.neighbors(self.pos)))
+        free_spots = list(
+            filter(
+                lambda p: not mrogue.map.Dungeon.unit_at(p),
+                mrogue.map.Dungeon.neighbors(self.pos),
+            )
+        )
         if len(free_spots) > 0:
             to = None
             if towards:
-                pairs = [(abs(towards.x - x), abs(towards.y - y), Point(x, y)) for x, y in free_spots]
+                pairs = [
+                    (abs(towards.x - x), abs(towards.y - y), Point(x, y))
+                    for x, y in free_spots
+                ]
                 if pairs:
                     to = min(pairs, key=lambda v: v[0] * v[0] + v[1] * v[1])[2]
             else:
@@ -128,10 +151,10 @@ class MonsterManager:
     selection_for_level = []
 
     def __init__(self):
-        for i in range(8+1):
+        for i in range(8 + 1):
             this_level = []
             for group, data in mrogue.monster_data.templates.items():
-                if i in data['occurrences'].keys():
+                if i in data["occurrences"].keys():
                     this_level.append(group)
             self.selection_for_level.append(this_level)
 
@@ -146,8 +169,9 @@ class MonsterManager:
         for i in range(num + depth):
             group = random.choice(cls.selection_for_level[depth])
             template = random.choices(
-                mrogue.monster_data.templates[group]['subtypes'],
-                mrogue.monster_data.templates[group]['occurrences'][depth])[0]
+                mrogue.monster_data.templates[group]["subtypes"],
+                mrogue.monster_data.templates[group]["occurrences"][depth],
+            )[0]
             Monster(template, (level.objects_on_map, level.units))
 
     @classmethod
@@ -160,14 +184,15 @@ class MonsterManager:
         level = mrogue.map.Dungeon.current_level
         group = random.choice(cls.selection_for_level[depth])
         template = random.choices(
-            mrogue.monster_data.templates[group]['subtypes'],
-            mrogue.monster_data.templates[group]['occurrences'][depth])[0]
+            mrogue.monster_data.templates[group]["subtypes"],
+            mrogue.monster_data.templates[group]["occurrences"][depth],
+        )[0]
         m = Monster(template, (level.objects_on_map, level.units))
         while True:
             pos = Point(*random.choice(level.floor))
             if not mrogue.player.Player.get().fov[pos]:
                 break
-        setattr(m, 'pos', pos)
+        setattr(m, "pos", pos)
         if kwargs:
             for key, val in kwargs.items():
                 setattr(m, key, val)
@@ -191,7 +216,9 @@ class MonsterManager:
             if cls.order:
                 for unit in cls.order:
                     unit.initiative -= cls.acting_initiative
-            cls.order = sorted(mrogue.map.Dungeon.current_level.units, key=lambda m: m.initiative)
+            cls.order = sorted(
+                mrogue.map.Dungeon.current_level.units, key=lambda m: m.initiative
+            )
             cls.acting_initiative = cls.order[0].initiative
             while cls.order[0].initiative == cls.acting_initiative:
                 unit = cls.order.pop(0)
@@ -205,6 +232,6 @@ class MonsterManager:
     def stop_monsters(cls) -> None:
         """Remove pathfinding information from each Monster and clear the Monster acting order queue"""
         for monster in mrogue.map.Dungeon.current_level.units:
-            if hasattr(monster, 'path'):
+            if hasattr(monster, "path"):
                 monster.path = None
         cls.order.clear()

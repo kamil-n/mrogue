@@ -1,6 +1,1 @@
-from . import (
-    data,
-    item,
-    manager,
-    template
-)
+from . import data, item, manager, template

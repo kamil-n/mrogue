@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """ A collection of small functions used in the whole project"""
 from __future__ import annotations
+
 import random
 import string
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from mrogue import Point
 
@@ -19,8 +21,13 @@ def adjacent(fr: Point, to: Point, distance: int = 1) -> bool:
     return abs(fr.x - to.x) <= distance and abs(fr.y - to.y) <= distance
 
 
-def find_in(where: list or tuple, attribute: str, like: object,
-            instance: type = None, many: bool = False) -> object or list[object]:
+def find_in(
+    where: list or tuple,
+    attribute: str,
+    like: object,
+    instance: type = None,
+    many: bool = False,
+) -> object or list[object]:
     """Generic function to find an item (or multiple) within an iterable with specific attribute
 
     :param where: collection to search in
@@ -45,10 +52,12 @@ def find_in(where: list or tuple, attribute: str, like: object,
 
 def print_result(func):
     """A decorator to print return value from a function/method"""
+
     def decorator(*args, **kwargs):
         value = func(*args, **kwargs)
-        print(f'{func.__name__}{args}: {value}')
+        print(f"{func.__name__}{args}: {value}")
         return value
+
     return decorator
 
 
@@ -69,11 +78,11 @@ def random_scroll_name() -> str:
 
     :return: 1 -3 words 3-5 letters each separated by single spaces
     """
-    name = ''
+    name = ""
     for i in range(random.randint(1, 3)):
         for j in range(random.randint(3, 5)):
             name += random.choice(string.ascii_uppercase)
-        name += ' '
+        name += " "
     return name.rstrip()
 
 

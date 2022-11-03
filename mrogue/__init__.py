@@ -19,18 +19,17 @@ import sys
 from collections import namedtuple
 from os import path
 
+__author__ = "Kamil Nienałtowski"
+__copyright__ = "Copyright (C) 2018-2021 Kamil Nienałtowski"
+__license__ = "GPL-3.0-or-later"
+__version__ = "v0.8.3"
 
-__author__ = 'Kamil Nienałtowski'
-__copyright__ = 'Copyright (C) 2018-2021 Kamil Nienałtowski'
-__license__ = 'GPL-3.0-or-later'
-__version__ = 'v0.8.3'
-
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     work_dir = path.dirname(sys.executable)
 else:
     work_dir = path.dirname(path.dirname(__file__))
 
-Point = namedtuple('Point', ('x', 'y'))
+Point = namedtuple("Point", ("x", "y"))
 
 from mrogue.io import Glyph
 

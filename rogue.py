@@ -2,8 +2,10 @@
 # Copyright (C) 2018-2021 Kamil Nienałtowski
 # License: GPL-3.0-or-later
 from os import path
+
 import tcod
 import tcod.event
+
 import mrogue.item.manager
 import mrogue.map
 import mrogue.message
@@ -32,22 +34,31 @@ class Rogue:
 
     def __init__(self):
         """Initialize the libTCOD terminal and some singletons and managers."""
-        self.fonts = mrogue.utils.circular([
-            ('terminal10x16_gs_ro.png', (10, 16)),
-            ('Bedstead-20-df.png', (12, 20)),
-            ('Cooz_curses_14x16.png', (14, 16)),
-            ('Bmac_smooth_16x24.png', (16, 24)),
-            ('Cheepicus_12x12.png', (12, 12)),
-            ('16x16_sb_ascii.png', (16, 16)),
-            ('Haowan_Curses_1440x450.png', (18, 18)),
-            ('Nagidal24x24shade.png', (24, 24)),
-            ('Curses_square_24.png', (24, 24)),
-        ])
-        font = tcod.tileset.load_tilesheet(path.join(mrogue.work_dir, 'data', next(self.fonts)[0]), 16, 16, tcod.tileset.CHARMAP_CP437)
+        self.fonts = mrogue.utils.circular(
+            [
+                ("terminal10x16_gs_ro.png", (10, 16)),
+                ("Bedstead-20-df.png", (12, 20)),
+                ("Cooz_curses_14x16.png", (14, 16)),
+                ("Bmac_smooth_16x24.png", (16, 24)),
+                ("Cheepicus_12x12.png", (12, 12)),
+                ("16x16_sb_ascii.png", (16, 16)),
+                ("Haowan_Curses_1440x450.png", (18, 18)),
+                ("Nagidal24x24shade.png", (24, 24)),
+                ("Curses_square_24.png", (24, 24)),
+            ]
+        )
+        font = tcod.tileset.load_tilesheet(
+            path.join(mrogue.work_dir, "data", next(self.fonts)[0]),
+            16,
+            16,
+            tcod.tileset.CHARMAP_CP437,
+        )
         mrogue.io.Screen(100, 40, font)
         self.dungeon = mrogue.map.Dungeon()
         self.items = mrogue.item.manager.ItemManager()
-        mrogue.monster.MonsterManager().create_monsters(self.num_objects, self.dungeon.depth())
+        mrogue.monster.MonsterManager().create_monsters(
+            self.num_objects, self.dungeon.depth()
+        )
         self.messenger = mrogue.message.Messenger()
         self.player = mrogue.player.Player()
         self.items.create_loot(self.num_objects)
@@ -98,12 +109,18 @@ class Rogue:
             if self.dungeon.ascend(self.player.pos):
                 return True
         # Shift + [number keys|arrows|numpad keys]
-        elif key[0] in mrogue.io.directions and mrogue.io.mod_is(key[1], tcod.event.KMOD_SHIFT):
-            if self.dungeon.automove(self.player.pos, key[0], self.draw_dungeon, self.update_dungeon):
+        elif key[0] in mrogue.io.directions and mrogue.io.mod_is(
+            key[1], tcod.event.KMOD_SHIFT
+        ):
+            if self.dungeon.automove(
+                self.player.pos, key[0], self.draw_dungeon, self.update_dungeon
+            ):
                 return True
         # number keys|arrows|numpad keys
         elif key[0] in mrogue.io.directions:
-            if self.dungeon.movement(self.player, mrogue.io.direction_from(key[0], self.player.pos)):
+            if self.dungeon.movement(
+                self.player, mrogue.io.direction_from(key[0], self.player.pos)
+            ):
                 return True
         # 'M'
         elif mrogue.io.key_is(key, tcod.event.K_m, tcod.event.KMOD_SHIFT):
@@ -117,10 +134,10 @@ class Rogue:
         # Ctrl + R
         elif mrogue.io.key_is(key, tcod.event.K_r, tcod.event.KMOD_CTRL):
             mrogue.io.Screen.change_font(new_font := next(self.fonts))
-            self.messenger.add(f'Changed font to {new_font[0]}.')
+            self.messenger.add(f"Changed font to {new_font[0]}.")
         # other
         else:
-            self.messenger.add(f'Unknown command.')
+            self.messenger.add(f"Unknown command.")
         return False
 
     def mainloop(self) -> None:
@@ -137,7 +154,7 @@ class Rogue:
                     break
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     rogue = Rogue()
     try:
         rogue.mainloop()
