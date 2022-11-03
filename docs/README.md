@@ -7,7 +7,7 @@ A Python port of libTCOD by [HexDecimal](https://github.com/HexDecimal) is used.
 
 ##### Goal
 The aim of this project is two-fold: to learn and apply Python techniques, and to create a Minimum Viable Product for a
-Rogue-like game which can be later extended and turned into an original experience and full feature game. 
+Rogue-like game which can be later extended and turned into an original experience and full feature game.
 
 ##### History
 I have started working on a roguelike engine several years ago in ANSI C using ncurses. As I was learning and trying

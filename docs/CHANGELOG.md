@@ -1,5 +1,5 @@
 - v0.8.0
-  - items reworked 
+  - items reworked
 - v0.4.6.4
   - multiple dungeon levels
 - v0.4.3.0
