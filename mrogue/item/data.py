@@ -69,7 +69,8 @@ materials = {
     },
 }
 
-# dictionary of 52 key mappings (a-zA-Z)- 26 for small letters and 26 capital letters for either shift key
+# dictionary of 52 key mappings (a-zA-Z)- 26 for small letters
+# and 26 capital letters for either shift key
 letters = dict(
     zip(
         [(letter, tcod.event.KMOD_NONE) for letter in range(97, 97 + 26 + 1)], range(26)

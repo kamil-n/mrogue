@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Represents a mobile Entity
-
-Classes:
-    * AbilityScore - Ability score as defined by Dungeon & Dragons rules
-    * Unit - A mobile Entity
-"""
 from __future__ import annotations
 
 import random
@@ -23,16 +17,6 @@ if TYPE_CHECKING:
 
 
 class AbilityScore:
-    """Quantifier of a basic character attribute.
-
-    Object attributes:
-        * name - name of this ability (Str., Dex., Con., Wis., Int., Cha.)
-        * score - a number between 1 and 20
-        * _original_score - in case it would need to be reset
-    Methods:
-        * mod() - modifier added to a skill check based on this ability
-    """
-
     def __init__(self, name, score):
         self.name = name
         self._original_score = self.score = score
@@ -43,51 +27,6 @@ class AbilityScore:
 
 
 class Unit(mrogue.Entity):
-    """A mobile entity that can carry and use items, attack other Entities, etc
-
-    Extends:
-        * Entity
-    Object attributes:
-        * player - whether Entity is a Player or a Monster
-        * inventory - a list for holding all carried items
-        * equipped - a list for grouping all worn/held items
-        * name - race/type in case of Monsters
-        * pos - position on current Level
-        * layer - used for determining which Glyph should be printed on top of a cell
-        * sight_range - how far an Entity can detect Entities and terrain
-        * abilities - currently 3 abilities used in combat/exploration
-        * load_thresholds - breakpoints for calculating encumbrance from Items
-        * speed - a modifier to amount of ticks between turns
-        * initiative - how soon an Entity can take it's turn
-        * keywords - helper attributes for determining additional mechanics
-        * proficiency - global bonus to ability checks
-        * ability_bonus - either Strength or Dexterity bonus to be added to attack rolls
-        * to_hit - total bonus to attack rolls (the higher the better)
-        * default_damage_dice - default for calculating damage rolls when unarmed
-        * damage_dice - used in combat, either default (unarmed) or calculated from a Weapon used
-        * base_armor_class - inherent armor class (when just dodging)
-        * ac_bonus - a bonus from natural armor
-        * armor_class - total armor value including worn Armor
-        * damage_reduction - flat damage reduction for balancing combat
-        * current_HP - current level of health
-        * max_HP - maximum level of health
-        * moved - if Unit performed movement action on last turn
-    Methods:
-        * update() - placeholder for actions to be considered every turn
-        * burden_update() - placeholder for encumbrance calculation (only Player)
-        * add_item() - puts a new Item in the inventory
-        * equip() - calculates Unit stats in case of Wearables; identifies equipped item
-        * use() - basic actions when an item is used (watching encumbrance, etc)
-        * unequip() - recalculates Unit stats after Wearable is removed, checks for curse status
-        * drop_item() - changes item placement in various groups, handles additional logic in case of Stackables
-        * pickup_item() - changes item placement in various groups, handles additional logic in case of Stackables
-        * move() - to be redefined in extending classes
-        * attack() - makes the attack roll and calculates success
-        * take_damage() - subtract health points and take action after going below 1
-        * heal() - add hit points
-        * die() - remove self from all groups and drop worn and held items
-    """
-
     def __init__(
         self,
         name,
@@ -152,18 +91,10 @@ class Unit(mrogue.Entity):
         pass
 
     def add_item(self, item: mrogue.item.item.Item) -> None:
-        """Add an item to Unit's inventory and recalculate encumbrance
-
-        :param item: Item to be added
-        """
         item.add(self.inventory)
         self.burden_update()
 
     def use(self, item: mrogue.item.item.Consumable) -> None:
-        """Apply Item effects and display message to player
-
-        :param item: Item to be used
-        """
         effect = item.used(self)
         self.burden_update()
         mrogue.message.Messenger.add(effect)
@@ -193,11 +124,6 @@ class Unit(mrogue.Entity):
         self.damage_reduction = self.armor_class / 100
 
     def equip(self, item: mrogue.item.item.Wearable, quiet: bool = False) -> bool:
-        """Switch groups and apply bonuses from wearing the Item
-
-        :param item: Item to be worn
-        :param quiet: should feedback messages be suppressed?
-        """
         slot = [item.slot]
         if item.slot == "both":
             slot = ["main", "both", "off"]
@@ -224,13 +150,6 @@ class Unit(mrogue.Entity):
     def unequip(
         self, item: mrogue.item.item.Wearable, quiet: bool = False, force: bool = False
     ) -> bool:
-        """Switch the Item between lists and recalculate related stats
-
-        :param item: Item to be removed
-        :param quiet: if feedback should be shown to player
-        :param force: if curse check should be ignored
-        :return: False if Item can't be removed, True after successful removal
-        """
         if item.enchantment_level < -1 and not force:
             mrogue.message.Messenger.add("Cursed items can't be unequipped.")
             return False
@@ -243,11 +162,6 @@ class Unit(mrogue.Entity):
         return True
 
     def drop_item(self, item: mrogue.item.item.Item, quiet: bool = False) -> None:
-        """Switch an Item between groups and recalculate encumbrance,
-
-        :param item: Item to be removed from inventory
-        :param quiet: if feedback to player should be suppressed
-        """
         if item.amount > 1:
             item.amount -= 1
             new_item = copy(item)
@@ -262,11 +176,6 @@ class Unit(mrogue.Entity):
             mrogue.message.Messenger.add(msg)
 
     def pickup_item(self, item_list: list[mrogue.item.item.Item]) -> bool:
-        """Transfer the top item from the heap to Unit's inventory
-
-        :param item_list: all Items laying at the spot
-        :return: True if an Item was picked up, False if there were no Items
-        """
         if item_list:
             item = item_list.pop(0)
             if issubclass(type(item), mrogue.item.item.Stackable):
@@ -298,10 +207,6 @@ class Unit(mrogue.Entity):
         self.moved = success
 
     def attack(self, target: mrogue.unit.Unit) -> None:
-        """Attempt an attack against another Unit
-
-        :param target: the other Unit
-        """
         msg = self.name.capitalize() + " "
         attack_roll = mrogue.utils.roll(1, 20)
         critical_hit = attack_roll == 20
@@ -320,10 +225,6 @@ class Unit(mrogue.Entity):
             mrogue.message.Messenger.add("{} {}.".format(msg, target.name))
 
     def take_damage(self, damage: int) -> None:
-        """Remove hit points and check if they go below minimum
-
-        :param damage: The amount of hit points to subtract
-        """
         absorption = int(self.damage_reduction * damage)
         damage -= absorption
         self.current_HP -= damage
@@ -331,16 +232,11 @@ class Unit(mrogue.Entity):
             self.die()
 
     def heal(self, amount: int) -> None:
-        """Increase hit points and check if they go over maximum
-
-        :param amount: The amount of hit points to add
-        """
         self.current_HP += amount
         if self.current_HP > self.max_HP:
             self.current_HP = self.max_HP
 
     def die(self) -> None:
-        """Remove self from all lists and drop all items on the ground"""
         mrogue.message.Messenger.add(f"{self.name.capitalize()} died.")
         if not (self.player and "debug" in argv):
             self.kill()

@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Basic algorithms for autonomous monsters
-
-Classes:
-    * MonsterManager - intermediate class to manage Monster behavior in the game loop
-    * Monster - a type of Unit that chases and attacks the player
-"""
 import random
 
 import tcod
@@ -19,21 +13,7 @@ from mrogue import Point
 
 
 class Monster(mrogue.unit.Unit):
-    """Extends Unit with wandering and aggression capabilities
-
-    Extends:
-        * Unit
-    Object attributes:
-        * path - A path to reach the Player
-    Methods:
-        * act() - if not on a path to reach and attack the Player, will wander
-        * is_in_range() - simple range check
-        * approach() - take next step on a path to Player or wander if the road is blocked
-        * wander() - pick a random destination to go to
-    """
-
     def __init__(self, template, groups):
-        """Will create a Monster and a random Weapon if the template indicates so and coin toss allows it"""
         super().__init__(
             template["name"],
             (template["icon"], template["color"]),
@@ -59,10 +39,6 @@ class Monster(mrogue.unit.Unit):
         return f"Monster('{self.name}', 0x{self.icon:x})"  # ", {self.color})"
 
     def act(self, target: mrogue.unit.Unit) -> None:
-        """Wander if Player not in range, approach otherwise, attack if adjacent
-
-        :param target: description
-        """
         if mrogue.utils.adjacent(self.pos, target.pos):
             self.path = None
             self.attack(target)
@@ -91,10 +67,6 @@ class Monster(mrogue.unit.Unit):
         )
 
     def approach(self, goal: Point) -> None:
-        """Move towards goal, calculate a new path if necessary
-
-        :param goal: target cell
-        """
         if self.path:  # if already on a path
             if goal != self.path[-1]:  # if target moved, find new path
                 self.path = mrogue.player.Player.get().dijkstra_map.get_path(*self.pos)
@@ -108,10 +80,6 @@ class Monster(mrogue.unit.Unit):
         mrogue.map.Dungeon.movement(self, Point(*self.path.pop()))
 
     def wander(self, towards: Point = None):
-        """Roam to an adjacent location (if any available) or in target's general direction
-
-        :param towards: if supplied, will prefer a new location that is closest to that target
-        """
         free_spots = list(
             filter(
                 lambda p: not mrogue.map.Dungeon.unit_at(p),
@@ -133,19 +101,6 @@ class Monster(mrogue.unit.Unit):
 
 
 class MonsterManager:
-    """Small utility layer for a monster list
-
-    Class attributes:
-        * order - Monsters ordered by their ticks left until taking action
-        * acting_initiative - tracks the passage of time
-        * selection_for_level - a list of available Monster templates appropriate for each Level of the Dungeon
-    Methods:
-        * create_monsters() - prepares a list of Monsters with varying difficulty level
-        * spawn_monster() - add in a single Monster
-        * handle_monsters() - makes Monsters perform their action
-        * stop_monsters() - halts the movement of monsters
-    """
-
     order = None
     acting_initiative = 0
     selection_for_level = []
@@ -160,11 +115,6 @@ class MonsterManager:
 
     @classmethod
     def create_monsters(cls, num: int, depth: int) -> None:
-        """Populate the Level at given depth with appropriate monsters.
-
-        :param num: total number of Monsters per Level
-        :param depth: depth of current Level
-        """
         level = mrogue.map.Dungeon.current_level
         for i in range(num + depth):
             group = random.choice(cls.selection_for_level[depth])
@@ -176,11 +126,6 @@ class MonsterManager:
 
     @classmethod
     def spawn_monster(cls, depth: int, **kwargs) -> None:
-        """Add a single monster out of Player's sight
-
-        :param depth: depth of current Level
-        :param kwargs: additional attributes to be set for this Monster
-        """
         level = mrogue.map.Dungeon.current_level
         group = random.choice(cls.selection_for_level[depth])
         template = random.choices(
@@ -199,18 +144,6 @@ class MonsterManager:
 
     @classmethod
     def handle_monsters(cls, target: mrogue.unit.Unit) -> None:
-        """Treat target as hostile and make every Monster act against it
-
-        This method will follow monster acting order based on individual monster speed.
-        Each monster has a certain number of ticks that must be reduced to 0 to be able
-        to act (initiative). Monsters with the same initiative can act at the same time.
-        Each time a group of monsters acts, initiative of each unit is reduced by acting_initiative.
-        acting_initiative is the minimum value of ticks needed for the next monster in queue to act.
-        All units, including player, are on that acting order list. When player's turn comes,
-        control is given to player and after their action acting order is resumed.
-
-        :param target: the Unit to chase and attack
-        """
         player = mrogue.player.Player.get()
         while True:
             if cls.order:
@@ -230,7 +163,6 @@ class MonsterManager:
 
     @classmethod
     def stop_monsters(cls) -> None:
-        """Remove pathfinding information from each Monster and clear the Monster acting order queue"""
         for monster in mrogue.map.Dungeon.current_level.units:
             if hasattr(monster, "path"):
                 monster.path = None

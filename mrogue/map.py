@@ -1,13 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Creation and display of the map for the whole game, consisting of 8 dungeon levels.
-
-Globals:
-    * tiles - dictionary of all the elements that the map is made of
-    * compare - casting those tiles to numpy arrays for array values comparison that works
-Classes:
-    * Level - represents one floor of the dungeon
-    * Dungeon - a collection of Levels
-"""
 import random
 from collections import defaultdict
 from os import path
@@ -62,21 +53,6 @@ compare = {
 
 
 class Level:
-    """Creates and stores a single floor of the dungeon that fits on the screen.
-
-    Object attributes:
-        * mapDim - width and height of the available space to dig in
-        * objects_on_map - list of all the Entities that are tied to a particular Level
-        * units - list of all the Units that walk on a particular Level
-        * pos - position (coordinates) where Player should appear initially
-        * tiles - numpy array keeping all structural information: walkability, transparency, tile type
-        * explored - remembers the explored tiles per level
-        * floor - a list of coordinates for empty tiles (rooms only)
-    Methods:
-        * create_level() - creates rooms and corridors, places stairs
-        * tunnel() - connects two points by making a broken line
-    """
-
     class Room:
         rooms_list = []
 
@@ -117,7 +93,6 @@ class Level:
             return list(filter(lambda x: x.is_connected, self.get_neighbors()))
 
     def __init__(self, dimensions: Point):
-        """Creates an empty level using one of the algorithms."""
         self.mapDim = dimensions
         self.objects_on_map = []
         self.units = []
@@ -130,11 +105,6 @@ class Level:
         self.explored = np.zeros(self.mapDim, bool, "F")
 
     def create_level(self, first: bool = False) -> None:
-        """
-        Fill the level with rooms and structures.
-
-        :param first: True if this is the first level created at start
-        """
         # create layout using one of the methods
         methods = [self.create_level_grid, self.create_level_bsp]
         self.floor = random.choice(methods)()
@@ -163,18 +133,16 @@ class Level:
                 if (i + max_cell_width + 1 < self.mapDim.x) and (
                     j + max_cell_height + 1 < self.mapDim.y
                 ):
-                    top, bottom = j, j + max_cell_height
-                    left, right = i, i + max_cell_width
                     x, y = random.randint(0, max_cell_width // 2), random.randint(
                         0, max_cell_height // 2
                     )
                     width, height = random.randint(
                         3, max_cell_width - x
                     ), random.randint(3, max_cell_height - y)
-                    self.tiles[
-                        left + x : left + x + width, top + y : top + y + height
-                    ] = tiles["floor"]
-                    self.Room(left, top, x, y, width, height)
+                    self.tiles[i + x : i + x + width, j + y : j + y + height] = tiles[
+                        "floor"
+                    ]
+                    self.Room(i, j, x, y, width, height)
 
         room = random.choice(self.Room.rooms_list)
         room.is_connected = True
@@ -272,7 +240,6 @@ class Level:
         return floor
 
     def tunnel(self, x1: int, y1: int, x2: int, y2: int) -> None:
-        """Connect two points, doing one turn after random amount of steps"""
         dx = 0 if x1 == x2 else int(abs(x2 - x1) / (x2 - x1))
         dy = 0 if y1 == y2 else int(abs(y2 - y1) / (y2 - y1))
         horizontal = random.random() > 0.5
@@ -296,32 +263,6 @@ class Level:
 
 
 class Dungeon:
-    """Keeps all the floors of the dungeon and implements field of view and other utility methods.
-
-    Class attributes:
-        * _levels - a list of all dungeon Levels
-        * _depth - current depth in a Dungeon
-        * current_level - for easy access by external classes
-        * mapTop - which line to start printing the map
-        * mapDim - width and height of the map itself
-    Object attributes:
-        * screen - main Screen object used by all the rendering methods
-    Methods:
-        * new_level() - creates a new Level and makes it current
-        * level_from_string() - loads preset level map from a binary file
-        * descend() - changes current level to previously visited one or creates a new one
-        * depth() - sometimes just the current floor number is needed
-        * ascend() - loads one of previously generated levels
-        * find_spot() - finds an unoccupied space on the map
-        * movement() - handles movements attempts by a Unit
-        * automove() - crude implementation of automatic movement
-        * scan() - checks for changes in the layout of traversed terrain
-        * look_around() - reveals the map around the player using a field of view algorithm
-        * unit_at() - returns a Unit at target coordinates
-        * draw_map() - renders the map on screen
-        * neighbors() - returns all the walkable cells around target coordinates
-    """
-
     _levels = []
     _depth = 0
     current_level = None
@@ -329,7 +270,6 @@ class Dungeon:
     mapDim = None
 
     def __init__(self):
-        """Creates initial Level at the game start"""
         self.screen = mrogue.io.Screen.get()
         Dungeon.mapDim = Point(self.screen.width, self.screen.height - 1)
         Dungeon.current_level = Level(Dungeon.mapDim)
@@ -337,10 +277,6 @@ class Dungeon:
         Dungeon._levels.append(Dungeon.current_level)
 
     def new_level(self, num_objects: int) -> None:
-        """Create new level, new monster list and new item list
-
-        :param num_objects: how many monsters and items should pre-populate the level
-        """
         Dungeon.current_level.pos = mrogue.player.Player.get().pos
         Dungeon.current_level = Level(self.mapDim)
         Dungeon.current_level.create_level()
@@ -351,11 +287,6 @@ class Dungeon:
         Dungeon._levels.append(Dungeon.current_level)
 
     def level_from_string(self, level_string: str) -> Level:
-        """Creates a level from binary file as a string
-
-        :param level_string: read from a zipped binary file
-        :return: Level instance
-        """
         level = Level(self.mapDim)
         level_array = level_string.split()
         i = 0
@@ -365,12 +296,6 @@ class Dungeon:
         return level
 
     def descend(self, pos: Point, num_objects: int) -> bool:
-        """Switch current level for the one below it, creating a new one if necessary
-
-        :param pos: check if there are stairs at this position
-        :param num_objects: how many monsters and items to create
-        :return: False if there are no stairs, True if level was switched
-        """
         if Dungeon.current_level.tiles[pos] == compare["stairs_down"]:
             Dungeon._depth += 1
             mrogue.monster.MonsterManager.stop_monsters()
@@ -406,11 +331,6 @@ class Dungeon:
 
     @classmethod
     def ascend(cls, pos: Point) -> bool:
-        """Switch current level for the one above it
-
-        :param pos: check if there are stairs at this position
-        :return: False if there are no stairs, True if level was switched
-        """
         if cls.current_level.tiles[pos] == compare["stairs_up"]:
             cls._depth -= 1
             mrogue.monster.MonsterManager.stop_monsters()
@@ -422,10 +342,6 @@ class Dungeon:
 
     @classmethod
     def find_spot(cls) -> Point:
-        """Return a random available cell
-
-        :return: coordinates of an unoccupied, walkable cell
-        """
         free_spots = list(
             filter(lambda spot: not cls.unit_at(Point(*spot)), cls.current_level.floor)
         )
@@ -433,12 +349,6 @@ class Dungeon:
 
     @classmethod
     def movement(cls, unit: mrogue.unit.Unit, check: Point) -> bool:
-        """Check if movement to target cell is possible and perform an action
-
-        :param unit: Unit that attempts movement
-        :param check: target cell
-        :return: False if something is preventing movement to target cell, True if movement or attack action was taken
-        """
         # if Unit skips turn or attempts to move but is immobilized, count it as spent action
         if unit.pos == check or unit.speed == 0.0:
             unit.move(False)
@@ -471,17 +381,7 @@ class Dungeon:
         render_func: Callable,
         update_func: Callable,
     ) -> bool:
-        """Attempt to move repeatedly unless state of the surroundings changed
-
-        :param pos: starting point on the map
-        :param direction: one of 8 directions to move along
-        :param render_func: reference to screen rendering function from the game's main loop
-        :param update_func: reference to passage of time function from the game's main loop
-        :return: False if auto movement can't be initiated, True if performed successfully
-        """
-
         def get_front(position: Point, delta: Point) -> np.array:
-            """Get just the front strip of where player is facing for more reliable environment tracking"""
             if delta.y == 1:
                 return Dungeon.current_level.tiles[
                     position.x + delta.x - 1, position.y - 1 : position.y + 2
@@ -498,7 +398,6 @@ class Dungeon:
         def scan(
             current_pos: Point, delta_pos: Point, original_geometry: np.array = None
         ) -> bool:
-            """Check if the map layout changed or if there is a Unit or Item"""
             if original_geometry is not None:
                 new_geometry = get_front(current_pos, delta_pos)
                 if not np.array_equal(geometry, new_geometry):
@@ -544,7 +443,6 @@ class Dungeon:
 
     @classmethod
     def look_around(cls):
-        """Mark dungeon tiles in range as visited using a field of view algorithm"""
         player = mrogue.player.Player.get()
         player.fov = tcod.map.compute_fov(
             cls.current_level.tiles["transparent"], player.pos, player.sight_range
@@ -553,14 +451,12 @@ class Dungeon:
 
     @classmethod
     def unit_at(cls, where: Point) -> mrogue.unit.Unit or None:
-        """Get a single Unit occupying target space or None"""
         for unit in cls.current_level.units:
             if unit.pos == where:
                 return unit
         return None
 
     def draw_map(self):
-        """Directly transplant tiles to tcod.Console's memory, then render Entities"""
         nothing = np.asarray(
             (0, (0, 0, 0, 0), (0, 0, 0, 0)), dtype=tcod.console.rgba_graphic
         )
@@ -606,11 +502,6 @@ class Dungeon:
 
     @classmethod
     def neighbors(cls, of: Point) -> list[Point]:
-        """Get the list of tiles reachable immediately from a location
-
-        :param of: center tile to get the neighbours of
-        :return: a list of all reachable tiles around the center
-        """
         x, y = of
         results = [
             Point(x - 1, y),

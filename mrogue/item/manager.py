@@ -1,13 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Item management - item functions, printing various inventory screens, etc
-
-Classes:
-    * ItemManager - helper class to create random items, show and manage held and used items
-    * Item - base class for a single type of an item
-    * Wearable - a subclass of Item that can be equipped and modifies player's statistics and abilities
-    * Stackable - a subclass of Item that can has the amount property
-    * Consumable - a subclass of Item that produces an Effect on single use
-"""
 from __future__ import annotations
 
 import string
@@ -27,27 +18,10 @@ from . import data, item, template
 
 
 class ItemManager:
-    """A helper class with multiple static and class methods for easy access to the item engine.
-
-    Object attributes:
-        * screen - the single Screen instance, will be called many times by this class
-    Methods:
-        * create_loot() - drops required number of items on current level's floor
-        * random_item() - creates a random item of either required type or any type from the template list
-        * try_equip() - equips the Item by the Entity if possible
-        * get_item_on_map() - fetches the list of any items lying on an indicated level map coordinates
-        * print_list() - prints the passed Item list on the screen
-        * print_inventory_ui() - prints the frame, header and some static labels
-        * show_inventory() - prints the inventory (backpack) menu
-        * show_equipment() - prints the equipped items menu
-        * show_pickup_choice() - prints the list of items on the ground
-    """
-
     blueprints = {}
     item_selection = {}
 
     def __init__(self):
-        """Assign random scroll names and potion colors for this session"""
         for s in filter(lambda x: x["type"] == "scroll", data.templates):
             data.scroll_names[s["name"]] = mrogue.utils.random_scroll_name()
         for p in filter(lambda x: x["type"] == "potion", data.templates):
@@ -67,27 +41,18 @@ class ItemManager:
 
     @classmethod
     def create_loot(cls, num_items: int) -> None:
-        """Create some items and put them on the floor
-
-        :param num_items: total number of unowned items for this level
-        """
         for _ in range(num_items):
             cls.random_item().dropped(mrogue.map.Dungeon.find_spot())
 
     @classmethod
     def prepare_selection_for_level(cls, level: int):
-        """Prepare a list of items that match budget requirements for current dungeon level
-
-        :param level: level
-        :return: list of ungrouped templates
-        """
         templates = []
         for item_template in cls.blueprints.values():
             if hasattr(
                 item_template, "base_budget"
             ):  # it's a consumable - always add it
                 templates.append(item_template)
-            else:  # if random stats template, match all possible budget versions against the target budget
+            else:  # if random, match all possible budget versions against the target budget
                 budget_grain = {item_template.budget(i) for i in range(-2, 3)}
                 if (
                     set(cls.item_selection[level]["budget"]).intersection(budget_grain)
@@ -108,12 +73,6 @@ class ItemManager:
 
     @classmethod
     def random_item(cls, keyword: str = None, groups: list = None) -> item.Item:
-        """Create either a specific or fully random item
-
-        :param keyword: if present, will create an Item of this particular type or property
-        :param groups:  a list of groups that should include this Item
-        :return: a new Item
-        """
         level = mrogue.map.Dungeon.depth()
         if "templates" not in cls.item_selection[level]:
             cls.prepare_selection_for_level(level)
@@ -139,11 +98,6 @@ class ItemManager:
 
     @staticmethod
     def get_item_on_map(coordinates: Point) -> list[item.Item]:
-        """Get all the Items at the coordinates on the map of current level
-
-        :param coordinates: x, y coordinates on the map
-        :return: all the Items lying at this spot, as a list
-        """
         return mrogue.utils.find_in(
             mrogue.map.Dungeon.current_level.objects_on_map,
             "pos",
@@ -160,15 +114,6 @@ class ItemManager:
         limit: int,
         show_details: bool = False,
     ) -> tcod.Console:
-        """Print a frame with all the Items in specified group. Allows scrolling
-
-        :param inventory: which group to show
-        :param scroll: which index to start printing 'inventory' from
-        :param width: allowed width of the window
-        :param limit: how many lines with Items can be displayed at once
-        :param show_details: whether to print additional info after item name
-        :return: tcod.Console with the list of items
-        """
         window = tcod.Console(width, limit)
         # window.draw_frame(0, 0, window.width, window.height)
         if scroll > 0:
@@ -194,14 +139,6 @@ class ItemManager:
     def print_inventory_ui(
         window: tcod.Console, selected_sort: int, weight: int, value: int
     ) -> None:
-        """
-        Print all the information related to inventory management
-
-        :param window: parent window
-        :param selected_sort: which column to print the arrow
-        :param weight: total weight of all items
-        :param value: total value of all items
-        """
         window.clear()
         window.draw_frame(0, 0, window.width, window.height, decoration="╔═╗║ ║╚═╝")
         window.print_box(0, 0, window.width, 1, " Inventory ", alignment=tcod.CENTER)
@@ -220,10 +157,6 @@ class ItemManager:
         )
 
     def show_inventory(self) -> bool:
-        """Print the list of Items in the 'inventory' (backpack) group
-
-        :return: False if no inventory action was taken, True otherwise (would finish player's turn)
-        """
         player = mrogue.player.Player.get()
         # allow to sort the list by one of four attributes
         sorts = mrogue.utils.circular(
@@ -295,10 +228,6 @@ class ItemManager:
                     return effect[1] if effect[1] is not None else True
 
     def show_equipment(self) -> bool:
-        """Print the list of Items in the 'equipped' group
-
-        :return: False if no inventory action was taken, True otherwise (would finish player's turn)
-        """
         width, height = item.Item.max_name + 12, 12
         slots = ("main", "both", "off", "head", "chest", "feet", "legs", "hands")
         window = tcod.Console(width, height, "F")

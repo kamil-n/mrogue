@@ -16,24 +16,10 @@ import mrogue.utils
 
 
 class Rogue:
-    """Main class representing the game.
-
-    Attributes:
-        * turn - keeps track of the passage of time
-        * num_objects - how many items and how many monsters are initially spawned on each level
-
-    Methods:
-        * update_dungeon() - performs monsters' actions and updates the environment
-        * draw_dungeon() - renders the dungeons and prints vital information and feedback
-        * handle_input() - lists all the keys used by the game and corresponding actions
-        * mainloop() - updates/draws the environment and waits for player input
-    """
-
     turn = 0
     num_objects = 10
 
     def __init__(self):
-        """Initialize the libTCOD terminal and some singletons and managers."""
         self.fonts = mrogue.utils.circular(
             [
                 ("terminal10x16_gs_ro.png", (10, 16)),
@@ -64,10 +50,6 @@ class Rogue:
         self.items.create_loot(self.num_objects)
 
     def update_dungeon(self) -> bool:
-        """Perform everything that happens between player inputs (moves monsters, recalculates FoV, etc)
-
-        :return: False if player is alive and True if they were killed during monsters' turn
-        """
         self.turn += 1
         mrogue.timers.Timer.update()
         if self.turn > 1:  # so that the player has first move
@@ -76,18 +58,12 @@ class Rogue:
         return self.player.check_pulse(self.dungeon, self.messenger)
 
     def draw_dungeon(self) -> None:
-        """Render the dungeon, player stats panel and message line, update the screen"""
         self.dungeon.draw_map()
         self.player.show_stats()
         self.messenger.show()
         mrogue.io.Screen.present()
 
     def handle_input(self, key: tuple[tcod.event.KeyDown, tcod.event.Modifier]) -> bool:
-        """Determine if the game can perform a non-blocking action (that ends player's turn)
-
-        :param key: a tuple consisting of the pressed key along with a held modifier key
-        :return: False if player can still perform an action, True if control should be returned to the mainloop
-        """
         # 'i'
         if mrogue.io.key_is(key, tcod.event.K_i):
             if self.items.show_inventory():
@@ -137,11 +113,10 @@ class Rogue:
             self.messenger.add(f"Changed font to {new_font[0]}.")
         # other
         else:
-            self.messenger.add(f"Unknown command.")
+            self.messenger.add("Unknown command.")
         return False
 
     def mainloop(self) -> None:
-        """Update the dungeon state, render it, wait for keypress, perform related action, exit if Q was pressed"""
         key = (0, 0)
         while not mrogue.io.key_is(key, tcod.event.K_q, tcod.event.KMOD_SHIFT):
             if self.update_dungeon():

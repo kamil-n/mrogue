@@ -59,7 +59,10 @@ class WeaponTemplate(ItemTemplate, type="weapon"):
         return budget
 
     def __repr__(self):
-        return f"{self._template['name']} [{self.damage[0]}-{self.damage[1]}/{self.to_hit}] {self.__class__.__name__}"
+        return (
+            f"{self._template['name']} [{self.damage[0]}-{self.damage[1]}/{self.to_hit}]"
+            f"{self.__class__.__name__}"
+        )
 
     def create(
         self, random: bool = False, min_budget: int = 0, max_budget: int = 10

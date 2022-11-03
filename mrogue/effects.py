@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-""""Module providing on-use effect implementation for consumables, spells, etc.
-
-Classes:
-    * Effect - an action or change of state to be triggered
-"""
 import string
 
 import tcod
@@ -57,36 +52,13 @@ def select_item_from_list(
 
 
 class Effect:
-    """Describes what will change at a specified moment.
-
-    Currently defines feedback message and optionally a following effect
-    (after a delay handled using Timer class).
-
-    Methods:
-        * apply() - make some changes and inform the player
-    """
-
     def __init__(
         self, from_item: mrogue.item.item.Consumable, for_unit: mrogue.unit.Unit
     ):
-        """Define the source of the Effect (it must provide instructions) and a target - usually an Unit."""
         self.source = from_item
         self.target = for_unit
 
     def apply(self) -> str:
-        """Perform the action described by the first word of the attribute 'effect', then gives feedback.
-
-        Supported keywords:
-            * 'identify'
-            * 'decurse'
-            * 'enchant x'
-            * 'fortify_armor x'
-            * 'heal x'
-            * 'ac_bonus x(hp) y(turns)'
-            * 'speed_bonus x y'
-
-        :return: a feedback message to be displayed to the player
-        """
         feedback = ""
         keyword, *args = self.source.effect.split()
 

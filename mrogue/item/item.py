@@ -1,14 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Item management - item functions, printing various inventory screens, etc
-
-Classes:
-    * ItemManager - helper class to create random items, show and manage held and used items
-    * Item - base class for a single type of an item
-    * Wearable - a subclass of Item that can be equipped and modifies player's statistics and abilities
-    * Stackable - a subclass of Item that can has the amount property
-    * Consumable - a subclass of Item that produces an Effect on single use
-"""
-import random
 from random import choice
 
 import tcod
@@ -24,29 +14,6 @@ from mrogue import Point
 
 
 class Item(mrogue.Entity):
-    """Base class for an item. Should not be used directly
-
-    Extends:
-        * Entity
-    Object attributes:
-        * type - class name from the extending class
-        * pos - position on the game map
-        * base_weight - base weight for this type of item (default material)
-        * base_value - base value shown for unidentified items
-        * identified_value - value shown after the item is identified
-        * value - value when material and quality is taken is into account
-        * icon - variable inherited from Entity
-        * layer - for the order of rendering if several Entities overlap
-        * status_identified - whether the item is identified (all details revealed)
-        * name - name for the unidentified version
-        * amount - default = 1 for unstackable items
-        * identified_name - full name including quality and enchantment
-    Methods:
-        * dropped() - state change when item is dropped on the ground
-        * picked() - state change when item is put into some kind of inventory
-        * identified() - state change when this Item instance is identified
-    """
-
     max_name = 39
 
     def __init__(self, name, base_weight, base_value, icon):
@@ -71,20 +38,14 @@ class Item(mrogue.Entity):
         return f"{chr(self.icon)} '{self.name}' ({self.amount})"  # " [{self.color}]"
 
     def dropped(self, coordinates: Point) -> None:
-        """Assign a position on the map and add this item to current level's objects group
-
-        :param coordinates: a pair of (x, y) coordinates
-        """
         self.add(mrogue.map.Dungeon.current_level.objects_on_map)
         self.pos = coordinates
 
     def picked(self) -> None:
-        """Remove placement data and remove the item from current level's objects group"""
         self.remove(mrogue.map.Dungeon.current_level.objects_on_map)
         self.pos = None
 
     def identified(self) -> None:
-        """Change the name and show real value of the item"""
         self.status_identified = True
         self.name = self.identified_name
         self.value = self.identified_value
@@ -98,7 +59,10 @@ class Item(mrogue.Entity):
             if hasattr(self, "enchantment_level"):
                 color = mrogue.item.data.enchantment_colors[self.enchantment_level]
             if self.subtype == "weapon":
-                suffix = f" ({self.props.damage[0]}-{self.props.damage[1]}/{self.props.to_hit_modifier:+d})"
+                suffix = (
+                    f" ({self.props.damage[0]}-{self.props.damage[1]}/"
+                    f"{self.props.to_hit_modifier:+d})"
+                )
             elif self.subtype == "armor":
                 suffix = f" ({self.props.armor_class_modifier:+d})"
         if self.amount > 1:
@@ -115,30 +79,7 @@ class Item(mrogue.Entity):
 
 
 class Wearable(Item):
-    """An item that can be held or worn. Encapsulates two types of functional types: weapons and armor.
-
-    Extends:
-        * Item
-    Object attributes:
-        * material - affects weight, value and Glyph color
-        * quality - affects Item stats slightly
-        * enchantment_level - affects Item stats severely
-        * weight - self explanatory
-        * slot - which equipment slot the Item takes
-        * subtype - currently either Weapon or Armor
-    """
-
     class Weapon:
-        """Holds all the stats related to damage and accuracy.
-
-        Object attributes:
-            * speed_modifier - affects global player speed
-            * base_to_hit - baseline accuracy bonus
-            * to_hit_modifier - accuracy bonus after adding quality and enchantment modifiers
-            * base_damage - baseline damage dice (range for the random number generator)
-            * damage - damage dice after adding enchantment modifiers
-        """
-
         def __init__(
             self, quality, enchantment_level, speed_modifier, base_to_hit, damage_range
         ):
@@ -152,13 +93,6 @@ class Wearable(Item):
             )
 
     class Armor:
-        """Hold all the stats related to armor class.
-
-        Object attributes:
-            * base_armor_class - baseline armor class modifier
-            * armor_class_modifier - armor class modifier after adding quality and enchantment bonuses
-        """
-
         def __init__(self, quality, enchantment_level, ac_mod):
             self.base_armor_class = ac_mod
             self.armor_class_modifier = ac_mod + quality + enchantment_level * 2
@@ -236,16 +170,6 @@ class Wearable(Item):
 
 
 class Stackable(Item):
-    """Adds count on top of the Item class
-
-    Extends:
-        * Item
-    Object attributes:
-        * amount - object should remove itself when amount reaches 0
-    Methods:
-        * used() - reduces the amount when used (as Consumable)
-    """
-
     def __init__(self, name, base_weight, base_value, icon, amount):
         super().__init__(name, base_weight, base_value, icon)
         self.amount = amount
@@ -265,27 +189,12 @@ class Stackable(Item):
     #     return f"{prefix} {self.name}{suffix}"
 
     def used(self, *args) -> None:
-        """Remove self from any list when amount reaches 0"""
         self.amount -= 1
         if self.amount == 0:
             self.kill()
 
 
 class Consumable(Stackable):
-    """Class description.
-
-    Extends:
-        * Stackable
-    Object attributes:
-        * subtype - currently either scroll or potion
-        * effect - a string representing the action to perform on use
-        * uses - how many times Consumable can be used before reducing the amount
-    Methods:
-        * used() - apply the effect on use
-        * identified() - identifies each copy of this item
-        * identify_all() - loops through dungeon and inventory item groups to identify all copies
-    """
-
     def __init__(
         self,
         name,
@@ -298,7 +207,6 @@ class Consumable(Stackable):
         id_name,
         subtype,
     ):
-        """Sets appropriate color and name based on subtype (scroll or potion)"""
         super().__init__(name, base_weight, base_value, icon, amount)
         self.identified_name = id_name
         self.slot = ""
@@ -313,11 +221,6 @@ class Consumable(Stackable):
         return f"Consumable('{self.name}', {self.subtype}, 0x{self.icon:x})"  # ", {self.color})"
 
     def used(self, target) -> str:
-        """Apply the related effect and fetch it's feedback message
-
-        :param target: a unit to apply the effect to
-        :return: the description of the effect to show the player
-        """
         self.identified()
         mrogue.message.Messenger.add("This is {}.".format(self.name))
         super().used(None)
@@ -327,13 +230,11 @@ class Consumable(Stackable):
         return effect.apply()
 
     def identified(self) -> None:
-        """Add this item to the list of consumables known to player"""
         mrogue.player.Player.get().identified_consumables.append(self.name)
         super().identified()
         self.identify_all()
 
     def identify_all(self) -> None:
-        """Identify each item of this type in map and player inventory"""
         for i in mrogue.map.Dungeon.current_level.objects_on_map:
             if (
                 isinstance(i, Consumable)

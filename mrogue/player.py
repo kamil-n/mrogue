@@ -1,11 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Tools that extend Unit with custom features related to health regen, information bar on the screen, etc
-
-Globals:
-    * load_statuses - speed modifiers and colors related to encumbrance
-Classes:
-    * Player - customized Unit just for the player character
-"""
 from __future__ import annotations
 
 import sys
@@ -35,31 +28,6 @@ load_statuses = {
 
 
 class Player(mrogue.unit.Unit):
-    """Class description.
-
-    Extends:
-        * Player
-    Class attributes:
-        * _instance - Singleton instance
-    Object attributes:
-        * dijsktra_map - tcod.path.Dijsktra instance that follows Player
-        * load_status - current load level (encumbrance)
-        * identified_consumables - list of remember Consumables to be always identified
-        * health_regen_cooldown - how many turns must pass before 1 HP is gained
-        * crit_immunity - critical hit immunity based on amount of blessed items equipped
-        * status_bar - tcod.console.Console for displaying Player stats on the screen
-    Methods:
-        * show_stats() - prints information on the status bar
-        * regenerate_health() - slow health regeneration for a price
-        * move() - recalculates pathfinding map
-        * change_level() - things to do when ascending or descending a Level
-        * update() - ambient information on each turn
-        * burden_update() - applies encumbrance effects
-        * in_slot() - what Item is held in a specific slot
-        * check_pulse() - ends the game if Player's health points go below 0
-        * pickup_item() - if there are multiple items, present the Item selection menu
-    """
-
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -72,7 +40,6 @@ class Player(mrogue.unit.Unit):
         return cls._instance
 
     def __init__(self):
-        """Equip the player with a weapon and a piece of armor."""
         super().__init__(
             "you", (0x263A, "lighter_red"), 10, (10, 10, 10), [], 1.0, 2, (1, 2), 0, 20
         )
@@ -98,7 +65,6 @@ class Player(mrogue.unit.Unit):
         )
 
     def show_stats(self) -> None:
-        """Puts basic information in the top line on the screen"""
         self.status_bar.clear()
         self.status_bar.print(0, 0, "HP:")
         r, g, b = tcod.color_lerp(tcod.red, tcod.green, self.current_HP / self.max_HP)
@@ -122,7 +88,6 @@ class Player(mrogue.unit.Unit):
         )
 
     def regenerate_health(self) -> None:
-        """Add 1 HP every 30 turns and spawn a random Monster that will hunt the player"""
         self.health_regen_cooldown -= 1
         if self.health_regen_cooldown > 0:
             return
@@ -131,7 +96,6 @@ class Player(mrogue.unit.Unit):
             mrogue.timers.Timer(self.health_regen_cooldown, self.heal_callable)
 
     def move(self, success: bool = True) -> None:
-        """Recalculate pathfinding map on each successful step"""
         super().move(success)
         if not success:
             if self.speed == 0.0:
@@ -142,10 +106,6 @@ class Player(mrogue.unit.Unit):
             self.dijkstra_map.set_goal(*self.pos)
 
     def change_level(self, level: Level) -> None:
-        """Reset the pathfinding map when changing Levels
-
-        :param level: the new Level of the Dungeon map
-        """
         self.pos = level.pos
         self.dijkstra_map = Dijkstra(level.tiles["walkable"])
         self.dijkstra_map.set_goal(*self.pos)
@@ -153,7 +113,6 @@ class Player(mrogue.unit.Unit):
             self.add(level.objects_on_map, level.units)
 
     def update(self) -> None:
-        """Add ambient information after movement"""
         self.regenerate_health()
         if self.moved:
             items = mrogue.item.manager.ItemManager.get_item_on_map(self.pos)
@@ -173,7 +132,6 @@ class Player(mrogue.unit.Unit):
         super().update()
 
     def burden_update(self) -> None:
-        """Adjust speed and display load information based on total weight of possessions"""
         super().burden_update()
         total_load = sum([i.weight for i in self.inventory + self.equipped])
         if total_load < self.load_thresholds[0]:
@@ -192,12 +150,6 @@ class Player(mrogue.unit.Unit):
         return mrogue.utils.find_in(self.equipped, "slot", slot)
 
     def check_pulse(self, dungeon: Dungeon, messenger: Messenger) -> bool:
-        """Show the game over screen if hit points go below
-
-        :param dungeon: for refreshing the map view one last time
-        :param messenger: for showing last messages outside of main game loop
-        :return: True if player character died, False otherwise
-        """
         if self.current_HP < 1 and "debug" not in sys.argv:
             window = tcod.Console(20, 4, "F")
             window.draw_frame(0, 0, 20, 4, "Game over.", False)
@@ -212,10 +164,6 @@ class Player(mrogue.unit.Unit):
         return False
 
     def equip(self, item: Wearable, **kwargs) -> None:
-        """Check if Item being equipped is blessed to increase critical hit immunity by 25%
-
-        :param item: Item to be worn
-        """
         if not isinstance(item, mrogue.item.item.Wearable):
             return
         super().equip(item, **kwargs)
@@ -223,10 +171,6 @@ class Player(mrogue.unit.Unit):
             self.crit_immunity += 0.16
 
     def unequip(self, item: Wearable, **kwargs) -> bool:
-        """Check if Item being removed is blessed to decrease critical hit immunity by 25%
-
-        :param item: Item to be removed
-        """
         if super().unequip(item, **kwargs):
             if item.enchantment_level > 1:
                 self.crit_immunity -= 0.16
@@ -234,11 +178,6 @@ class Player(mrogue.unit.Unit):
         return False
 
     def pickup_item(self, item_manager: mrogue.item.manager.ItemManager) -> bool:
-        """Pick an Item up if it's a single item, present pick-up choice list otherwise
-
-        :param item_manager: ItemManager object for access to instance methods
-        :return: True if Item(s) were picked up, False if there were no Items
-        """
         item_list = item_manager.get_item_on_map(self.pos)
         if not item_list:
             msg = "There are no items here."
