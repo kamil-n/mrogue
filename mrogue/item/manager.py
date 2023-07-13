@@ -3,29 +3,30 @@ from __future__ import annotations
 
 import string
 from random import choice, choices
+from typing import Any, Callable
 
 import tcod
 import tcod.constants
 import tcod.event
 
-import mrogue.map
-import mrogue.message
-import mrogue.player
 import mrogue.utils
 from mrogue import Point
+from mrogue.io import Color
+from mrogue.map import Dungeon
+from mrogue.player import Player
 
 from . import data, item, template
 
 
 class ItemManager:
-    blueprints = {}
-    item_selection = {}
+    blueprints: dict[str, template.ItemTemplate]
+    item_selection: dict[int, dict[str, Any]] = {}
 
-    def __init__(self):
+    def __init__(self) -> None:
         for s in filter(lambda x: x["type"] == "scroll", data.templates):
-            data.scroll_names[s["name"]] = mrogue.utils.random_scroll_name()
+            data.scroll_names[s["name"]] = mrogue.utils.random_scroll_name()  # type: ignore[index]
         for p in filter(lambda x: x["type"] == "potion", data.templates):
-            data.potion_colors[p["name"]] = choice(
+            data.potion_colors[p["name"]] = choice(  # type: ignore[index]
                 list(data.materials["potions"].items())
             )
         self.screen = mrogue.io.Screen.get()
@@ -42,15 +43,16 @@ class ItemManager:
     @classmethod
     def create_loot(cls, num_items: int) -> None:
         for _ in range(num_items):
-            cls.random_item().dropped(mrogue.map.Dungeon.find_spot())
+            cls.random_item().dropped(Dungeon.find_spot())
 
     @classmethod
-    def prepare_selection_for_level(cls, level: int):
-        templates = []
+    def prepare_selection_for_level(cls, level: int) -> None:
+        templates: list[template.ItemTemplate] = []
         for item_template in cls.blueprints.values():
-            if hasattr(
-                item_template, "base_budget"
-            ):  # it's a consumable - always add it
+            if type(item_template) in (
+                template.PotionTemplate,
+                template.ScrollTemplate,
+            ):
                 templates.append(item_template)
             else:  # if random, match all possible budget versions against the target budget
                 budget_grain = {item_template.budget(i) for i in range(-2, 3)}
@@ -72,8 +74,10 @@ class ItemManager:
         cls.item_selection[level]["grouped"] = template_groups
 
     @classmethod
-    def random_item(cls, keyword: str = None, groups: list = None) -> item.Item:
-        level = mrogue.map.Dungeon.depth()
+    def random_item(
+        cls, keyword: str = None, groups: list[list[item.Item]] = None
+    ) -> item.Item:
+        level = Dungeon.depth()
         if "templates" not in cls.item_selection[level]:
             cls.prepare_selection_for_level(level)
         grouped = cls.item_selection[level]["grouped"]
@@ -99,7 +103,7 @@ class ItemManager:
     @staticmethod
     def get_item_on_map(coordinates: Point) -> list[item.Item]:
         return mrogue.utils.find_in(
-            mrogue.map.Dungeon.current_level.objects_on_map,
+            Dungeon.current_level.objects_on_map,
             "pos",
             coordinates,
             item.Item,
@@ -108,7 +112,7 @@ class ItemManager:
 
     @staticmethod
     def print_list(
-        inventory: list[item.Wearable or item.Consumable],
+        inventory: list[item.Item],
         scroll: int,
         width: int,
         limit: int,
@@ -117,7 +121,7 @@ class ItemManager:
         window = tcod.Console(width, limit)
         # window.draw_frame(0, 0, window.width, window.height)
         if scroll > 0:
-            window.print(0, 0, chr(0x2191), tcod.black, tcod.white)
+            window.print(0, 0, chr(0x2191), Color.black, Color.white)
         for i in range(len(inventory)):
             if i > limit - 1:
                 break
@@ -125,14 +129,14 @@ class ItemManager:
             window.print(1, i, f"{string.ascii_letters[i+scroll]}) ")
             window.print(4, i, chr(it.icon), it.color)
             window.print(6, i, *it.interface_name)
-            if show_details:
+            if show_details and type(it) == item.Wearable:
                 window.print(
                     item.Item.max_name + 6,
                     i,
                     f"{it.slot:>6} {it.weight*it.amount:6.2f} {it.value*it.amount:>7.2f}",
                 )
         if limit + scroll < len(inventory):
-            window.print(0, limit - 1, chr(0x2193), tcod.black, tcod.white)
+            window.print(0, limit - 1, chr(0x2193), Color.black, Color.white)
         return window
 
     @staticmethod
@@ -143,21 +147,21 @@ class ItemManager:
         window.draw_frame(0, 0, window.width, window.height, decoration="╔═╗║ ║╚═╝")
         window.print_box(0, 0, window.width, 1, " Inventory ", alignment=tcod.CENTER)
         window.print(2, 1, "Select an item or Esc to close:")
-        window.print(item.Item.max_name + 11, 1, "[/] Sort", tcod.yellow)
-        window.print(6, 2, "Name", tcod.lighter_gray)
+        window.print(item.Item.max_name + 11, 1, "[/] Sort", Color.yellow)
+        window.print(6, 2, "Name", Color.lighter_gray)
         window.print(
-            item.Item.max_name + 9, 2, "Slot     Wt     Val", tcod.lighter_gray
+            item.Item.max_name + 9, 2, "Slot     Wt     Val", Color.lighter_gray
         )
-        window.print(selected_sort, 2, chr(0x2193), tcod.yellow)
+        window.print(selected_sort, 2, chr(0x2193), Color.yellow)
         window.print(
             item.Item.max_name + 7,
             window.height - 2,
             f"Total: {weight:6.2f} {value:7.2f}",
-            tcod.lighter_gray,
+            Color.lighter_gray,
         )
 
     def show_inventory(self) -> bool:
-        player = mrogue.player.Player.get()
+        player = Player.get()
         # allow to sort the list by one of four attributes
         sorts = mrogue.utils.circular(
             [
@@ -211,15 +215,17 @@ class ItemManager:
                 highlight_line = 3 + data.letters[key] - scroll
                 if 3 <= highlight_line <= window_height - 3:
                     inventory_window.draw_rect(
-                        1, highlight_line, window_width - 2, 1, 0, bg=tcod.blue
+                        1, highlight_line, window_width - 2, 1, 0, bg=Color.blue
                     )
                     inventory_window.blit(self.screen, 4, 4)
-                context_actions = []
-                if i.subtype in ("scroll", "potion"):
+                context_actions: list[
+                    tuple[str, item.Item, Callable[[None], None]]
+                ] = []
+                if isinstance(i, item.Consumable):
                     context_actions.append(("Use item", i, player.use))
                 elif i in player.equipped:
                     context_actions.append(("Unequip item", i, player.unequip))
-                elif i.subtype in ("weapon", "armor"):
+                elif isinstance(i, item.Wearable):
                     context_actions.append(("Equip item", i, player.equip))
                 if i not in player.equipped:
                     context_actions.append(("Drop item", i, player.drop_item))
@@ -228,6 +234,7 @@ class ItemManager:
                     return effect[1] if effect[1] is not None else True
 
     def show_equipment(self) -> bool:
+        player = Player.get()
         width, height = item.Item.max_name + 12, 12
         slots = ("main", "both", "off", "head", "chest", "feet", "legs", "hands")
         window = tcod.Console(width, height, "F")
@@ -239,9 +246,7 @@ class ItemManager:
             window.print(2, 1, "Select a slot to manage or Esc to close:")
             for line, slot in enumerate(slots):
                 window.print(2, line + 3, f"{chr(97 + line)}) {slot.capitalize():>5}:")
-                it = mrogue.utils.find_in(
-                    mrogue.player.Player.get().equipped, "slot", slot
-                )
+                it = mrogue.utils.find_in(player.equipped, "slot", slot)
                 if it:
                     name, _ = it.interface_name
                     window.print(12, line + 3, chr(it.icon), it.color)
@@ -261,23 +266,21 @@ class ItemManager:
                 return False
             # if a-z was pressed and it represents one of the slots:
             elif key[0] in range(97, 97 + len(slots)):
-                it = mrogue.utils.find_in(
-                    mrogue.player.Player.get().equipped, "slot", slots[key[0] - 97]
-                )
+                it = mrogue.utils.find_in(player.equipped, "slot", slots[key[0] - 97])
                 if it:
-                    return mrogue.player.Player.get().unequip(it)
+                    return player.unequip(it)
                 else:
                     # if the slot is empty, highlight it and present list of available items
                     items = list(
                         filter(
                             lambda x: x.slot == slots[key[0] - 97],
-                            mrogue.player.Player.get().inventory,
+                            player.inventory,
                         )
                     )
                     if not items:
                         continue
                     items.sort(key=lambda x: (getattr(x, "enchantment_level"), x.name))
-                    window.draw_rect(1, 3 + key[0] - 97, width - 2, 1, 0, bg=tcod.blue)
+                    window.draw_rect(1, 3 + key[0] - 97, width - 2, 1, 0, bg=Color.blue)
                     window.blit(self.screen, 4, 4)
                     total_items = len(items)
                     limit, scroll = 10, 0
@@ -301,10 +304,12 @@ class ItemManager:
                         elif mrogue.io.key_is(selected, tcod.event.K_UP):
                             scroll -= 1 if scroll > 0 else 0
                         elif selected[0] in range(97, 97 + total_items):
-                            mrogue.player.Player.get().equip(items[selected[0] - 97])
+                            player.equip(items[selected[0] - 97])
                             return True
 
-    def show_pickup_choice(self, items: list[item.Item]) -> item.Item or bool:
+    def show_pickup_choice(
+        self, items: list[item.Item]
+    ) -> item.Item | list[item.Item] | bool:
         total = len(items)
         w, limit, scroll = item.Item.max_name + 9, 6, 0
         h = 3 + min(limit, total)
@@ -320,7 +325,7 @@ class ItemManager:
                 w,
                 1,
                 f"[a-{char}] single item, [,] - all:",
-                tcod.light_gray,
+                Color.light_gray,
                 alignment=tcod.CENTER,
             )
             self.print_list(items, scroll, w - 2, h - 3).blit(window, 1, 2)

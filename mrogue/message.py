@@ -25,7 +25,9 @@ class Messenger:
             Messenger.window.clear()
             Messenger.window.print(0, 0, line)
             if buffer:
-                Messenger.window.print(len(line) + 1, 0, "-more-", tcod.yellow)
+                Messenger.window.print(
+                    len(line) + 1, 0, "-more-", mrogue.io.Color.yellow
+                )
                 Messenger.window.blit(self.screen, 0, self.screen.height - 1)
                 self.screen.present()
                 mrogue.io.wait(tcod.event.K_SPACE)
@@ -48,13 +50,17 @@ class Messenger:
             window.clear()
             window.draw_frame(0, 0, 65, 12, "Messages")
             if scroll > 0:
-                window.print(0, 1, chr(0x2191), tcod.black, tcod.white)
+                window.print(
+                    0, 1, chr(0x2191), mrogue.io.Color.black, mrogue.io.Color.white
+                )
             for i in range(len(self.message_history)):
                 if i > 10 - 1:
                     break
                 window.print(1, 1 + i, self.message_history[i + scroll])
             if 10 + scroll < len(self.message_history):
-                window.print(0, 10, chr(0x2193), tcod.black, tcod.white)
+                window.print(
+                    0, 10, chr(0x2193), mrogue.io.Color.black, mrogue.io.Color.white
+                )
             window.blit(self.screen, 12, 12, bg_alpha=0.95)
             self.screen.present()
             key = mrogue.io.wait()

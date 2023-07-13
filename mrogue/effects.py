@@ -3,16 +3,15 @@ import string
 
 import tcod
 
-import mrogue.item
-import mrogue.message
-import mrogue.timers
-import mrogue.unit
-import mrogue.utils
+import mrogue.io
+from mrogue.item.item import Consumable, Wearable
+from mrogue.message import Messenger
+from mrogue.timers import Timer
+from mrogue.unit import Unit
+from mrogue.utils import roll
 
 
-def select_item_from_list(
-    items: list[mrogue.item.item.Wearable], action: str
-) -> mrogue.item.item.Wearable or False:
+def select_item_from_list(items: list[Wearable], action: str) -> Wearable | bool:
     screen = mrogue.io.Screen.get()
     total = len(items)
     w, limit, scroll = mrogue.item.item.Item.max_name + 9, 6, 0
@@ -26,7 +25,9 @@ def select_item_from_list(
             0, 0, w, 1, f" Select an item to {action}: ", alignment=tcod.CENTER
         )
         if scroll > 0:
-            window.print(1, 1, chr(0x2191), tcod.black, tcod.white)
+            window.print(
+                1, 1, chr(0x2191), mrogue.io.Color.black, mrogue.io.Color.white
+            )
         for i in range(len(items)):
             if i > limit - 1:
                 break
@@ -35,7 +36,9 @@ def select_item_from_list(
             window.print(5, i + 1, chr(it.icon), it.color)
             window.print(7, i + 1, *it.interface_name)
         if limit + scroll < len(items):
-            window.print(1, limit, chr(0x2193), tcod.black, tcod.white)
+            window.print(
+                1, limit, chr(0x2193), mrogue.io.Color.black, mrogue.io.Color.white
+            )
         window.blit(screen, 16, 6)
         screen.present()
         key = mrogue.io.wait()
@@ -52,9 +55,7 @@ def select_item_from_list(
 
 
 class Effect:
-    def __init__(
-        self, from_item: mrogue.item.item.Consumable, for_unit: mrogue.unit.Unit
-    ):
+    def __init__(self, from_item: Consumable, for_unit: Unit):
         self.source = from_item
         self.target = for_unit
 
@@ -79,12 +80,11 @@ class Effect:
         elif keyword == "enchant":
             # select a Wearable
             items = self.target.inventory + self.target.equipped
-            items = list(
-                filter(lambda x: isinstance(x, mrogue.item.item.Wearable), items)
-            )
+            items = list(filter(lambda x: isinstance(x, Wearable), items))
             item = select_item_from_list(items, "enchant")
             if not item:
                 return "You have wasted an enchantment spell."
+            assert isinstance(item, Wearable)
             if item.enchantment_level < 2:
                 name = item.name
                 item.upgrade_enchantment(int(args[0]))
@@ -101,14 +101,14 @@ class Effect:
             items = self.target.inventory + self.target.equipped
             items = list(
                 filter(
-                    lambda x: isinstance(x, mrogue.item.item.Wearable)
-                    and x.subtype == "armor",
+                    lambda x: type(x) == Wearable and type(x.props) == Wearable.Armor,
                     items,
                 )
             )
             item = select_item_from_list(items, "fortify")
             if not item:
                 return "You have wasted a fortify spell."
+            assert isinstance(item, Wearable)
             name = item.name
             item.upgrade_armor(int(args[0]))
             item.identified()
@@ -117,18 +117,18 @@ class Effect:
 
         # heal a random amount of health points
         elif keyword == "heal":
-            self.target.heal(mrogue.utils.roll(int(args[0]), int(args[1])))
+            self.target.heal(roll(int(args[0]), int(args[1])))
             feedback = "Some of your wounds are healed."
 
         # grant additional speed for a duration
         elif keyword == "speed_bonus":
 
-            def lower_speed():
+            def lower_speed() -> None:
                 self.target.speed_bonus *= 1 / float(args[0])
                 self.target.burden_update()
-                mrogue.message.Messenger.add("Your speed turns back to normal.")
+                Messenger.add("Your speed turns back to normal.")
 
-            mrogue.timers.Timer(int(args[1]), lower_speed)
+            Timer(int(args[1]), lower_speed)
             self.target.speed_bonus *= float(args[0])
             self.target.burden_update()
             feedback = "You feel much quicker."
@@ -136,12 +136,12 @@ class Effect:
         # grant additional armor for a duration
         elif keyword == "ac_bonus":
 
-            def lower_ac():
+            def lower_ac() -> None:
                 self.target.ac_bonus -= int(args[0])
                 self.target.recalculate_stats_from_items()
-                mrogue.message.Messenger.add("Your skin turns back to normal.")
+                Messenger.add("Your skin turns back to normal.")
 
-            mrogue.timers.Timer(int(args[1]), lower_ac)
+            Timer(int(args[1]), lower_ac)
             self.target.ac_bonus += int(args[0])
             self.target.recalculate_stats_from_items()
             feedback = "Your skin turns into " + (

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from random import choice, choices
+from typing import Any
 
 import tcod.constants
 
@@ -9,14 +10,14 @@ from . import data, item
 
 
 class ItemTemplate:
-    _subclass_registry = {}
-    _templates = {}
+    _subclass_registry: dict[str, Any] = {}
+    _templates: dict[str, ItemTemplate] = {}
 
-    def __init_subclass__(cls, type, *args, **kwargs):
+    def __init_subclass__(cls, type: str, *args, **kwargs) -> None:
         super().__init_subclass__(*args, **kwargs)
         cls._subclass_registry[type] = cls
 
-    def __new__(cls, template: dict):
+    def __new__(cls, template: dict[str, Any]) -> ItemTemplate:
         subclass = cls._subclass_registry[template["type"]]
         obj = object.__new__(subclass)
         obj._template = template
@@ -28,8 +29,11 @@ class ItemTemplate:
         self.value = self._template["base_value"]
         self.icon = self._template["icon"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self._template['name']} {self.__class__.__name__}"
+
+    def budget(self, quality: int) -> int:
+        return 25
 
     @staticmethod
     def randomize() -> tuple[int, int]:
@@ -38,7 +42,7 @@ class ItemTemplate:
         return quality[0], enchantment[0]
 
     @classmethod
-    def all(cls) -> dict:
+    def all(cls) -> dict[str, ItemTemplate]:
         return cls._templates
 
 
@@ -53,14 +57,14 @@ class WeaponTemplate(ItemTemplate, type="weapon"):
         self.damage = self._template["damage_range"]
         super()._templates[self.name] = self
 
-    def budget(self, quality) -> int:
+    def budget(self, quality: int) -> int:
         budget = self.damage[0] * 9 + self.damage[1] + self.to_hit * 10
         budget += int(budget * quality * 0.45)
         return budget
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
-            f"{self._template['name']} [{self.damage[0]}-{self.damage[1]}/{self.to_hit}]"
+            f"{self._template['name']} [{self.damage[0]}-{self.damage[1]}/{self.to_hit}] "
             f"{self.__class__.__name__}"
         )
 
@@ -121,12 +125,12 @@ class ArmorTemplate(ItemTemplate, type="armor"):
         self.ac = self._template["armor_class_modifier"]
         super()._templates[self.name] = self
 
-    def budget(self, quality) -> int:
+    def budget(self, quality: int) -> int:
         budget = self.ac * 10
         budget += int(budget * quality * 0.45)
         return budget
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self._template['name']} [{self.ac}] {self.__class__.__name__}"
 
     def create(
@@ -178,7 +182,6 @@ class ScrollTemplate(ItemTemplate, type="scroll"):
         self.color = self._template["color"]
         self.effect = self._template["effect"]
         self.uses = self._template["number_of_uses"]
-        self.base_budget = 25
         super()._templates[self.name] = self
 
     def create(self, *args) -> item.Consumable:
@@ -203,7 +206,6 @@ class PotionTemplate(ItemTemplate, type="potion"):
         super().__init__()
         self.effect = self._template["effect"]
         self.uses = self._template["number_of_uses"]
-        self.base_budget = 25
         super()._templates[self.name] = self
 
     def create(self, *args) -> item.Consumable:

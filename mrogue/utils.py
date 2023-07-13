@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import random
 import string
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Iterator, Sequence
 
 if TYPE_CHECKING:
     from mrogue import Point
@@ -14,19 +14,20 @@ def adjacent(fr: Point, to: Point, distance: int = 1) -> bool:
 
 
 def find_in(
-    where: list or tuple,
+    where: Sequence[Any],
     attribute: str,
-    like: object,
+    like: Any,
     instance: type = None,
     many: bool = False,
-) -> object or list[object]:
+) -> Any:
     # print(f"finding in {where}\n object with attr {attribute}," \
     #       f"matching {like}, must be {instance}, many={many}:")
     results = []
     if instance:
-        where = filter(lambda x: isinstance(x, instance), where)
+        where = filter(lambda x: isinstance(x, instance), where)  # type: ignore
     for element in where:
-        if getattr(element, attribute) == like:
+        value = getattr(element, attribute)
+        if (type(value) if type(like) == type else value) == like:
             if many:
                 results.append(element)
             else:
@@ -34,8 +35,8 @@ def find_in(
     return results or None
 
 
-def print_result(func):
-    def decorator(*args, **kwargs):
+def print_result(func: Callable[..., Any]) -> Callable[..., Any]:
+    def decorator(*args: Any, **kwargs: Any) -> Any:
         value = func(*args, **kwargs)
         print(f"{func.__name__}{args}: {value}")
         return value
@@ -57,7 +58,7 @@ def random_scroll_name() -> str:
     return name.rstrip()
 
 
-def circular(sequence):
+def circular(sequence: Sequence[Any]) -> Iterator[Any]:
     while sequence:
         for element in sequence:
             yield element

@@ -265,7 +265,7 @@ class Level:
 class Dungeon:
     _levels = []
     _depth = 0
-    current_level = None
+    current_level: Level
     mapTop = 1
     mapDim = None
 
@@ -377,7 +377,7 @@ class Dungeon:
     def automove(
         self,
         pos: Point,
-        direction: tcod.event.KeyDown,
+        direction: int,
         render_func: Callable,
         update_func: Callable,
     ) -> bool:

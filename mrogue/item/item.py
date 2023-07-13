@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from abc import ABC, abstractmethod
 from random import choice
 
 import tcod
@@ -11,30 +12,32 @@ import mrogue.message
 import mrogue.player
 import mrogue.utils
 from mrogue import Point
+from mrogue.io import Color
 
 
-class Item(mrogue.Entity):
+class Item(ABC, mrogue.Entity):
     max_name = 39
 
-    def __init__(self, name, base_weight, base_value, icon):
+    @abstractmethod
+    def __init__(self, name: str, base_weight: float, base_value: float, icon: int):
         super().__init__()
-        self.pos = None
+        self.pos: Point | None
         self.base_weight = base_weight
         self.base_value = base_value
         self.identified_value = base_value
         self.value = base_value
         self.icon = icon
-        self.background = tcod.blue * 0.3
+        self.background = (0, 0, 76)
         # self.layer = 2
         self.status_identified = False
         self.name = name
         self.amount = 1
         self.identified_name = name  # TEMP
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Item('{self.name}', {self.__class__}, 0x{self.icon:x})"  # ", {self.color})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{chr(self.icon)} '{self.name}' ({self.amount})"  # " [{self.color}]"
 
     def dropped(self, coordinates: Point) -> None:
@@ -51,25 +54,25 @@ class Item(mrogue.Entity):
         self.value = self.identified_value
 
     @property
-    def interface_name(self):
-        color = tcod.white
+    def interface_name(self) -> tuple[str, tuple[int, int, int]]:
+        color = Color.white
         prefix = ""
         suffix = ""
-        if self.status_identified:
+        if isinstance(self, Wearable) and self.status_identified:
             if hasattr(self, "enchantment_level"):
                 color = mrogue.item.data.enchantment_colors[self.enchantment_level]
-            if self.subtype == "weapon":
+            if isinstance(self.props, Wearable.Weapon):
                 suffix = (
                     f" ({self.props.damage[0]}-{self.props.damage[1]}/"
                     f"{self.props.to_hit_modifier:+d})"
                 )
-            elif self.subtype == "armor":
+            else:
                 suffix = f" ({self.props.armor_class_modifier:+d})"
         if self.amount > 1:
             prefix = f"{self.amount} "
         elif self in mrogue.player.Player.get().equipped:
             prefix = "(E) "
-            color = tcod.light_grey
+            color = Color.light_gray
         elif not self.status_identified:
             prefix = "(?) "
         name = self.name
@@ -81,7 +84,12 @@ class Item(mrogue.Entity):
 class Wearable(Item):
     class Weapon:
         def __init__(
-            self, quality, enchantment_level, speed_modifier, base_to_hit, damage_range
+            self,
+            quality: int,
+            enchantment_level: int,
+            speed_modifier: float,
+            base_to_hit: int,
+            damage_range: tuple[int, int],
         ):
             self.speed_modifier = speed_modifier
             self.base_to_hit = base_to_hit
@@ -93,22 +101,22 @@ class Wearable(Item):
             )
 
     class Armor:
-        def __init__(self, quality, enchantment_level, ac_mod):
+        def __init__(self, quality: int, enchantment_level: int, ac_mod: int):
             self.base_armor_class = ac_mod
             self.armor_class_modifier = ac_mod + quality + enchantment_level * 2
 
     def __init__(
         self,
-        name,
-        base_weight,
-        base_value,
-        icon,
-        material,
-        quality,
-        enchantment,
-        slot,
-        subtype,
-        props,
+        name: str,
+        base_weight: float,
+        base_value: float,
+        icon: int,
+        material: tuple[str, str, str],
+        quality: int,
+        enchantment: int,
+        slot: str,
+        subtype: str,
+        props: Weapon | Armor,
     ):
         super().__init__(name, base_weight, base_value, icon)
         self.material = material
@@ -122,19 +130,18 @@ class Wearable(Item):
         )
         self.color = vars(tcod.constants)[self.material[2]]
         self.slot = slot
-        quality = mrogue.item.data.quality_levels[self.quality]
-        if type(quality) == tuple:
-            quality = choice(quality)
-        enchantment = mrogue.item.data.enchantment_levels[self.enchantment_level]
-        self.identified_name = f"{quality} {enchantment} {self.name}".strip()
+        quality_word = mrogue.item.data.quality_levels[self.quality]
+        if type(quality_word) == tuple:
+            quality_word = choice(quality_word)
+        enchantment_word = mrogue.item.data.enchantment_levels[self.enchantment_level]
+        self.identified_name = f"{quality_word} {enchantment_word} {self.name}".strip()
         self.identified_name = " ".join(self.identified_name.split())
-        self.subtype = subtype
         self.props = props
 
-    def __repr__(self):
-        return f"Wearable('{self.name}', {self.subtype}, 0x{self.icon:x})"  # ", {self.color})"
+    def __repr__(self) -> str:
+        return f"Wearable('{self.name}', {type(self.props)}, 0x{self.icon:x})"  # ", {self.color})"
 
-    def upgrade_enchantment(self, amount):
+    def upgrade_enchantment(self, amount: int) -> None:
         if self.enchantment_level > 1:
             raise ValueError("Item already at max ench. level.")
         self.enchantment_level += amount
@@ -150,19 +157,19 @@ class Wearable(Item):
         self.identified_name = f"{quality} {enchantment} {self.name}".strip()
         self.identified_name = " ".join(self.identified_name.split())
         self.name = self.identified_name
-        if self.subtype == "weapon":
+        if isinstance(self.props, Wearable.Weapon):
             speed = self.props.speed_modifier
             to_hit = self.props.base_to_hit
             damage = self.props.base_damage
             self.props = Wearable.Weapon(
                 self.quality, self.enchantment_level, speed, to_hit, damage
             )
-        elif self.subtype == "armor":
+        else:
             ac_mod = self.props.base_armor_class
             self.props = Wearable.Armor(self.quality, self.enchantment_level, ac_mod)
 
-    def upgrade_armor(self, amount):
-        if self.subtype != "armor":
+    def upgrade_armor(self, amount: int) -> None:
+        if type(self.props) != Wearable.Armor:
             raise ValueError("Can't upgrade armor on non-armor items.")
         self.props.armor_class_modifier += amount
         self.identified_name = "fortified " + self.identified_name
@@ -170,7 +177,10 @@ class Wearable(Item):
 
 
 class Stackable(Item):
-    def __init__(self, name, base_weight, base_value, icon, amount):
+    @abstractmethod
+    def __init__(
+        self, name: str, base_weight: float, base_value: float, icon: int, amount: int
+    ):
         super().__init__(name, base_weight, base_value, icon)
         self.amount = amount
         self.weight = self.base_weight * self.amount
@@ -188,24 +198,19 @@ class Stackable(Item):
     #     suffix = 's' if self.amount > 1 else ''
     #     return f"{prefix} {self.name}{suffix}"
 
-    def used(self, *args) -> None:
-        self.amount -= 1
-        if self.amount == 0:
-            self.kill()
-
 
 class Consumable(Stackable):
     def __init__(
         self,
-        name,
-        base_weight,
-        base_value,
-        icon,
-        amount,
-        color,
-        effect,
-        id_name,
-        subtype,
+        name: str,
+        base_weight: float,
+        base_value: float,
+        icon: int,
+        amount: int,
+        color: tuple[int, int, int],
+        effect: str,
+        id_name: str,
+        subtype: str,
     ):
         super().__init__(name, base_weight, base_value, icon, amount)
         self.identified_name = id_name
@@ -217,13 +222,16 @@ class Consumable(Stackable):
             self.identified()
         self.subtype = subtype
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Consumable('{self.name}', {self.subtype}, 0x{self.icon:x})"  # ", {self.color})"
 
-    def used(self, target) -> str:
+    def used(self, target: mrogue.unit.Unit) -> str:
         self.identified()
         mrogue.message.Messenger.add("This is {}.".format(self.name))
-        super().used(None)
+        self.amount -= 1
+        if self.amount == 0:
+            self.kill()
+
         from mrogue.effects import Effect
 
         effect = Effect(self, target)
@@ -244,7 +252,7 @@ class Consumable(Stackable):
                 i.identified()
         for i in mrogue.player.Player.get().inventory:
             if (
-                i.subtype in ("scroll", "potion")
+                isinstance(i, Consumable)
                 and not i.status_identified
                 and i.effect == self.effect
             ):

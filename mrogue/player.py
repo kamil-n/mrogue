@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sys
 from copy import copy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import tcod.console
 from tcod.path import Dijkstra
@@ -13,6 +13,7 @@ import mrogue.monster
 import mrogue.timers
 import mrogue.unit
 import mrogue.utils
+from mrogue.io import Color
 
 if TYPE_CHECKING:
     from mrogue.item.item import Wearable
@@ -20,30 +21,30 @@ if TYPE_CHECKING:
     from mrogue.message import Messenger
 
 load_statuses = {
-    "light": (0.8, tcod.green),
-    "normal": (1.0, tcod.white),
-    "heavy": (1.2, tcod.orange),
-    "immobile": (0.0, tcod.red),
+    "light": (0.8, Color.green),
+    "normal": (1.0, Color.white),
+    "heavy": (1.2, Color.orange),
+    "immobile": (0.0, Color.red),
 }
 
 
 class Player(mrogue.unit.Unit):
     _instance = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: Any, **kwargs: Any) -> Player:
         if not cls._instance:
             cls._instance = super(Player, cls).__new__(cls)
         return cls._instance
 
     @classmethod
-    def get(cls):
+    def get(cls) -> Player:
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             "you", (0x263A, "lighter_red"), 10, (10, 10, 10), [], 1.0, 2, (1, 2), 0, 20
         )
-        self.background = tcod.green * 0.3
+        self.background = (0, 76, 0)
         self.player = True
         self.dijkstra_map = Dijkstra(mrogue.map.Dungeon.current_level.tiles["walkable"])
         self.dijkstra_map.set_goal(*self.pos)
@@ -51,7 +52,7 @@ class Player(mrogue.unit.Unit):
         self.load_thresholds = tuple(
             threshold + self.abilities["str"].mod for threshold in self.load_thresholds
         )
-        self.identified_consumables = []
+        self.identified_consumables: list[str] = []
         self.health_regen_cooldown = 0
         self.crit_immunity = 0.0
         self.status_bar = tcod.console.Console(mrogue.io.Screen.get().width, 1, "F")
@@ -67,7 +68,7 @@ class Player(mrogue.unit.Unit):
     def show_stats(self) -> None:
         self.status_bar.clear()
         self.status_bar.print(0, 0, "HP:")
-        r, g, b = tcod.color_lerp(tcod.red, tcod.green, self.current_HP / self.max_HP)
+        r, g, b = tcod.color_lerp(Color.red, Color.green, self.current_HP / self.max_HP)
         self.status_bar.print(3, 0, f"{self.current_HP:2d}/{self.max_HP}", (r, g, b))
         self.status_bar.print(11, 0, "AC:%2d" % self.armor_class)
         self.status_bar.print(
@@ -153,7 +154,7 @@ class Player(mrogue.unit.Unit):
         if self.current_HP < 1 and "debug" not in sys.argv:
             window = tcod.Console(20, 4, "F")
             window.draw_frame(0, 0, 20, 4, "Game over.", False)
-            window.print_box(0, 2, 20, 1, "YOU DIED", tcod.red, alignment=tcod.CENTER)
+            window.print_box(0, 2, 20, 1, "YOU DIED", Color.red, alignment=tcod.CENTER)
             dungeon.draw_map()
             self.show_stats()
             messenger.show()
@@ -170,14 +171,15 @@ class Player(mrogue.unit.Unit):
         if item.enchantment_level > 1:
             self.crit_immunity += 0.16
 
-    def unequip(self, item: Wearable, **kwargs) -> bool:
+    def unequip(self, item: Wearable, **kwargs: Any) -> bool:
         if super().unequip(item, **kwargs):
             if item.enchantment_level > 1:
                 self.crit_immunity -= 0.16
             return True
         return False
 
-    def pickup_item(self, item_manager: mrogue.item.manager.ItemManager) -> bool:
+    def pickup(self, item_manager: mrogue.item.manager.ItemManager) -> bool:
+        id = None
         item_list = item_manager.get_item_on_map(self.pos)
         if not item_list:
             msg = "There are no items here."
@@ -187,30 +189,11 @@ class Player(mrogue.unit.Unit):
             chosen = item_manager.show_pickup_choice(item_list)
             if not chosen:
                 return False
-            if len(chosen) > 1:
+            if type(chosen) == list:
                 for item in chosen:
-                    if issubclass(type(item), mrogue.item.item.Stackable):
-                        existing_item = mrogue.utils.find_in(
-                            self.inventory, "name", item.name
-                        )
-                        if existing_item:
-                            existing_item.amount += 1
-                        else:
-                            new_item = copy(item)
-                            new_item.amount = 1
-                            new_item.add(self.inventory)
-                        if item.amount > 1:
-                            item.amount -= 1
-                        else:
-                            item.picked()
-                    else:
-                        item.add(self.inventory)
-                        item.picked()
-                    msg = f"{self.name.capitalize()} picked up {item.name}."
-                    mrogue.message.Messenger.add(msg)
-                self.burden_update()
+                    super().pickup_item([item])
                 return True
-            else:
-                return super().pickup_item(chosen)
+            elif type(chosen) == mrogue.item.item.Item:
+                return super().pickup_item([chosen])
         else:
             return super().pickup_item(item_list)

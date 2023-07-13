@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import Any
 
 import tcod.event
 
@@ -14,14 +15,14 @@ enchantment_levels = {-2: "cursed", -1: "spent", 0: "", 1: "energized", 2: "bles
 
 # color list at https://libtcod.github.io/docs/html2/color.html or via tcod.constants
 enchantment_colors = {
-    -2: tcod.light_crimson,
-    -1: tcod.lighter_crimson,
-    0: tcod.white,
-    1: tcod.lighter_sea,
-    2: tcod.light_sea,
+    -2: (255, 63, 111),
+    -1: (255, 127, 159),
+    0: (255, 255, 255),
+    1: (127, 255, 191),
+    2: (63, 255, 159),
 }
 
-materials = {
+materials: dict[str, Any] = {
     "weapons": {
         "wooden": ("0.7", "0.5", "darker_orange"),
         "bone": ("0.8", "0.6", "lightest_amber"),
@@ -50,22 +51,22 @@ materials = {
         },
     },
     "potions": {
-        "red": tcod.red,
-        "orange": tcod.orange,
-        "amber": tcod.amber,
-        "lime": tcod.lime,
-        "chartreuse": tcod.chartreuse,
-        "green": tcod.green,
-        "turquoise": tcod.turquoise,
-        "cyan": tcod.cyan,
-        "azure": tcod.azure,
-        "blue": tcod.blue,
-        "violet": tcod.violet,
-        "purple": tcod.purple,
-        "fuchsia": tcod.fuchsia,
-        "magenta": tcod.magenta,
-        "pink": tcod.pink,
-        "crimson": tcod.crimson,
+        "red": (255, 0, 0),
+        "orange": (255, 127, 0),
+        "amber": (255, 191, 0),
+        "lime": (191, 255, 0),
+        "chartreuse": (127, 255, 0),
+        "green": (0, 255, 0),
+        "turquoise": (0, 255, 191),
+        "cyan": (0, 255, 255),
+        "azure": (0, 127, 255),
+        "blue": (0, 0, 255),
+        "violet": (127, 0, 255),
+        "purple": (191, 0, 255),
+        "fuchsia": (255, 0, 255),
+        "magenta": (255, 0, 191),
+        "pink": (191, 0, 255),
+        "crimson": (255, 0, 63),
     },
 }
 
@@ -93,8 +94,8 @@ letters.update(
     )
 )
 
-scroll_names = {}
-potion_colors = {}
+scroll_names: dict[str, str] = {}
+potion_colors: dict[str, tuple[int, int, int]] = {}
 
 templates = [
     {

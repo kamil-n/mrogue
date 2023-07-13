@@ -26,7 +26,7 @@ class Monster(mrogue.unit.Unit):
             template["ac_bonus"],
             mrogue.utils.roll(*template["hp_range"]),
         )
-        self.background = tcod.red * 0.3
+        self.background = (76, 0, 0)
         self.path = None
         if "weapon" in template and random.randint(0, 1):
             mrogue.item.manager.ItemManager.random_item(

@@ -4,7 +4,7 @@ from __future__ import annotations
 import random
 from copy import copy
 from sys import argv
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import tcod.constants
 
@@ -17,33 +17,33 @@ if TYPE_CHECKING:
 
 
 class AbilityScore:
-    def __init__(self, name, score):
+    def __init__(self, name: str, score: int):
         self.name = name
         self._original_score = self.score = score
 
     @property
-    def mod(self):
+    def mod(self) -> int:
         return (self.score - 10) // 2
 
 
 class Unit(mrogue.Entity):
     def __init__(
         self,
-        name,
-        icon,
-        sight_range,
-        abi_scores,
-        keywords,
-        speed,
-        proficiency,
-        damage_range,
-        ac_bonus,
-        base_hp_from_dice,
+        name: str,
+        icon: tuple[int, str],
+        sight_range: int,
+        abi_scores: tuple[int, int, int],
+        keywords: list[str],
+        speed: float,
+        proficiency: int,
+        damage_range: tuple[int, int],
+        ac_bonus: int,
+        base_hp_from_dice: int,
     ):
         super().__init__()
         self.player = False
-        self.inventory = []
-        self.equipped = []
+        self.inventory: list[Any] = []
+        self.equipped: list[Any] = []
         self.name = name
         self.pos = mrogue.map.Dungeon.find_spot()
         self.icon = icon[0]
@@ -77,10 +77,10 @@ class Unit(mrogue.Entity):
         self.max_HP = base_hp_from_dice
         self.moved = False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Unit('{self.name}', 0x{self.icon:x})"  # ", {self.color})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{chr(self.icon)} '{self.name}'"  # " [{self.color}]"
 
     def update(self) -> None:
@@ -99,11 +99,13 @@ class Unit(mrogue.Entity):
         self.burden_update()
         mrogue.message.Messenger.add(effect)
 
-    def recalculate_stats_from_items(self):
+    def recalculate_stats_from_items(self) -> None:
         # weapon
         self.to_hit = self.proficiency + self.ability_bonus
         self.damage_dice = self.default_damage_dice
-        item = mrogue.utils.find_in(self.equipped, "subtype", "weapon")
+        item = mrogue.utils.find_in(
+            self.equipped, "props", mrogue.item.item.Wearable.Weapon
+        )
         if item:
             self.to_hit += item.props.to_hit_modifier
             self.damage_dice = (
@@ -115,7 +117,7 @@ class Unit(mrogue.Entity):
             [
                 i.props.armor_class_modifier
                 for i in self.equipped
-                if i.subtype == "armor"
+                if type(i.props) == mrogue.item.item.Wearable.Armor
             ]
         )
         self.armor_class = (
@@ -210,7 +212,7 @@ class Unit(mrogue.Entity):
         msg = self.name.capitalize() + " "
         attack_roll = mrogue.utils.roll(1, 20)
         critical_hit = attack_roll == 20
-        if target.player and critical_hit:
+        if type(target) == mrogue.player.Player and critical_hit:
             critical_hit = random.random() > target.crit_immunity
         if critical_hit or attack_roll + self.to_hit >= target.armor_class:
             damage_roll = mrogue.utils.roll(*self.damage_dice, critical_hit)
@@ -241,10 +243,10 @@ class Unit(mrogue.Entity):
         if not (self.player and "debug" in argv):
             self.kill()
             if not self.player:
-                for item in self.equipped:
-                    self.unequip(item, quiet=True, force=True)
-                for item in self.inventory:
-                    self.drop_item(item, quiet=True)
+                for worn in self.equipped:
+                    self.unequip(worn, quiet=True, force=True)
+                for carried in self.inventory:
+                    self.drop_item(carried, quiet=True)
             self.remove(
                 mrogue.map.Dungeon.current_level.units,
                 mrogue.map.Dungeon.current_level.objects_on_map,

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
+
 import string
 from os import path
-from typing import Callable, NamedTuple, Tuple
+from typing import Any, Callable, NamedTuple
 
 import numpy as np
 import tcod.event
@@ -35,18 +37,14 @@ ignore_keys = (
 
 ignore_mods = tcod.event.KMOD_NUM
 
-# type hints
-KEY = tcod.event.KeyDown
-MOD = tcod.event.Modifier
 
-
-def direction_from(key: KEY, pos: mrogue.Point) -> mrogue.Point:
+def direction_from(key: int, pos: mrogue.Point) -> mrogue.Point:
     placement = np.nonzero(directions == key)
     return mrogue.Point(pos.x + placement[2][0] - 1, pos.y + placement[1][0] - 1)
 
 
 def key_is(
-    key: tuple[KEY, MOD], target_key: KEY, target_mod: MOD = tcod.event.KMOD_NONE
+    key: tuple[int, int], target_key: int, target_mod: int = tcod.event.KMOD_NONE
 ) -> bool:
     if key[0] == target_key:
         # if modifier is pressed but it is in the ignore list - remove the modifier
@@ -60,7 +58,7 @@ def key_is(
     return False
 
 
-def mod_is(mod: MOD, target_mod: MOD = tcod.event.KMOD_NONE) -> bool:
+def mod_is(mod: int, target_mod: int = tcod.event.KMOD_NONE) -> bool:
     # if any pressed modifiers are in the ignore list - remove them
     if mod & ignore_mods == ignore_mods:
         mod = mod - ignore_mods
@@ -73,7 +71,7 @@ def mod_is(mod: MOD, target_mod: MOD = tcod.event.KMOD_NONE) -> bool:
     return False
 
 
-def wait(character: KEY = None, mod: MOD = tcod.event.KMOD_NONE) -> tuple[KEY, MOD]:
+def wait(character: int = None, mod: int = tcod.event.KMOD_NONE) -> tuple[int, int]:
     while True:
         for event in tcod.event.wait():
             if event.type == "QUIT":
@@ -123,8 +121,8 @@ def help_screen() -> None:
 
 
 def select_action(
-    options: list[tuple[str, object, Callable]]
-) -> tuple[bool, bool or None]:
+    options: list[tuple[str, Any, Callable[[None], None]]]
+) -> tuple[bool, bool | None]:
     w, h = 23, len(options) + 2
     dialog = tcod.console.Console(w, h, "F")
     dialog.draw_frame(0, 0, w, h, "Select an action:")
@@ -154,55 +152,32 @@ tile_dt = np.dtype(
 class Tile(NamedTuple):
     walkable: bool
     transparent: bool
-    lit: Tuple[int, Tuple[int, int, int, int], Tuple[int, int, int, int]]
-    dim: Tuple[int, Tuple[int, int, int, int], Tuple[int, int, int, int]]
+    lit: tuple[int, tuple[int, ...], tuple[int, ...]]
+    dim: tuple[int, tuple[int, ...], tuple[int, ...]]
 
 
-class Glyph:
-    def __init__(
-        self,
-        default: Tuple[int, Tuple[int, int, int, int], Tuple[int, int, int, int]] = (
-            0,
-            (*tcod.white, 255),
-            (*tcod.black, 255),
-        ),
-    ):
-        self.icon = default[0]
-        self.color = default[1][:3]
-        self.fg_alpha = default[1][3]
-        self.background = default[2][:3]
-        self.bg_alpha = default[2][3]
-
-    @property
-    def tile(self):
-        return (
-            self.icon,
-            (*self.color, self.fg_alpha),
-            (*self.background, self.bg_alpha),
-        )
-
-    @tile.setter
-    def tile(
-        self,
-        tile_tuple: Tuple[int, Tuple[int, int, int, int], Tuple[int, int, int, int]],
-    ):
-        self.icon = tile_tuple[0]
-        self.color = tile_tuple[1][:3]
-        self.fg_alpha = tile_tuple[1][3]
-        self.background = tile_tuple[2][:3]
-        self.bg_alpha = tile_tuple[2][3]
+class Color:
+    black = (0, 0, 0)
+    white = (255, 255, 255)
+    red = (255, 0, 0)
+    green = (0, 255, 0)
+    blue = (0, 0, 255)
+    yellow = (255, 255, 0)
+    orange = (255, 127, 0)
+    light_gray = (159, 159, 159)
+    lighter_gray = (191, 191, 191)
 
 
 class Screen(tcod.Console):
     _instance = None
     _context = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> "Screen":
         if not cls._instance:
             cls._instance = super(Screen, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, width, height, font):
+    def __init__(self, width: int, height: int, font: tcod.tileset.Tileset):
         super().__init__(width, height, "F")
         Screen._context = tcod.context.new(
             columns=width,
@@ -214,15 +189,15 @@ class Screen(tcod.Console):
         Screen.cols, Screen.rows = width, height
 
     @classmethod
-    def get(cls):
+    def get(cls) -> "Screen" | tcod.Console:
         return cls._instance
 
     @classmethod
-    def present(cls, *args, **kwargs):
+    def present(cls, *args, **kwargs) -> None:
         cls._context.present(Screen._instance, *args, **kwargs)
 
     @classmethod
-    def change_font(cls, font):
+    def change_font(cls, font: tuple[str, tuple[int, int]]) -> None:
         new_font = tcod.tileset.load_tilesheet(
             path.join(mrogue.work_dir, "data", font[0]),
             16,

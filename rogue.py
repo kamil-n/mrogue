@@ -19,7 +19,7 @@ class Rogue:
     turn = 0
     num_objects = 10
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.fonts = mrogue.utils.circular(
             [
                 ("terminal10x16_gs_ro.png", (10, 16)),
@@ -63,7 +63,7 @@ class Rogue:
         self.messenger.show()
         mrogue.io.Screen.present()
 
-    def handle_input(self, key: tuple[tcod.event.KeyDown, tcod.event.Modifier]) -> bool:
+    def handle_input(self, key: tuple[int, int]) -> bool:
         # 'i'
         if mrogue.io.key_is(key, tcod.event.K_i):
             if self.items.show_inventory():
