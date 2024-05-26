@@ -1,19 +1,19 @@
 [tool.poetry]
 name = "mrogue"
-version = "0.8.3"
+version = "0.8.4"
 description = "MRogue: A Roguelike written in Python."
 authors = ["Kamil Nienałtowski <niekamil@protonmail.com>"]
 readme = "docs/README.md"
 
 [tool.poetry.dependencies]
-python = "3.10.6"
-tcod = "^13.8.1"
+python = "^3.11.0"
+tcod = "*"
 
 [tool.poetry.group.dev.dependencies]
-pre-commit = "^2.20.0"
-flake8 = "^5.0.4"
-black = "^22.10.0"
-mypy = "^0.982"
+pre-commit = "*"
+flake8 = "*"
+black = "*"
+mypy = "*"
 
 [build-system]
 requires = ["poetry-core"]
