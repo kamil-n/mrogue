@@ -478,8 +478,9 @@ class Dungeon:
         if "debug" in argv:
             self.screen.rgba[:, 0:39] = level.tiles["lit"]
         else:
+            # TODO: investigate the bug below
             display_items = list(
-                filter(lambda item: player.fov[item.pos], display_items)
+                filter(lambda item: item.pos and player.fov[item.pos], display_items)
             )
             display_monsters = list(
                 filter(lambda m: player.fov[m.pos], display_monsters)

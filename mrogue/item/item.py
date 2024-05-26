@@ -96,8 +96,8 @@ class Wearable(Item):
             self.to_hit_modifier = self.base_to_hit + quality + enchantment_level
             self.base_damage = damage_range
             self.damage = (
-                damage_range[0] + enchantment_level,
-                damage_range[1] + enchantment_level,
+                max(damage_range[0] + enchantment_level, 1),
+                max(damage_range[1] + enchantment_level, 1),
             )
 
     class Armor:

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import sys
-from copy import copy
 from typing import TYPE_CHECKING, Any
 
 import tcod.console
@@ -179,7 +178,6 @@ class Player(mrogue.unit.Unit):
         return False
 
     def pickup(self, item_manager: mrogue.item.manager.ItemManager) -> bool:
-        id = None
         item_list = item_manager.get_item_on_map(self.pos)
         if not item_list:
             msg = "There are no items here."

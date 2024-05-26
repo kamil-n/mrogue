@@ -3,4 +3,4 @@
 * ~~equipping a 2handed weapon while wearing 1h weapon and a shield causes only 1 of those to be removed at random~~ **fixed in v0.8.2.1**
 * item after enchanting has malformed name (double quantifiers)
 * sometimes a weapon-wielding monster spawns but there is no weapon selection in level budget range
-* cursed weapon can have negative starting damage range
+* ~~cursed weapon can have negative starting damage range~~
